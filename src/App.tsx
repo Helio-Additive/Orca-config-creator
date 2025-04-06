@@ -4,7 +4,7 @@ import TabbedWindow from "./components/tabbed-window";
 
 function App() {
   return (
-    <main className="h-screen">
+    <main className="h-screen max-h-screen">
       <BackgroundPlate />
       <TabbedWindow />
     </main>
