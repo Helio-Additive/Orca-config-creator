@@ -5,14 +5,14 @@ import { globalState } from "../../lib/state-store";
 export default function VendorConfigTab() {
   const { vendorConfigs } = useHookstate(globalState);
   return (
-    <div className="w-full h-full max-h-full">
+    <div className="w-full min-h-[3000px]">
       {vendorConfigs.keys.map((key) => {
-        const config = vendorConfigs[key]!;
+        const config = vendorConfigs[key].get();
 
         return (
           <ConfigItem
-            name={config.name.get() as string}
-            version={config.version.get() as string}
+            name={config.name}
+            version={config.version}
             machines={config.machine_list.length}
             models={config.machine_model_list.length}
             filaments={config.filament_list.length}
