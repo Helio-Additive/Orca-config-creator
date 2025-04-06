@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path;
 use tauri::api::file::read_string;
@@ -51,17 +51,34 @@ pub struct PrinterModelJsonSchema {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+pub struct MinPrinterModelJsonSchema {
+    name: String,
+    nozzle_diameter: String,
+    family: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PrinterVariantJsonSchema {
     name: String,
 
     #[serde(rename = "type")]
     preset_type: String,
-    nozzle_diameter: String,
-    inherits: String,
+    nozzle_diameter: Vec<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
     extra: Extra,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MinPrinterVariantJsonSchema {
+    name: String,
+
+    #[serde(rename = "type")]
+    preset_type: String,
+    nozzle_diameter: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -117,7 +134,7 @@ fn get_all_json_files(path: &str) -> Result<Vec<String>, String> {
 #[tauri::command]
 pub fn load_all_system_vendor_profiles(
     path: &str,
-) -> Result<HashMap<String, VendorJsonSchema>, String> {
+) -> Result<BTreeMap<String, VendorJsonSchema>, String> {
     let all_vendor_json_files_res = get_all_json_files(path);
 
     match all_vendor_json_files_res {
@@ -143,9 +160,40 @@ pub fn load_all_system_vendor_profiles(
                     }
                 }
             })
-            .collect::<HashMap<_, _>>()),
+            .collect::<BTreeMap<_, _>>()),
         Err(err) => Err(err),
     }
+}
+
+pub fn load_all_x_presets<T: DeserializeOwned>(
+    path: &str,
+    config_name_and_paths: Vec<ConfigNameAndPath>,
+) -> Vec<Result<T, String>> {
+    config_name_and_paths
+        .into_iter()
+        .map(|config_name_and_path| {
+            let complete_path = path.to_string() + "/" + &config_name_and_path.sub_path;
+            let printer_model_res = load_preset::<T>(&complete_path);
+
+            printer_model_res
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub fn load_all_printer_model_presets(
+    path: &str,
+    config_name_and_paths: Vec<ConfigNameAndPath>,
+) -> Vec<Result<MinPrinterModelJsonSchema, String>> {
+    load_all_x_presets(path, config_name_and_paths)
+}
+
+#[tauri::command]
+pub fn load_all_printer_presets(
+    path: &str,
+    config_name_and_paths: Vec<ConfigNameAndPath>,
+) -> Vec<Result<MinPrinterVariantJsonSchema, String>> {
+    load_all_x_presets(path, config_name_and_paths)
 }
 
 pub fn load_preset<T: DeserializeOwned>(path: &str) -> Result<T, String> {
@@ -157,7 +205,7 @@ pub fn load_preset<T: DeserializeOwned>(path: &str) -> Result<T, String> {
 
             match parsed_config_res {
                 Ok(parsed_config) => Ok(parsed_config),
-                _ => Err(format!("Malformed or invalid JSON file: {}", path)),
+                Err(err) => Err(format!("Malformed or invalid JSON file: {}\n{}", path, err)),
             }
         }
         _ => Err(format!("Could not read profile: {}", path)),

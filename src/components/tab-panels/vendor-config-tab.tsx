@@ -5,18 +5,24 @@ import { globalState } from "../../lib/state-store";
 export default function VendorConfigTab() {
   const { vendorConfigs } = useHookstate(globalState);
   return (
-    <div className="w-full min-h-[3000px]">
+    <div className="h-full overflow-y-auto">
       {vendorConfigs.keys.map((key) => {
         const config = vendorConfigs[key].get();
+        const model_num = config.machine_model_list.length;
+        const machine_num = config.machine_model_list.length;
+        const filament_num = config.machine_model_list.length;
+        const process_num = config.machine_model_list.length;
 
         return (
           <ConfigItem
             name={config.name}
-            version={config.version}
-            machines={config.machine_list.length}
-            models={config.machine_model_list.length}
-            filaments={config.filament_list.length}
-            processes={config.process_list.length}
+            text1={config.version}
+            text2={[
+              `models: ${model_num}`,
+              `machines: ${machine_num}`,
+              `filaments: ${filament_num}`,
+              `processes: ${process_num}`,
+            ]}
           />
         );
       })}
