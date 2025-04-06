@@ -6,10 +6,17 @@ import { VendorJsonSchema } from "../../lib/bindings/VendorJsonSchema";
 import { globalState } from "../../lib/state-store";
 import FieldButton from "./field-button";
 import InputComponent from "./input-component";
+import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
+import { MinPrinterModelJsonSchema } from "../../lib/bindings/MinPrinterModelJsonSchema";
 
 export default function FileLoader() {
-  const { orcaInstallationPath, orcaDataDirectory, vendorConfigs } =
-    useHookstate(globalState);
+  const {
+    orcaInstallationPath,
+    orcaDataDirectory,
+    vendorConfigs,
+    modelConfigs,
+    printerConfigs,
+  } = useHookstate(globalState);
 
   const [errLoadingInstallationPath, setErrorLoadingInstallationPath] =
     useState(undefined as string | undefined);
@@ -38,7 +45,6 @@ export default function FileLoader() {
               path: orcaInstallationPath.get() + "/resources/profiles",
             });
 
-          console.log(vendorConfigsRead);
           vendorConfigs.set(vendorConfigsRead);
           setErrorLoadingInstallationPath(undefined);
         } else {
@@ -54,7 +60,83 @@ export default function FileLoader() {
     config_loader();
   }, [orcaInstallationPath]);
 
-  useEffect(() => {}, [vendorConfigs]);
+  useEffect(() => {
+    const config_loader = async () => {
+      try {
+        if (orcaInstallationPath.get()) {
+          vendorConfigs.keys.map(async (key) => {
+            const vendorConfig = vendorConfigs[key].get({ stealth: true });
+            const machine_model_list =
+              vendorConfig.machine_model_list as ConfigNameAndPath[];
+            const modelConfigsParsed: (MinPrinterModelJsonSchema & {
+              fileName: string;
+            })[] = await invoke("load_all_printer_model_presets", {
+              path: orcaInstallationPath.get() + "/resources/profiles/" + key,
+              configNameAndPaths: machine_model_list,
+            });
+
+            for (let i = 0; i < machine_model_list.length; i++) {
+              modelConfigsParsed[i].fileName =
+                orcaInstallationPath.get() +
+                "/resources/profiles/" +
+                key +
+                "/" +
+                machine_model_list[i].sub_path;
+              modelConfigs[machine_model_list[i].name].set(
+                modelConfigsParsed[i]
+              );
+            }
+          });
+        } else {
+          console.log("error");
+          modelConfigs.set({});
+        }
+      } catch (error: any) {
+        console.log(error);
+        modelConfigs.set({});
+      }
+    };
+
+    config_loader();
+  }, [vendorConfigs]);
+
+  useEffect(() => {
+    const config_loader = async () => {
+      try {
+        if (orcaInstallationPath.get()) {
+          vendorConfigs.keys.map(async (key) => {
+            const vendorConfig = vendorConfigs[key].get({ stealth: true });
+            const machine_list =
+              vendorConfig.machine_list as ConfigNameAndPath[];
+            const printerConfigsParsed: (MinPrinterModelJsonSchema & {
+              fileName: string;
+            })[] = await invoke("load_all_printer_presets", {
+              path: orcaInstallationPath.get() + "/resources/profiles/" + key,
+              configNameAndPaths: machine_list,
+            });
+
+            for (let i = 0; i < machine_list.length; i++) {
+              printerConfigsParsed[i].fileName =
+                orcaInstallationPath.get() +
+                "/resources/profiles/" +
+                key +
+                "/" +
+                machine_list[i].sub_path;
+              printerConfigs[machine_list[i].name].set(printerConfigsParsed[i]);
+            }
+          });
+        } else {
+          console.log("error");
+          printerConfigs.set({});
+        }
+      } catch (error: any) {
+        console.log(error);
+        printerConfigs.set({});
+      }
+    };
+
+    config_loader();
+  }, [vendorConfigs]);
 
   return (
     <>
