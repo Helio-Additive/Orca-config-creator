@@ -1,0 +1,47 @@
+import { Button, Description, Field, Input, Label } from "@headlessui/react";
+import clsx from "clsx";
+import { ReactNode, useState } from "react";
+
+export default function InputComponent({
+  label,
+  type = "text",
+  value,
+  placeholder,
+  onClick,
+  rightChildren,
+  err,
+}: {
+  label?: string;
+  type?: string;
+  value?: string;
+  placeholder?: string;
+  onClick?: () => void;
+  rightChildren?: ReactNode[];
+  err?: string;
+}) {
+  return (
+    <Field className={"mb-3"}>
+      {label && (
+        <Label className="text-sm/6 font-medium text-text-primary">
+          {label}
+        </Label>
+      )}
+      <div className="flex w-full max-w-[1024px]">
+        <Input
+          placeholder={placeholder}
+          value={err ?? value ?? placeholder}
+          className={clsx(
+            "w-full flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
+            "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
+            err ? "bg-red-500/60" : "bg-transparent-white-input",
+            value ? "text-text-primary" : "text-text-secondary",
+            "mr-1"
+          )}
+          onClick={onClick}
+          type={type}
+        />
+        {rightChildren && rightChildren.map((x) => x)}
+      </div>
+    </Field>
+  );
+}

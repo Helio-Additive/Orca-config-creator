@@ -1,0 +1,119 @@
+import { ConfigOptionMode, ConfigOptionType } from "./config-option-types";
+
+interface Property {
+  label: string;
+  id: string;
+  default: any;
+  nullable?: boolean;
+  tooltip?: string;
+  type: ConfigOptionType;
+  required?: boolean;
+  fixed?: boolean;
+  enumList?: [string, string][];
+  min?: number;
+  max?: number;
+  regex?: string;
+  sidetext?: string;
+  mode?: ConfigOptionMode;
+  example?: any;
+  is_per_extruder?: boolean;
+}
+
+// prettier-ignore
+let printer_properties: Property[] = [
+{ id: "printer_technology", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "Printer technology", tooltip: "Printer technology", enumList: [["FFF", "FFF"]], default: 0},
+{ id: "helio_printer_id", type: ConfigOptionType.coString, fixed: false, required: false, label: "Helio Printer ID", tooltip: "UUID of the printer provided by Helio", mode: ConfigOptionMode.comSimple, default: "" },
+{ id: "helio_initial_room_air_temp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial room airtemp", sidetext: "Â°C", tooltip: "Specifies the starting ambient air temperature within the room or environment where the printing process begins. This parameter establishes the baseline thermal conditions for the printing operation.  ", mode: ConfigOptionMode.comSimple, default: 25 },
+{ id: "helio_layer_threshold", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Layer Threshold", sidetext: "mm", tooltip: "LFAM print height, denotes the threshold helight at which the ambient temperature stabilizes, ceasing to rise further as the printing process advances. Typically, this marks the point where the immediate vicinity of the print reaches its peak temperature, owing to the consistent emission of heat from the printing object.", mode: ConfigOptionMode.comSimple, default: 40 },
+{ id: "helio_object_proximity_airtemp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial air temperature", sidetext: "Â°C", tooltip: "Refers to the ambient air temperature at a distance of 10 centimeters from the vertical surface of the printed object.", mode: ConfigOptionMode.comSimple, default: 30 },
+{ id: "printable_area", type: ConfigOptionType.coPoints, fixed: false, required: true, label: "Printable area", mode: ConfigOptionMode.comAdvanced, default: null, example: [[0, 0], [200, 0], [200, 200], [0, 200]] },
+{ id: "bed_exclude_area", type: ConfigOptionType.coPoints, fixed: false, required: true, label: "Bed exclude area", mode: ConfigOptionMode.comAdvanced, default: [[0, 0]] },
+{ id: "bed_custom_texture", type: ConfigOptionType.coString, fixed: false, required: false, label: "Bed custom texture", mode: ConfigOptionMode.comAdvanced, default: null },
+{ id: "bed_custom_model", type: ConfigOptionType.coString, fixed: false, required: false, label: "Bed custom model", mode: ConfigOptionMode.comAdvanced, default: null },
+{ id: "gcode_flavor", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "G-code flavor", tooltip: "What kind of gcode the printer is compatible with", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'Marlin(legacy)', 'marlin' ], [ 'Klipper', 'klipper' ], [ 'RepRapFirmware', 'reprapfirmware' ], [ 'RepRap/Sprinter', 'repetier' ], [ 'Repetier', 'teacup' ], [ 'Teacup', 'makerware' ], [ 'MakerWare (MakerBot)', 'marlin2' ], [ 'Marlin 2', 'sailfish' ], [ 'Sailfish (MakerBot)', 'mach3' ], [ 'Mach3/LinuxCNC', 'machinekit' ], [ 'Machinekit', 'smoothie' ], [ 'Smoothie', 'no-extrusion' ]], default: 0},
+{ id: "fan_kickstart", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Fan kick-start time", sidetext: "s", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0 },
+{ id: "fan_speedup_time", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Fan speed-up time", sidetext: "s", mode: ConfigOptionMode.comAdvanced, default: 0 },
+{ id: "fan_speedup_overhangs", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Only overhangs", tooltip: "Will only take into account the delay for the cooling of overhangs.", mode: ConfigOptionMode.comAdvanced, default: true },
+{ id: "single_extruder_multi_material", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Single Extruder Multi Material", tooltip: "Use single nozzle to print multi filament", mode: ConfigOptionMode.comAdvanced, default: true },
+{ id: "manual_filament_change", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Manual Filament Change", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "printer_model", type: ConfigOptionType.coString, fixed: false, required: true, label: "Printer type", tooltip: "Type of the printer", default: null, example: "Bambu Lab X1 Carbon"},
+{ id: "printer_variant", type: ConfigOptionType.coString, fixed: false, required: true, label: "Printer variant", tooltip: "Name of the printer variant. For example, the printer variants may be differentiated by a nozzle diameter.", default: null, example: "0.2"},
+{ id: "printable_height", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Printable height", sidetext: "mm", tooltip: "Maximum printable height which is limited by mechanism of printer", mode: ConfigOptionMode.comSimple, min: 0, max: 214700, default: null, example: 100.0 },
+{ id: "extruder_clearance_radius", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Radius", sidetext: "mm", tooltip: "Clearance radius around extruder. Used for collision avoidance in by-object printing.", mode: ConfigOptionMode.comAdvanced, min: 0, default: 40 },
+{ id: "extruder_clearance_height_to_lid", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Height to lid", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 120 },
+{ id: "extruder_clearance_height_to_rod", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Height to rod", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 40 },
+{ id: "nozzle_height", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Nozzle height", sidetext: "mm", tooltip: "The height of nozzle tip.", mode: ConfigOptionMode.comDevelop, min: 0, default: 2.5 },
+{ id: "default_print_profile", type: ConfigOptionType.coString, fixed: false, required: false, label: "Default process profile", tooltip: "Default process profile when switch to this machine profile", default: null },     
+{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: true, label: "Inherits profile", tooltip: "Name of parent profile", default: ""},
+{ id: "silent_mode", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Supports silent mode", tooltip: "Whether the machine supports silent mode in which machine use lower acceleration to print", mode: ConfigOptionMode.comDevelop, default: false },
+{ id: "scan_first_layer", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Scan first layer", tooltip: "Enable this to enable the camera on printer to check the quality of first layer", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "machine_load_filament_time", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Filament load time", sidetext: "s", tooltip: "Time to load new filament when switch filament. It's usually applicable for single-extruder multi-material machines. For tool changers or multi-tool machines, it's typically 0. For statistics only", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0.0 },
+{ id: "machine_unload_filament_time", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Filament unload time", sidetext: "s", tooltip: "Time to unload old filament when switch filament. It's usually applicable for single-extruder multi-material machines. For tool changers or multi-tool machines, it's typically 0. For statistics only", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0.0 },
+{ id: "machine_tool_change_time", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Tool change time", sidetext: "s", tooltip: "Time taken to switch tools. It's usually applicable for tool changers or multi-tool machines. For single-extruder multi-material machines, it's typically 0. For statistics only", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0.  },
+{ id: "time_cost", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Time cost", sidetext: "money/h", tooltip: "The printer cost per hour", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0 },
+{ id: "nozzle_type", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Nozzle type", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'Undefine', 'undefine' ], [ 'Hardened steel', 'hardened_steel' ], [ 'Stainless steel', 'stainless_steel' ], [ 'Brass', 'brass' ]], default: 0},
+{ id: "nozzle_hrc", type: ConfigOptionType.coInt, fixed: false, required: false, label: "Nozzle HRC", sidetext: "HRC", tooltip: "The nozzle's hardness. Zero means no checking for nozzle's hardness during slicing.", mode: ConfigOptionMode.comDevelop, min: 0, max: 500, default: 0 },
+{ id: "auxiliary_fan", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Auxiliary part cooling fan", tooltip: "Enable this option if machine has auxiliary part cooling fan. G-code command: M106 P2 S(0-255).", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "nozzle_volume", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Nozzle volume", sidetext: "mmÂ³", tooltip: "Volume of nozzle between the cutter and the end of nozzle", mode: ConfigOptionMode.comAdvanced, default: 0.0  },
+{ id: "upward_compatible_machine", type: ConfigOptionType.coStrings, fixed: false, required: false, label: "upward compatible machine", mode: ConfigOptionMode.comAdvanced, default: [''], example: [ "Bambu Lab P1S 0.2 nozzle", "Bambu Lab P1P 0.2 nozzle", "Bambu Lab X1 0.2 nozzle", "Bambu Lab X1E 0.2 nozzle", "Bambu Lab A1 0.2 nozzle" ]},
+{ id: "support_chamber_temp_control", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Support control chamber temperature", tooltip: "This option is enabled if machine support controlling chamber temperature\nG-code command: M141 S(0-255)", mode: ConfigOptionMode.comDevelop, default: true },
+{ id: "support_air_filtration", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Support air filtration", tooltip: "Enable this if printer support air filtration\nG-code command: M106 P3 S(0-255)", mode: ConfigOptionMode.comDevelop, default: true },
+{ id: "printer_structure", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Printer structure", tooltip: "The physical arrangement and components of a printing device", mode: ConfigOptionMode.comDevelop, enumList: [[ 'Undefine', 'undefine' ], [ 'CoreXY', 'corexy' ], [ 'I3', 'i3' ], [ 'Hbot', 'hbot' ], [ 'Delta', 'delta' ]], default: 0},
+{ id: "best_object_pos", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Best object position", tooltip: "Best auto arranging position in range [0,1] w.r.t. bed shape.", mode: ConfigOptionMode.comAdvanced, default: [ 0.5, 0.5 ] },
+{ id: "head_wrap_detect_zone", type: ConfigOptionType.coPoints, fixed: false, required: false, label: "Head wrap detect zone", mode: ConfigOptionMode.comDevelop, default: [''] },
+{ id: "host_type", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Host Type", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'PrusaLink', 'prusalink' ], [ 'PrusaConnect', 'prusaconnect' ], [ 'Octo/Klipper', 'octoprint' ], [ 'Duet', 'duet' ], [ 'FlashAir', 'flashair' ], [ 'AstroBox', 'astrobox' ], [ 'Repetier', 'repetier' ], [ 'MKS', 'mks' ], [ 'ESP3D', 'esp3d' ], [ 'CrealityPrint', 'crealityprint' ], [ 'Obico', 'obico' ], [ 'Flashforge', 'flashforge' ], [ 'SimplyPrint', 'simplyprint' ], [ 'Elegoo Link', 'elegoolink' ]], default: 2},
+{ id: "print_host", type: ConfigOptionType.coString, fixed: false, required: false, label: "Hostname, IP or URL", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_apikey", type: ConfigOptionType.coString, fixed: false, required: false, label: "API Key / Password", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "bbl_use_printhost", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Use 3rd-party print host", tooltip: "Allow controlling BambuLab's printer through 3rd party print hosts", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "print_host_webui", type: ConfigOptionType.coString, fixed: false, required: false, label: "Device UI", tooltip: "Specify the URL of your device user interface if it's not same as print_host", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_cafile", type: ConfigOptionType.coString, fixed: false, required: false, label: "HTTPS CA File", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_port", type: ConfigOptionType.coString, fixed: false, required: false, label: "Printer", tooltip: "Name of the printer", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_authorization_type", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Authorization Type", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'API key', 'key' ], [ 'HTTP digest', 'user' ]], default: 0},
+{ id: "printhost_user", type: ConfigOptionType.coString, fixed: false, required: false, label: "User", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_password", type: ConfigOptionType.coString, fixed: false, required: false, label: "Password", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printhost_ssl_ignore_revoke", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Ignore HTTPS certificate revocation checks", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "thumbnails", type: ConfigOptionType.coString, fixed: false, required: false, label: "G-code thumbnails", mode: ConfigOptionMode.comAdvanced, default: "48x48/PNG,300x300/PNG" },
+{ id: "thumbnails_format", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Format of G-code thumbnails", tooltip: "Format of G-code thumbnails: PNG for best quality, JPG for smallest size, QOI for low memory firmware", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'PNG', 'PNG' ], [ 'JPG', 'JPG' ], [ 'QOI', 'QOI' ], [ 'BTT TT', 'BTT_TFT' ], [ 'ColPic', 'COLPIC' ]], default: 0},
+{ id: "use_firmware_retraction", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Use firmware retraction", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "use_relative_e_distances", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Use relative E distances", mode: ConfigOptionMode.comAdvanced, default: true },
+{ id: "printer_notes", type: ConfigOptionType.coString, fixed: false, required: false, label: "Printer notes", tooltip: "You can put your notes regarding the printer here.", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "cooling_tube_retraction", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Cooling tube position", sidetext: "mm", tooltip: "Distance of the center-point of the cooling tube from the extruder tip.", mode: ConfigOptionMode.comAdvanced, min: 0, default: 91.5 },
+{ id: "cooling_tube_length", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Cooling tube length", sidetext: "mm", tooltip: "Length of the cooling tube to limit space for cooling moves inside it.", mode: ConfigOptionMode.comAdvanced, min: 0, default: 5. },
+{ id: "high_current_on_filament_swap", type: ConfigOptionType.coBool, fixed: false, required: false, label: "High extruder current on filament swap", mode: ConfigOptionMode.comAdvanced, default: 0 },
+{ id: "parking_pos_retraction", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Filament parking position", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 92. },
+{ id: "extra_loading_move", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Extra loading distance", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: -2. },
+{ id: "purge_in_prime_tower", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Purge in prime tower", tooltip: "Purge remaining filament into prime tower", mode: ConfigOptionMode.comAdvanced, default: true },
+{ id: "enable_filament_ramming", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Enable filament ramming", tooltip: "Enable filament ramming", mode: ConfigOptionMode.comAdvanced, default: true }, 
+{ id: "z_offset", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Z offset", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: 0 },
+{ id: "disable_m73", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Disable set remaining print time", tooltip: "Disable generating of the M73: Set remaining print time in the final gcode", mode: ConfigOptionMode.comAdvanced, default: false },
+{ id: "preferred_orientation", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Preferred orientation", sidetext: "Â°", tooltip: "Automatically orient stls on the Z-axis upon initial import", mode: ConfigOptionMode.comAdvanced, min: -360, max: 360, default: 0.0 },
+{ id: "emit_machine_limits_to_gcode", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Emit limits to G-code", mode: ConfigOptionMode.comAdvanced, default: true },
+{ id: "pellet_modded_printer", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Pellet Modded Printer", tooltip: "Enable this option if your printer uses pellets instead of filaments", mode: ConfigOptionMode.comSimple, default: false },
+{ id: "support_multi_bed_types", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Support multi bed types", tooltip: "Enable this option if you want to use multiple bed types", mode: ConfigOptionMode.comSimple, default: false },
+{ id: "bed_mesh_min", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Bed mesh min", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: [ -99999, -99999 ] },
+{ id: "bed_mesh_max", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Bed mesh max", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: [ 99999, 99999 ] },
+{ id: "bed_mesh_probe_distance", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Probe point distance", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: [ 50, 50 ] },      
+{ id: "adaptive_bed_mesh_margin", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Mesh margin", sidetext: "mm", tooltip: "This option determines the additional distance by which the adaptive bed mesh area should be expanded in the XY directions.", mode: ConfigOptionMode.comAdvanced, default: 0 },
+{ id: "enable_long_retraction_when_cut", label: "enable_long_retraction_when_cut", type: ConfigOptionType.coInt, fixed: false, required: false, mode: ConfigOptionMode.comDevelop, default: 0 },
+
+    //per extruder properties
+
+{ id: "z_hop_types", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "Z-hop type", tooltip: "Z hop type", mode: ConfigOptionMode.comAdvanced, default: [2], enumList: [[ 'Auto', 'Auto Lift' ], [ 'Normal', 'Normal Lift' ], [ 'Slope', 'Slope Lift' ], [ 'Spiral', 'Spiral Lift' ]], is_per_extruder: true},
+{ id: "travel_slope", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Traveling angle", sidetext: "°", tooltip: "Traveling angle for Slope and Spiral Z hop type. Setting it to 90° results in Normal Lift", mode: ConfigOptionMode.comAdvanced, min: 1, max: 90, default: [3], is_per_extruder: true},
+{ id: "retract_lift_enforce", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "On surfaces", tooltip: "Enforce Z Hop behavior. This setting is impacted by the above settings (Only lift Z above/below).", mode: ConfigOptionMode.comAdvanced, default: [0], enumList: [[ 'All Surfaces', 'All Surfaces' ], [ 'Top Only', 'Top Only' ], [ 'Bottom Only', 'Bottom Only' ], [ 'Top and Bottom', 'Top and Bottom' ]], is_per_extruder: true},
+{ id: "long_retractions_when_cut", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Long retraction when cut(beta)", mode: ConfigOptionMode.comDevelop, default: [false], is_per_extruder: true},
+{ id: "retraction_distances_when_cut", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Retraction distance when cut", tooltip: "Experimental feature.Retraction length before cutting off during filament change", mode: ConfigOptionMode.comDevelop, min: 10, max: 18, default: [18], is_per_extruder: true },
+
+    //GCode properties
+
+{ id: "machine_start_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Start G-code", tooltip: "Start G-code when start the whole printing", mode: ConfigOptionMode.comAdvanced, default: "G28 ; home all axes\nG1 Z5 F5000 ; lift nozzle\n" },
+{ id: "machine_end_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "End G-code", tooltip: "End G-code when finish the whole printing", mode: ConfigOptionMode.comAdvanced, default: "M104 S0 ; turn off temperature\nG28 X0  ; home X axis\nM84     ; disable motors\n" },
+{ id: "before_layer_change_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Before layer change G-code", tooltip: "This G-code is inserted at every layer change before lifting z", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "printing_by_object_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Between Object Gcode", tooltip: "Insert Gcode between objects. This parameter will only come into effect when you print your models object by object", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "layer_change_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Layer change G-code", tooltip: "This gcode part is inserted at every layer change after lift z", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "time_lapse_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Time lapse G-code", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "change_filament_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Change filament G-code", tooltip: "This gcode is inserted when change filament, including T command to trigger tool change", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "change_extrusion_role_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Change extrusion role G-code", tooltip: "This gcode is inserted when the extrusion role is changed", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "machine_pause_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Pause G-code", tooltip: "This G-code will be used as a code for the pause print. User can insert pause G-code in gcode viewer", mode: ConfigOptionMode.comAdvanced, default: "" },
+{ id: "template_custom_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Custom G-code", tooltip: "This G-code will be used as a custom code", mode: ConfigOptionMode.comAdvanced, default: "" },
+];
