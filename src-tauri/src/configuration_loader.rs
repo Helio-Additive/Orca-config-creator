@@ -4,7 +4,6 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path;
-use tauri::api::file::read_string;
 use ts_rs::TS;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,7 +76,7 @@ pub struct MinPrinterVariantJsonSchema {
     name: String,
 
     #[serde(rename = "type")]
-    preset_type: String,
+    preset_type: Option<String>,
     nozzle_diameter: Option<Vec<String>>,
     inherits: Option<String>,
 }
@@ -166,6 +165,37 @@ pub fn load_all_system_vendor_profiles(
     }
 }
 
+#[tauri::command]
+pub fn load_all_user_printer_profiles_in_dir(
+    path: &str,
+) -> Result<Vec<(String, MinPrinterVariantJsonSchema)>, String> {
+    load_all_user_profiles_in_dir(path)
+}
+
+pub fn load_all_user_profiles_in_dir<T: DeserializeOwned>(
+    path: &str,
+) -> Result<Vec<(String, T)>, String> {
+    let all_json_files_res = get_all_json_files(path);
+
+    match all_json_files_res {
+        Ok(files) => Ok(files
+            .into_iter()
+            .filter_map(|file| {
+                let parsed_config_res = load_preset::<T>(&file);
+
+                match parsed_config_res {
+                    Ok(parsed_config) => Some((file, parsed_config)),
+                    Err(err) => {
+                        println!("{}", err);
+                        None
+                    }
+                }
+            })
+            .collect()),
+        Err(err) => Err(err),
+    }
+}
+
 pub fn load_all_x_presets<T: DeserializeOwned>(
     path: &str,
     config_name_and_paths: Vec<ConfigNameAndPath>,
@@ -194,6 +224,7 @@ pub fn load_all_printer_presets(
     path: &str,
     config_name_and_paths: Vec<ConfigNameAndPath>,
 ) -> Vec<Result<MinPrinterVariantJsonSchema, String>> {
+    println!("{}", path);
     load_all_x_presets(path, config_name_and_paths)
 }
 
