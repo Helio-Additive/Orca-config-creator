@@ -64,7 +64,7 @@ pub struct PrinterVariantJsonSchema {
 
     #[serde(rename = "type")]
     preset_type: String,
-    nozzle_diameter: Vec<String>,
+    nozzle_diameter: Option<Vec<String>>,
 
     #[serde(flatten)]
     #[ts(flatten)]
@@ -78,7 +78,8 @@ pub struct MinPrinterVariantJsonSchema {
 
     #[serde(rename = "type")]
     preset_type: String,
-    nozzle_diameter: Vec<String>,
+    nozzle_diameter: Option<Vec<String>>,
+    inherits: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

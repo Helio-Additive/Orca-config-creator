@@ -1,11 +1,9 @@
 import { hookstate } from "@hookstate/core";
-import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
-import { PrinterModelJsonSchema } from "./bindings/PrinterModelJsonSchema";
-import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
+import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 
-const globalStateObject = {
+export const globalStateObject = {
   orcaInstallationPath: undefined as string | undefined,
   orcaDataDirectory: undefined as string | undefined,
   vendorConfigs: {} as Record<string, VendorJsonSchema>,
@@ -13,9 +11,12 @@ const globalStateObject = {
     string,
     { Ok?: MinPrinterModelJsonSchema; Err?: string } & { fileName: string }
   >,
-  printerConfigs: {} as Record<
+  installedPrinterConfigs: {} as Record<
     string,
-    { Ok?: MinPrinterVariantJsonSchema; Err?: string } & { fileName: string }
+    Record<
+      string,
+      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & { fileName: string }
+    >
   >,
 };
 

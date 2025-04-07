@@ -15,7 +15,7 @@ export default function FileLoader() {
     orcaDataDirectory,
     vendorConfigs,
     modelConfigs,
-    printerConfigs,
+    installedPrinterConfigs,
   } = useHookstate(globalState);
 
   const [errLoadingInstallationPath, setErrorLoadingInstallationPath] =
@@ -82,7 +82,7 @@ export default function FileLoader() {
                 key +
                 "/" +
                 machine_model_list[i].sub_path;
-              modelConfigs[machine_model_list[i].name].set(
+              modelConfigs[machine_model_list[i].name + "_" + key].set(
                 modelConfigsParsed[i]
               );
             }
@@ -122,16 +122,19 @@ export default function FileLoader() {
                 key +
                 "/" +
                 machine_list[i].sub_path;
-              printerConfigs[machine_list[i].name].set(printerConfigsParsed[i]);
+
+              installedPrinterConfigs[key].merge({
+                [machine_list[i].name]: printerConfigsParsed[i],
+              });
             }
           });
         } else {
           console.log("error");
-          printerConfigs.set({});
+          installedPrinterConfigs.set({});
         }
       } catch (error: any) {
         console.log(error);
-        printerConfigs.set({});
+        installedPrinterConfigs.set({});
       }
     };
 
