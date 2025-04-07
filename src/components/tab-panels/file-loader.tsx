@@ -26,6 +26,7 @@ export default function FileLoader() {
     installedPrinterConfigs,
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
+    instantiatedInstalledPrinterConfigs,
   } = useHookstate(globalState);
 
   const [errLoadingInstallationPath, setErrorLoadingInstallationPath] =
@@ -218,7 +219,10 @@ export default function FileLoader() {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
             const machine_list =
               vendorConfig.machine_list as ConfigNameAndPath[];
-            const printerConfigsParsed: (MinPrinterModelJsonSchema & {
+            const printerConfigsParsed: ({
+              Ok?: MinPrinterVariantJsonSchema;
+              Err?: string;
+            } & {
               fileName: string;
             })[] = await invoke("load_all_printer_presets", {
               path:
@@ -241,10 +245,14 @@ export default function FileLoader() {
               installedPrinterConfigs[key].merge({
                 [machine_list[i].name]: printerConfigsParsed[i],
               });
+
+              if (printerConfigsParsed[i].Ok?.instantiation)
+                instantiatedInstalledPrinterConfigs.merge({
+                  [machine_list[i].name]: printerConfigsParsed[i].Ok,
+                });
             }
           });
         } else {
-          console.log("error");
           installedPrinterConfigs.set({});
         }
       } catch (error: any) {

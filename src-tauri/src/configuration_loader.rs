@@ -79,6 +79,7 @@ pub struct MinPrinterVariantJsonSchema {
     preset_type: Option<String>,
     nozzle_diameter: Option<Vec<String>>,
     inherits: Option<String>,
+    instantiation: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -224,7 +225,6 @@ pub fn load_all_printer_presets(
     path: &str,
     config_name_and_paths: Vec<ConfigNameAndPath>,
 ) -> Vec<Result<MinPrinterVariantJsonSchema, String>> {
-    println!("{}", path);
     load_all_x_presets(path, config_name_and_paths)
 }
 
