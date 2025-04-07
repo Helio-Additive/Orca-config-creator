@@ -3,11 +3,19 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 import { VendorJsonSchema } from "../../lib/bindings/VendorJsonSchema";
-import { globalState } from "../../lib/state-store";
+import { fileProperty, globalState } from "../../lib/state-store";
 import FieldButton from "./field-button";
 import InputComponent from "./input-component";
 import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
 import { MinPrinterModelJsonSchema } from "../../lib/bindings/MinPrinterModelJsonSchema";
+import {
+  INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
+  LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
+  LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY,
+  LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY,
+  LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY,
+} from "../../lib/constants";
+import { MinPrinterVariantJsonSchema } from "../../lib/bindings/MinPrinterVariantJsonSchema";
 
 export default function FileLoader() {
   const {
@@ -16,10 +24,15 @@ export default function FileLoader() {
     vendorConfigs,
     modelConfigs,
     installedPrinterConfigs,
+    loadedSystemPrinterConfigs,
+    loadedUserPrinterConfigs,
   } = useHookstate(globalState);
 
   const [errLoadingInstallationPath, setErrorLoadingInstallationPath] =
     useState(undefined as string | undefined);
+  const [errLoadingDataPath, setErrorLoadingDataPath] = useState(
+    undefined as string | undefined
+  );
 
   const handleClick = async (stateObj: State<string | undefined, {}>) => {
     const selected = await open({
@@ -42,7 +55,9 @@ export default function FileLoader() {
         if (orcaInstallationPath.get()) {
           const vendorConfigsRead: Record<string, VendorJsonSchema> =
             await invoke("load_all_system_vendor_profiles", {
-              path: orcaInstallationPath.get() + "/resources/profiles",
+              path:
+                orcaInstallationPath.get() +
+                INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
             });
 
           vendorConfigs.set(vendorConfigsRead);
@@ -63,6 +78,96 @@ export default function FileLoader() {
   useEffect(() => {
     const config_loader = async () => {
       try {
+        if (orcaDataDirectory.get()) {
+          const vendorConfigsRead: Record<string, VendorJsonSchema> =
+            await invoke("load_all_system_vendor_profiles", {
+              path:
+                orcaDataDirectory.get() +
+                LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
+            });
+
+          Object.keys(vendorConfigsRead).map(async (key) => {
+            const vendorConfig = vendorConfigsRead[key];
+            const machine_list =
+              vendorConfig.machine_list as ConfigNameAndPath[];
+
+            const printerConfigsParsed: (MinPrinterModelJsonSchema & {
+              fileName: string;
+            })[] = await invoke("load_all_printer_presets", {
+              path:
+                orcaDataDirectory.get() +
+                LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
+                key,
+              configNameAndPaths: machine_list,
+            });
+
+            for (let i = 0; i < machine_list.length; i++) {
+              printerConfigsParsed[i].fileName =
+                orcaDataDirectory.get() +
+                LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
+                key +
+                "/" +
+                machine_list[i].sub_path;
+
+              loadedSystemPrinterConfigs[key].merge({
+                [machine_list[i].name]: printerConfigsParsed[i],
+              });
+            }
+          });
+
+          const userMachineDirectory =
+            orcaDataDirectory.get({ stealth: true }) +
+            LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY +
+            LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY;
+          const userMachineBaseDirectory =
+            userMachineDirectory +
+            LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY;
+
+          const inheritedPrinterConfigs: [
+            String,
+            MinPrinterVariantJsonSchema
+          ][] = await invoke("load_all_user_printer_profiles_in_dir", {
+            path: userMachineDirectory,
+          });
+          const basePrinterConfigs: [String, MinPrinterVariantJsonSchema][] =
+            await invoke("load_all_user_printer_profiles_in_dir", {
+              path: userMachineBaseDirectory,
+            });
+
+          basePrinterConfigs.forEach(([path, config]) => {
+            const configWithFileName: MinPrinterVariantJsonSchema &
+              fileProperty = { ...config, fileName: path.toString() };
+            loadedUserPrinterConfigs.merge({
+              [config.name]: configWithFileName,
+            });
+          });
+
+          inheritedPrinterConfigs.forEach(([path, config]) => {
+            const configWithFileName: MinPrinterVariantJsonSchema &
+              fileProperty = { ...config, fileName: path.toString() };
+            loadedUserPrinterConfigs.merge({
+              [config.name]: configWithFileName,
+            });
+          });
+
+          setErrorLoadingDataPath(undefined);
+        } else {
+          loadedSystemPrinterConfigs.set({});
+          setErrorLoadingDataPath(undefined);
+        }
+      } catch (error: any) {
+        setErrorLoadingDataPath(error);
+      }
+    };
+
+    config_loader();
+  }, [orcaDataDirectory]);
+
+  useEffect(() => {
+    const config_loader = async () => {
+      try {
         if (orcaInstallationPath.get()) {
           vendorConfigs.keys.map(async (key) => {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
@@ -71,14 +176,19 @@ export default function FileLoader() {
             const modelConfigsParsed: (MinPrinterModelJsonSchema & {
               fileName: string;
             })[] = await invoke("load_all_printer_model_presets", {
-              path: orcaInstallationPath.get() + "/resources/profiles/" + key,
+              path:
+                orcaInstallationPath.get() +
+                INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
+                key,
               configNameAndPaths: machine_model_list,
             });
 
             for (let i = 0; i < machine_model_list.length; i++) {
               modelConfigsParsed[i].fileName =
                 orcaInstallationPath.get() +
-                "/resources/profiles/" +
+                INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
                 key +
                 "/" +
                 machine_model_list[i].sub_path;
@@ -111,14 +221,19 @@ export default function FileLoader() {
             const printerConfigsParsed: (MinPrinterModelJsonSchema & {
               fileName: string;
             })[] = await invoke("load_all_printer_presets", {
-              path: orcaInstallationPath.get() + "/resources/profiles/" + key,
+              path:
+                orcaInstallationPath.get() +
+                INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
+                key,
               configNameAndPaths: machine_list,
             });
 
             for (let i = 0; i < machine_list.length; i++) {
               printerConfigsParsed[i].fileName =
                 orcaInstallationPath.get() +
-                "/resources/profiles/" +
+                INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+                "/" +
                 key +
                 "/" +
                 machine_list[i].sub_path;

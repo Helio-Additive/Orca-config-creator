@@ -4,9 +4,9 @@
 mod configuration_loader;
 use configuration_loader::{
     load_all_printer_model_presets, load_all_printer_presets, load_all_system_vendor_profiles,
-    load_preset, load_printer_model_preset, load_printer_variant_preset, MinPrinterModelJsonSchema,
-    MinPrinterVariantJsonSchema, PrinterModelJsonSchema, PrinterVariantJsonSchema,
-    VendorJsonSchema,
+    load_all_user_printer_profiles_in_dir, load_preset, load_printer_model_preset,
+    load_printer_variant_preset, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
+    PrinterModelJsonSchema, PrinterVariantJsonSchema, VendorJsonSchema,
 };
 use ts_rs::TS;
 
@@ -36,7 +36,8 @@ fn main() {
             load_printer_model_preset,
             load_printer_variant_preset,
             load_all_printer_model_presets,
-            load_all_printer_presets
+            load_all_printer_presets,
+            load_all_user_printer_profiles_in_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

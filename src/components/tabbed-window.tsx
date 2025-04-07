@@ -8,7 +8,8 @@ import ModelConfigTab from "./tab-panels/model-config-tab";
 import PrinterConfigTab from "./tab-panels/printer-config-tab";
 
 export default function TabbedWindow() {
-  const { vendorConfigs, orcaInstallationPath } = useHookstate(globalState);
+  const { vendorConfigs, orcaInstallationPath, orcaDataDirectory } =
+    useHookstate(globalState);
 
   const categories = [
     {
@@ -34,7 +35,10 @@ export default function TabbedWindow() {
       name: "Printers",
       component: PrinterConfigTab,
       loadCondition: () => {
-        return orcaInstallationPath.get() !== undefined;
+        return (
+          orcaInstallationPath.get() !== undefined ||
+          orcaDataDirectory.get() !== undefined
+        );
       },
     },
   ];
