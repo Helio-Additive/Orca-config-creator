@@ -5,11 +5,13 @@ export default function ConfigItem({
   text1,
   text2,
   className,
+  onClick,
 }: {
   name: string;
   text1?: string;
   text2?: string[];
   className?: string;
+  onClick?: () => void;
 }) {
   return (
     <div
@@ -19,6 +21,7 @@ export default function ConfigItem({
         "hover:bg-transparent-black-hover",
         className
       )}
+      onClick={onClick}
     >
       <div className="flex mb-2">
         <span className="text-text-primary text-lg/6 font-medium mr-1">

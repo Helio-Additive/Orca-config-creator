@@ -15,6 +15,7 @@ export default function VendorConfigTab() {
 
         return (
           <ConfigItem
+            key={config.name}
             name={config.name}
             text1={config.version}
             text2={[

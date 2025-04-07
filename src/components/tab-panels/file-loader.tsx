@@ -193,7 +193,7 @@ export default function FileLoader() {
                 key +
                 "/" +
                 machine_model_list[i].sub_path;
-              modelConfigs[machine_model_list[i].name + "_" + key].set(
+              modelConfigs[machine_model_list[i].name].set(
                 modelConfigsParsed[i]
               );
             }
@@ -248,7 +248,10 @@ export default function FileLoader() {
 
               if (printerConfigsParsed[i].Ok?.instantiation)
                 instantiatedInstalledPrinterConfigs.merge({
-                  [machine_list[i].name]: printerConfigsParsed[i].Ok,
+                  [machine_list[i].name]: {
+                    ...printerConfigsParsed[i].Ok!,
+                    fileName: printerConfigsParsed[i].fileName,
+                  },
                 });
             }
           });
@@ -272,12 +275,12 @@ export default function FileLoader() {
         onClick={() => handleClick(orcaInstallationPath)}
         value={orcaInstallationPath.get()}
         placeholder="Pick a directory/folder"
-        rightChildren={[
+        rightChild={
           <FieldButton
             text="Clear"
             onClick={() => clearPath(orcaInstallationPath)}
-          />,
-        ]}
+          />
+        }
         err={errLoadingInstallationPath}
       />
       <InputComponent
@@ -286,12 +289,13 @@ export default function FileLoader() {
         onClick={() => handleClick(orcaDataDirectory)}
         value={orcaDataDirectory.get()}
         placeholder="Pick a directory/folder"
-        rightChildren={[
+        rightChild={
           <FieldButton
             text="Clear"
             onClick={() => clearPath(orcaDataDirectory)}
-          />,
-        ]}
+          />
+        }
+        err={errLoadingDataPath}
       />
     </>
   );

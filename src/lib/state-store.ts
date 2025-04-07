@@ -21,7 +21,7 @@ export const globalStateObject = {
   >,
   instantiatedInstalledPrinterConfigs: {} as Record<
     string,
-    MinPrinterVariantJsonSchema
+    MinPrinterVariantJsonSchema & fileProperty
   >,
   loadedSystemPrinterConfigs: {} as Record<
     string,

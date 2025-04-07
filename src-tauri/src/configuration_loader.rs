@@ -62,8 +62,11 @@ pub struct PrinterVariantJsonSchema {
     name: String,
 
     #[serde(rename = "type")]
-    preset_type: String,
+    preset_type: Option<String>,
     nozzle_diameter: Option<Vec<String>>,
+    inherits: Option<String>,
+    instantiation: Option<String>,
+    printer_model: Option<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
