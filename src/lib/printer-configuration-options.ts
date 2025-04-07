@@ -20,7 +20,7 @@ interface Property {
 }
 
 // prettier-ignore
-let printer_properties: Property[] = [
+export const printer_properties: Property[] = [
 { id: "printer_technology", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "Printer technology", tooltip: "Printer technology", enumList: [["FFF", "FFF"]], default: 0},
 { id: "helio_printer_id", type: ConfigOptionType.coString, fixed: false, required: false, label: "Helio Printer ID", tooltip: "UUID of the printer provided by Helio", mode: ConfigOptionMode.comSimple, default: "" },
 { id: "helio_initial_room_air_temp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial room airtemp", sidetext: "Â°C", tooltip: "Specifies the starting ambient air temperature within the room or environment where the printing process begins. This parameter establishes the baseline thermal conditions for the printing operation.  ", mode: ConfigOptionMode.comSimple, default: 25 },

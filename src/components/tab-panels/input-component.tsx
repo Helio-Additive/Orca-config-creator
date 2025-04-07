@@ -1,6 +1,6 @@
-import { Button, Description, Field, Input, Label } from "@headlessui/react";
+import { Field, Input, Label } from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 
 export default function InputComponent({
   label,
@@ -8,7 +8,7 @@ export default function InputComponent({
   value,
   placeholder,
   onClick,
-  rightChildren,
+  rightChild,
   err,
 }: {
   label?: string;
@@ -16,7 +16,7 @@ export default function InputComponent({
   value?: string;
   placeholder?: string;
   onClick?: () => void;
-  rightChildren?: ReactNode[];
+  rightChild?: ReactNode;
   err?: string;
 }) {
   return (
@@ -40,7 +40,7 @@ export default function InputComponent({
           onClick={onClick}
           type={type}
         />
-        {rightChildren && rightChildren.map((x) => x)}
+        {rightChild && rightChild}
       </div>
     </Field>
   );
