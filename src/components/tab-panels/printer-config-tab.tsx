@@ -91,7 +91,7 @@ export default function PrinterConfigTab() {
             const vendorConfig = installedPrinterConfigs[key];
 
             return (
-              <div>
+              <div key={key}>
                 <span className="font-semibold text-text-primary text-xl mb-1 pl-3 mt-3">
                   {key}
                 </span>
@@ -135,7 +135,7 @@ export default function PrinterConfigTab() {
             const vendorConfig = loadedSystemPrinterConfigs[key];
 
             return (
-              <div>
+              <div key={key}>
                 <span className="font-semibold text-text-primary text-xl mb-1 pl-3 mt-3">
                   {key}
                 </span>
