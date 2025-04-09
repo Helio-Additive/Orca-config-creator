@@ -7,6 +7,9 @@ export type fileProperty = { fileName: string };
 export const globalStateObject = {
   orcaInstallationPath: undefined as string | undefined,
   orcaDataDirectory: undefined as string | undefined,
+  errLoadingInstallationPath: undefined as string | undefined,
+  errLoadingDataPath: undefined as string | undefined,
+  os: "none",
   vendorConfigs: {} as Record<string, VendorJsonSchema>,
   modelConfigs: {} as Record<
     string,
