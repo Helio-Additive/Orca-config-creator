@@ -39,7 +39,7 @@ function App() {
   }, []);
 
   const get_installed_system_profiles_subdirectory_directory = () => {
-    if (os.get() == "darwin")
+    if (os.get({ stealth: true }) == "darwin")
       return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS;
     else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY;
   };
@@ -47,15 +47,15 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaInstallationPath.get()) {
+        if (orcaInstallationPath.get({ stealth: true })) {
           console.log(
-            orcaInstallationPath.get() +
+            orcaInstallationPath.get({ stealth: true }) +
               get_installed_system_profiles_subdirectory_directory()
           );
           const vendorConfigsRead: Record<string, VendorJsonSchema> =
             await invoke("load_all_system_vendor_profiles", {
               path:
-                orcaInstallationPath.get() +
+                orcaInstallationPath.get({ stealth: true }) +
                 get_installed_system_profiles_subdirectory_directory(),
             });
 
@@ -77,11 +77,11 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaDataDirectory.get()) {
+        if (orcaDataDirectory.get({ stealth: true })) {
           const vendorConfigsRead: Record<string, VendorJsonSchema> =
             await invoke("load_all_system_vendor_profiles", {
               path:
-                orcaDataDirectory.get() +
+                orcaDataDirectory.get({ stealth: true }) +
                 LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
             });
 
@@ -94,7 +94,7 @@ function App() {
               fileName: string;
             })[] = await invoke("load_all_printer_presets", {
               path:
-                orcaDataDirectory.get() +
+                orcaDataDirectory.get({ stealth: true }) +
                 LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
                 "/" +
                 key,
@@ -103,7 +103,7 @@ function App() {
 
             for (let i = 0; i < machine_list.length; i++) {
               printerConfigsParsed[i].fileName =
-                orcaDataDirectory.get() +
+                orcaDataDirectory.get({ stealth: true }) +
                 LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
                 "/" +
                 key +
@@ -172,7 +172,7 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaInstallationPath.get()) {
+        if (orcaInstallationPath.get({ stealth: true })) {
           vendorConfigs.keys.map(async (key) => {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
             const machine_model_list =
@@ -181,7 +181,7 @@ function App() {
               fileName: string;
             })[] = await invoke("load_all_printer_model_presets", {
               path:
-                orcaInstallationPath.get() +
+                orcaInstallationPath.get({ stealth: true }) +
                 get_installed_system_profiles_subdirectory_directory() +
                 "/" +
                 key,
@@ -190,7 +190,7 @@ function App() {
 
             for (let i = 0; i < machine_model_list.length; i++) {
               modelConfigsParsed[i].fileName =
-                orcaInstallationPath.get() +
+                orcaInstallationPath.get({ stealth: true }) +
                 get_installed_system_profiles_subdirectory_directory() +
                 "/" +
                 key +
@@ -217,7 +217,7 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaInstallationPath.get()) {
+        if (orcaInstallationPath.get({ stealth: true })) {
           vendorConfigs.keys.map(async (key) => {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
             const machine_list =
@@ -229,7 +229,7 @@ function App() {
               fileName: string;
             })[] = await invoke("load_all_printer_presets", {
               path:
-                orcaInstallationPath.get() +
+                orcaInstallationPath.get({ stealth: true }) +
                 get_installed_system_profiles_subdirectory_directory() +
                 "/" +
                 key,
@@ -238,7 +238,7 @@ function App() {
 
             for (let i = 0; i < machine_list.length; i++) {
               printerConfigsParsed[i].fileName =
-                orcaInstallationPath.get() +
+                orcaInstallationPath.get({ stealth: true }) +
                 get_installed_system_profiles_subdirectory_directory() +
                 "/" +
                 key +
