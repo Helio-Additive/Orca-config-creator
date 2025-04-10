@@ -5,8 +5,10 @@ import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 
 export type fileProperty = { fileName: string };
 export const globalStateObject = {
-  orcaInstallationPath: undefined as string | undefined,
-  orcaDataDirectory: undefined as string | undefined,
+  orcaInstallationPath: "C:\\Program Files\\OrcaSlicer" as string | undefined,
+  orcaDataDirectory: "C:\\Users\\Vipul Rajan\\AppData\\Roaming\\OrcaSlicer" as
+    | string
+    | undefined,
   errLoadingInstallationPath: undefined as string | undefined,
   errLoadingDataPath: undefined as string | undefined,
   os: "none",

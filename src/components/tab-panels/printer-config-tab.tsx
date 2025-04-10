@@ -4,6 +4,7 @@ import ConfigItem from "./config-list/config-item";
 import { invoke } from "@tauri-apps/api/tauri";
 import { PrinterVariantJsonSchema } from "../../lib/bindings/PrinterVariantJsonSchema";
 import { v4 as uuidv4 } from "uuid";
+import { basename, dirname } from "@tauri-apps/api/path";
 
 export default function PrinterConfigTab() {
   const {
@@ -19,24 +20,25 @@ export default function PrinterConfigTab() {
     family?: string
   ) => {
     let configFile: string | undefined = undefined;
-    const loadedUserPrinterConfigRes = loadedUserPrinterConfigs[configName].get(
-      {
+    const loadedUserPrinterConfigRes = loadedUserPrinterConfigs
+      .nested(configName)
+      .get({
         stealth: true,
-      }
-    );
+      });
 
     if (loadedUserPrinterConfigRes) {
       configFile = loadedUserPrinterConfigRes.fileName;
     } else if (!family) {
       const instantiatedInstalledPrinterConfigRes =
-        instantiatedInstalledPrinterConfigs[configName].get({
+        instantiatedInstalledPrinterConfigs.nested(configName).get({
           stealth: true,
         });
       configFile = instantiatedInstalledPrinterConfigRes.fileName;
     } else {
-      const possibleConfigRes = loadedSystemPrinterConfigs[family][
-        configName
-      ].get({ stealth: true });
+      const possibleConfigRes = loadedSystemPrinterConfigs
+        .nested(family)
+        .nested(configName)
+        .get({ stealth: true });
       configFile = possibleConfigRes.fileName;
     }
 
@@ -51,9 +53,15 @@ export default function PrinterConfigTab() {
       if (res.inherits) {
         let printerFamily = family;
         if (res.printer_model) {
-          printerFamily = modelConfigs[res.printer_model].get({ stealth: true })
-            .Ok!.family;
+          const modelFile = modelConfigs
+            .nested(res.printer_model)
+            .get({ stealth: true }).fileName;
+
+          const machineDirectory = await dirname(modelFile);
+          const familyDirectory = await dirname(machineDirectory);
+          printerFamily = await basename(familyDirectory);
         }
+
         const inherited_props = await load_all_printer_props(
           res.inherits,
           printerFamily
@@ -68,7 +76,7 @@ export default function PrinterConfigTab() {
         return res;
       }
     } catch (error: any) {
-      console.log("Something went wrong");
+      console.log("Something went wrong: " + error);
     }
   };
 
@@ -96,7 +104,7 @@ export default function PrinterConfigTab() {
                   {key}
                 </span>
                 {vendorConfig.keys.map((printerName) => {
-                  const config = vendorConfig[printerName].get();
+                  const config = vendorConfig.nested(printerName).get();
 
                   if (config.Ok) {
                     return (
@@ -140,7 +148,7 @@ export default function PrinterConfigTab() {
                   {key}
                 </span>
                 {vendorConfig.keys.map((printerName) => {
-                  const config = vendorConfig[printerName].get();
+                  const config = vendorConfig.nested(printerName).get();
 
                   if (config.Ok) {
                     return (
@@ -171,7 +179,7 @@ export default function PrinterConfigTab() {
         </div>
         <div className="flex flex-col flex-1/2 overflow-y-auto">
           {loadedUserPrinterConfigs.keys.map((key) => {
-            const machineConfig = loadedUserPrinterConfigs[key].get();
+            const machineConfig = loadedUserPrinterConfigs.nested(key).get();
 
             return (
               <ConfigItem
