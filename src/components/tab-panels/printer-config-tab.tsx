@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { PrinterVariantJsonSchema } from "../../lib/bindings/PrinterVariantJsonSchema";
 import { v4 as uuidv4 } from "uuid";
 import { basename, dirname } from "@tauri-apps/api/path";
+import { toast } from "react-toastify";
 
 export default function PrinterConfigTab() {
   const {
@@ -77,15 +78,21 @@ export default function PrinterConfigTab() {
       }
     } catch (error: any) {
       console.log("Something went wrong: " + error);
+      throw "Could complete inheritance hierarchy: " + error;
     }
   };
 
   const export_flattened = async (configName: string) => {
-    const res = await load_all_printer_props(configName);
-    res.name = res.name + "_" + uuidv4();
+    try {
+      const res = await load_all_printer_props(configName);
+      res.name = res.name + "_" + uuidv4();
 
-    await invoke("save_and_zip_json", { data: res });
-    console.log("flattened_config", res);
+      await invoke("save_and_zip_json", { data: res });
+
+      toast("Saved 'Printer presets.zip'", { type: "success" });
+    } catch (error: any) {
+      toast(error, { type: "error" });
+    }
   };
 
   return (
