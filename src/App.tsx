@@ -18,6 +18,7 @@ import { MinPrinterVariantJsonSchema } from "./lib/bindings/MinPrinterVariantJso
 import { fileProperty, globalState } from "./lib/state-store";
 import { useHookstate } from "@hookstate/core";
 import { VendorJsonSchema } from "./lib/bindings/VendorJsonSchema";
+import { ToastContainer, toast } from "react-toastify";
 
 function App() {
   const {
@@ -61,6 +62,7 @@ function App() {
 
           vendorConfigs.set(vendorConfigsRead);
           errLoadingInstallationPath.set(undefined);
+          toast("Loaded system vendor configurations", { type: "success" });
         } else {
           vendorConfigs.set({});
           errLoadingInstallationPath.set(undefined);
@@ -157,6 +159,7 @@ function App() {
           });
 
           errLoadingDataPath.set(undefined);
+          toast("Loaded user printer profiles", { type: "success" });
         } else {
           loadedSystemPrinterConfigs.set({});
           errLoadingDataPath.set(undefined);
@@ -201,11 +204,14 @@ function App() {
               );
             }
           });
+
+          toast("Loaded system model configs", { type: "success" });
         } else {
-          console.log("error");
+          toast("Installation path not set correctly", { type: "error" });
           modelConfigs.set({});
         }
       } catch (error: any) {
+        toast(error, { type: "error" });
         console.log(error);
         modelConfigs.set({});
       }
@@ -258,10 +264,14 @@ function App() {
                 });
             }
           });
+
+          toast("Loaded system machine configs", { type: "success" });
         } else {
+          toast("Installation path not set correctly", { type: "error" });
           installedPrinterConfigs.set({});
         }
       } catch (error: any) {
+        toast(error, { type: "error" });
         console.log(error);
         installedPrinterConfigs.set({});
       }
@@ -272,6 +282,7 @@ function App() {
 
   return (
     <main className="h-screen max-h-screen">
+      <ToastContainer theme="colored" />
       <BackgroundPlate />
       <TabbedWindow />
     </main>
