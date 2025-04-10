@@ -4,16 +4,17 @@
 mod configuration_loader;
 use configuration_loader::{
     load_all_printer_model_presets, load_all_printer_presets, load_all_system_vendor_profiles,
-    load_all_user_printer_profiles_in_dir, load_preset, load_printer_model_preset,
-    load_printer_variant_preset, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
-    PrinterModelJsonSchema, PrinterVariantJsonSchema, VendorJsonSchema,
+    load_all_user_printer_profiles_in_dir, load_printer_model_preset, load_printer_variant_preset,
+    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, PrinterModelJsonSchema,
+    PrinterVariantJsonSchema, VendorJsonSchema,
 };
 use std::fs::File;
-use std::io::{Cursor, Write};
-use std::path::{Path, PathBuf};
-use tauri::{api::dialog::blocking::FileDialogBuilder, api::path::document_dir};
+use std::io::Write;
+use std::path::PathBuf;
+use tauri::api::dialog::blocking::FileDialogBuilder;
+use tauri::async_runtime::spawn_blocking;
 use ts_rs::TS;
-use zip::write::{FileOptions, SimpleFileOptions};
+use zip::write::SimpleFileOptions;
 
 // Learn more about Tauri commands at https://v1.tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -27,53 +28,48 @@ fn greet2(name: &str) -> String {
 }
 
 #[tauri::command]
-fn save_and_zip_json(data: serde_json::Value) -> Result<bool, String> {
-    // Ask user where to save the file
-    let save_path: Option<PathBuf> = FileDialogBuilder::new()
-        .set_title("Choose where to save the ZIP file")
-        .pick_folder();
+async fn save_and_zip_json(data: serde_json::Value) -> Result<bool, String> {
+    // Run the blocking folder picker in a separate thread
+    let save_path: Option<PathBuf> = spawn_blocking(move || {
+        FileDialogBuilder::new()
+            .set_title("Choose where to save the ZIP file")
+            .pick_folder()
+    })
+    .await
+    .unwrap_or(None);
 
-    let Some(path) = save_path else {
+    let Some(base_path) = save_path else {
         return Err("No path selected".into());
     };
 
-    let path = path.join("Printer presets.zip");
+    let zip_path = base_path.join("Printer presets.zip");
 
-    // Write JSON file
-    let json_str = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
-    //std::fs::write(&path, json_str).map_err(|e| e.to_string())?;
+    // Now spawn the blocking zip logic
+    let data_clone = data.clone(); // clone to move into thread
+    spawn_blocking(move || {
+        let json_str = serde_json::to_string_pretty(&data_clone).map_err(|e| e.to_string())?;
 
-    let path_object = Path::new(&path);
-    let file = File::create(&path_object).unwrap();
+        let file = File::create(&zip_path).map_err(|e| e.to_string())?;
+        let mut zip = zip::ZipWriter::new(file);
 
-    let mut zip = zip::ZipWriter::new(file);
-    zip.start_file(
-        data.get("name")
+        let file_name = data_clone
+            .get("name")
             .and_then(|v| v.as_str())
-            .unwrap()
-            .to_owned()
-            + ".json",
-        SimpleFileOptions::default(),
-    )
-    .unwrap();
-    zip.write_all(&json_str.as_bytes()).unwrap();
-    zip.finish().unwrap();
+            .map(|s| format!("{s}.json"))
+            .unwrap_or_else(|| "data.json".to_string());
 
-    /*// Create zip file in the same directory
-    let zip_path = path.with_extension("zip");
-    let zip_file = File::create(&zip_path).map_err(|e| e.to_string())?;
-    let mut zip = zip::ZipWriter::new(zip_file);
-    let options =
-        zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        zip.start_file(file_name, SimpleFileOptions::default())
+            .map_err(|e| e.to_string())?;
 
-    let filename = path.file_name().unwrap().to_string_lossy();
-    let json_data = std::fs::read(&path).map_err(|e| e.to_string())?;
-    zip.start_file(&filename, options)
-        .map_err(|e| e.to_string())?;
-    zip.write_all(&json_data).map_err(|e| e.to_string())?;
-    zip.finish().map_err(|e| e.to_string())?;*/
+        zip.write_all(json_str.as_bytes())
+            .map_err(|e| e.to_string())?;
 
-    Ok(true)
+        zip.finish().map_err(|e| e.to_string())?;
+
+        Ok(true)
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
 }
 
 fn main() {

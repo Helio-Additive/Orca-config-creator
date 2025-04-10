@@ -11,6 +11,7 @@
     "version": "0.1.0"
   },
   "tauri": {
+    "macOSPrivateApi": true,
     "allowlist": {
       "os": {
         "all": true
@@ -21,12 +22,7 @@
         "open": true
       },
       "dialog": {
-        "all": false,
-        "ask": false,
-        "confirm": false,
-        "message": false,
-        "open": true,
-        "save": false
+        "all": true
       },
       "path": {
         "all": true
