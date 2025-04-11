@@ -13,13 +13,13 @@ export const globalStateObject = {
   vendorConfigs: {} as Record<string, VendorJsonSchema>,
   modelConfigs: {} as Record<
     string,
-    { Ok?: MinPrinterModelJsonSchema; Err?: string } & { fileName: string }
+    { Ok?: MinPrinterModelJsonSchema; Err?: string } & fileProperty
   >,
   installedPrinterConfigs: {} as Record<
     string,
     Record<
       string,
-      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & { fileName: string }
+      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
     >
   >,
   instantiatedInstalledPrinterConfigs: {} as Record<
@@ -30,12 +30,12 @@ export const globalStateObject = {
     string,
     Record<
       string,
-      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & { fileName: string }
+      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
     >
   >,
   loadedUserPrinterConfigs: {} as Record<
     string,
-    MinPrinterVariantJsonSchema & { fileName: string }
+    MinPrinterVariantJsonSchema & fileProperty
   >,
 };
 
