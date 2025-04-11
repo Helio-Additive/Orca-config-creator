@@ -131,7 +131,9 @@ fn get_all_json_files(path: &str) -> Result<Vec<String>, String> {
                 })
                 .collect::<Vec<String>>(), // Collect as Vec<String>
         ),
-        Err(_err) => Err("Could not open or read directory".to_string()),
+        Err(_err) => {
+            Err("Could not open or read directory. Or the structure is deformed".to_string())
+        }
     }
 }
 

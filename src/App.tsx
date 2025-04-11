@@ -7,6 +7,7 @@ import { platform } from "@tauri-apps/api/os";
 import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
 import { MinPrinterModelJsonSchema } from "./lib/bindings/MinPrinterModelJsonSchema";
 import {
+  directoryDefaults,
   INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
   INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS,
   LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
@@ -19,6 +20,8 @@ import { fileProperty, globalState } from "./lib/state-store";
 import { useHookstate } from "@hookstate/core";
 import { VendorJsonSchema } from "./lib/bindings/VendorJsonSchema";
 import { ToastContainer, toast } from "react-toastify";
+import { checkPathExists } from "./lib/commons";
+import { homeDir } from "@tauri-apps/api/path";
 
 function App() {
   const {
@@ -36,10 +39,61 @@ function App() {
   } = useHookstate(globalState);
 
   useEffect(() => {
-    platform().then((a) => os.set(a));
+    platform().then((a) => {
+      os.set(a);
+
+      const setDefaultDirectories = async () => {
+        switch (a) {
+          case "darwin": {
+            checkPathExists(
+              directoryDefaults.darwin.installationDirectory
+            ).then((res) => {
+              if (res)
+                orcaInstallationPath.set(
+                  directoryDefaults.darwin.installationDirectory
+                );
+            });
+
+            homeDir().then((homeDirectory) => {
+              const dataDirectory =
+                homeDirectory + directoryDefaults.darwin.dataSubdirectory;
+              checkPathExists(dataDirectory).then((res) => {
+                if (res) orcaDataDirectory.set(dataDirectory);
+              });
+            });
+
+            break;
+          }
+
+          case "win32": {
+            checkPathExists(directoryDefaults.win32.installationDirectory).then(
+              (res) => {
+                if (res)
+                  orcaInstallationPath.set(
+                    directoryDefaults.win32.installationDirectory
+                  );
+              }
+            );
+
+            homeDir().then((homeDirectory) => {
+              const dataDirectory =
+                homeDirectory + directoryDefaults.win32.dataSubdirectory;
+              checkPathExists(dataDirectory).then((res) => {
+                if (res) orcaDataDirectory.set(dataDirectory);
+              });
+            });
+
+            break;
+          }
+        }
+      };
+
+      setDefaultDirectories();
+    });
   }, []);
 
   const get_installed_system_profiles_subdirectory_directory = () => {
+    console.log(os.get({ stealth: true }));
     if (os.get({ stealth: true }) == "darwin")
       return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS;
     else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY;
@@ -69,6 +123,7 @@ function App() {
         }
       } catch (error: any) {
         vendorConfigs.set({});
+        toast(error, { type: "error" });
         errLoadingInstallationPath.set(error);
       }
     };
@@ -79,7 +134,10 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaDataDirectory.get({ stealth: true })) {
+        if (
+          orcaDataDirectory.get({ stealth: true }) &&
+          !errLoadingDataPath.get({ stealth: true })
+        ) {
           const vendorConfigsRead: Record<string, VendorJsonSchema> =
             await invoke("load_all_system_vendor_profiles", {
               path:
@@ -165,7 +223,9 @@ function App() {
           errLoadingDataPath.set(undefined);
         }
       } catch (error: any) {
+        loadedSystemPrinterConfigs.set({});
         errLoadingDataPath.set(error);
+        toast(error, { type: "error" });
       }
     };
 
@@ -175,7 +235,10 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaInstallationPath.get({ stealth: true })) {
+        if (
+          orcaInstallationPath.get({ stealth: true }) &&
+          !errLoadingInstallationPath.get({ stealth: true })
+        ) {
           vendorConfigs.keys.map(async (key) => {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
             const machine_model_list =
@@ -207,7 +270,6 @@ function App() {
 
           toast("Loaded system model configs", { type: "success" });
         } else {
-          toast("Installation path not set correctly", { type: "error" });
           modelConfigs.set({});
         }
       } catch (error: any) {
@@ -223,7 +285,10 @@ function App() {
   useEffect(() => {
     const config_loader = async () => {
       try {
-        if (orcaInstallationPath.get({ stealth: true })) {
+        if (
+          orcaInstallationPath.get({ stealth: true }) &&
+          !errLoadingInstallationPath.get({ stealth: true })
+        ) {
           vendorConfigs.keys.map(async (key) => {
             const vendorConfig = vendorConfigs[key].get({ stealth: true });
             const machine_list =
@@ -267,7 +332,6 @@ function App() {
 
           toast("Loaded system machine configs", { type: "success" });
         } else {
-          toast("Installation path not set correctly", { type: "error" });
           installedPrinterConfigs.set({});
         }
       } catch (error: any) {

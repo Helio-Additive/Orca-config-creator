@@ -29,7 +29,7 @@ export default function InputComponent({
       <div className="flex w-full max-w-[1024px]">
         <Input
           placeholder={placeholder}
-          value={err ?? value ?? placeholder}
+          value={value ?? placeholder}
           className={clsx(
             "w-full flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
             "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
