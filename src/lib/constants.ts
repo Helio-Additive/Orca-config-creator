@@ -13,7 +13,7 @@ export const directoryDefaults = {
     dataSubdirectory: "/AppData/Roaming/OrcaSlicer",
   },
   darwin: {
-    installationDirectory: "Applications/OrcaSlicer.app",
+    installationDirectory: "/Applications/OrcaSlicer.app",
     dataSubdirectory: "/Library/Application Support/OrcaSlicer",
   },
 };
