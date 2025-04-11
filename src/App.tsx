@@ -1,11 +1,17 @@
-import "./App.css";
-import { useEffect } from "react";
+import { useHookstate } from "@hookstate/core";
+import { platform } from "@tauri-apps/api/os";
+import { homeDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "./App.css";
 import BackgroundPlate from "./components/background-plate";
 import TabbedWindow from "./components/tabbed-window";
-import { platform } from "@tauri-apps/api/os";
 import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
 import { MinPrinterModelJsonSchema } from "./lib/bindings/MinPrinterModelJsonSchema";
+import { MinPrinterVariantJsonSchema } from "./lib/bindings/MinPrinterVariantJsonSchema";
+import { VendorJsonSchema } from "./lib/bindings/VendorJsonSchema";
+import { checkDirectoryExists } from "./lib/commons";
 import {
   directoryDefaults,
   INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
@@ -15,13 +21,7 @@ import {
   LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY,
 } from "./lib/constants";
-import { MinPrinterVariantJsonSchema } from "./lib/bindings/MinPrinterVariantJsonSchema";
 import { fileProperty, globalState } from "./lib/state-store";
-import { useHookstate } from "@hookstate/core";
-import { VendorJsonSchema } from "./lib/bindings/VendorJsonSchema";
-import { ToastContainer, toast } from "react-toastify";
-import { checkPathExists } from "./lib/commons";
-import { homeDir } from "@tauri-apps/api/path";
 
 function App() {
   const {
@@ -45,20 +45,37 @@ function App() {
       const setDefaultDirectories = async () => {
         switch (a) {
           case "darwin": {
-            checkPathExists(
+            checkDirectoryExists(
               directoryDefaults.darwin.installationDirectory
             ).then((res) => {
-              if (res)
+              if (res) {
                 orcaInstallationPath.set(
                   directoryDefaults.darwin.installationDirectory
+                );
+                toast("Set default installation directory", {
+                  type: "success",
+                });
+              } else
+                toast(
+                  "Default installation directory does not exist.\nPlease set manually",
+                  { type: "error" }
                 );
             });
 
             homeDir().then((homeDirectory) => {
               const dataDirectory =
                 homeDirectory + directoryDefaults.darwin.dataSubdirectory;
-              checkPathExists(dataDirectory).then((res) => {
-                if (res) orcaDataDirectory.set(dataDirectory);
+              checkDirectoryExists(dataDirectory).then((res) => {
+                if (res) {
+                  orcaDataDirectory.set(dataDirectory);
+                  toast("Set default data directory", {
+                    type: "success",
+                  });
+                } else
+                  toast(
+                    "Default data directory does not exist.\nPlease set manually",
+                    { type: "error" }
+                  );
               });
             });
 
@@ -66,20 +83,37 @@ function App() {
           }
 
           case "win32": {
-            checkPathExists(directoryDefaults.win32.installationDirectory).then(
-              (res) => {
-                if (res)
-                  orcaInstallationPath.set(
-                    directoryDefaults.win32.installationDirectory
-                  );
-              }
-            );
+            checkDirectoryExists(
+              directoryDefaults.win32.installationDirectory
+            ).then((res) => {
+              if (res) {
+                orcaInstallationPath.set(
+                  directoryDefaults.win32.installationDirectory
+                );
+                toast("Set default installation directory", {
+                  type: "success",
+                });
+              } else
+                toast(
+                  "Default installation directory does not exist.\nPlease set manually",
+                  { type: "error" }
+                );
+            });
 
             homeDir().then((homeDirectory) => {
               const dataDirectory =
                 homeDirectory + directoryDefaults.win32.dataSubdirectory;
-              checkPathExists(dataDirectory).then((res) => {
-                if (res) orcaDataDirectory.set(dataDirectory);
+              checkDirectoryExists(dataDirectory).then((res) => {
+                if (res) {
+                  orcaDataDirectory.set(dataDirectory);
+                  toast("Set default data directory", {
+                    type: "success",
+                  });
+                } else
+                  toast(
+                    "Default data directory does not exist.\nPlease set manually",
+                    { type: "error" }
+                  );
               });
             });
 
