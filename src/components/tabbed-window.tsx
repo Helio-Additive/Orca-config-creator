@@ -21,7 +21,7 @@ export default function TabbedWindow() {
       name: "Vendors",
       component: VendorConfigTab,
       loadCondition: () => {
-        return vendorConfigs.keys.length > 0;
+        return orcaInstallationPath.get() !== undefined;
       },
     },
     {
