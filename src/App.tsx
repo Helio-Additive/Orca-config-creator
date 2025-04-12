@@ -9,7 +9,7 @@ import {
   dataPrinterConfigLoader,
   modelConfigLoader,
   setOsAndDefaultDirectories as setDefaultDirectories,
-  systemPrinterConfigLoader,
+  installedPrinterConfigLoader,
   vendorConfigLoader,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
@@ -62,10 +62,8 @@ function App() {
       modelConfigs,
       errLoadingInstallationPath
     );
-  }, [vendorConfigs]);
 
-  useEffect(() => {
-    systemPrinterConfigLoader(
+    installedPrinterConfigLoader(
       os,
       orcaInstallationPath,
       vendorConfigs,

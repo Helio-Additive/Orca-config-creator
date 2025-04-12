@@ -307,7 +307,13 @@ export const dataPrinterConfigLoader = async (
   }
 };
 
-export const systemPrinterConfigLoader = async (
+export function installedConfigLoader<T, S, M>(
+  os: State<string>,
+  orcaInstallationPath: State<string | undefined>,
+  vendorConfigs: State<Record<string, VendorJsonSchema>>
+) {}
+
+export const installedPrinterConfigLoader = async (
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
   vendorConfigs: State<Record<string, VendorJsonSchema>>,
