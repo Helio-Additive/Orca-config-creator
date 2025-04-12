@@ -8,12 +8,12 @@ import { basename, dirname } from "@tauri-apps/api/path";
 import { toast } from "react-toastify";
 import ConfigTabTemplate from "./config-tab-template";
 
-export default function PrinterConfigTab() {
+export default function FilamentConfigTab() {
   const {
-    installedPrinterConfigs,
-    loadedSystemPrinterConfigs,
-    loadedUserPrinterConfigs,
-    instantiatedInstalledPrinterConfigs,
+    installedFilamentConfigs,
+    loadedSystemFilamentConfigs,
+    loadedUserFilamentConfigs,
+    instantiatedInstalledFilamentConfigs,
     modelConfigs,
   } = useHookstate(globalState);
 
@@ -96,8 +96,8 @@ export default function PrinterConfigTab() {
     }
   };
 
-  const installedConfigs = installedPrinterConfigs.keys.map((key) => {
-    const vendorConfig = installedPrinterConfigs[key];
+  const installedConfigs = installedFilamentConfigs.keys.map((key) => {
+    const vendorConfig = installedFilamentConfigs[key];
 
     return (
       <div key={key}>
@@ -130,8 +130,8 @@ export default function PrinterConfigTab() {
     );
   });
 
-  const loadedSystemConfigs = loadedSystemPrinterConfigs.keys.map((key) => {
-    const vendorConfig = loadedSystemPrinterConfigs[key];
+  const loadedSystemConfigs = loadedSystemFilamentConfigs.keys.map((key) => {
+    const vendorConfig = loadedSystemFilamentConfigs[key];
 
     return (
       <div key={key}>
@@ -164,8 +164,8 @@ export default function PrinterConfigTab() {
     );
   });
 
-  const loadedUserConfigs = loadedUserPrinterConfigs.keys.map((key) => {
-    const machineConfig = loadedUserPrinterConfigs.nested(key).get();
+  const loadedUserConfigs = loadedUserFilamentConfigs.keys.map((key) => {
+    const machineConfig = loadedUserFilamentConfigs.nested(key).get();
 
     return (
       <ConfigItem

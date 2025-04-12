@@ -11,6 +11,8 @@ import {
   setOsAndDefaultDirectories as setDefaultDirectories,
   installedPrinterConfigLoader,
   vendorConfigLoader,
+  installedFilamentConfigLoader,
+  dataFilamentConfigLoader,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
 
@@ -21,9 +23,13 @@ function App() {
     vendorConfigs,
     modelConfigs,
     installedPrinterConfigs,
+    installedFilamentConfigs,
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
+    loadedSystemFilamentConfigs,
+    loadedUserFilamentConfigs,
     instantiatedInstalledPrinterConfigs,
+    instantiatedInstalledFilamentConfigs,
     os,
     errLoadingDataPath,
     errLoadingInstallationPath,
@@ -52,6 +58,13 @@ function App() {
       loadedUserPrinterConfigs,
       errLoadingDataPath
     );
+
+    dataFilamentConfigLoader(
+      orcaDataDirectory,
+      loadedSystemFilamentConfigs,
+      loadedUserFilamentConfigs,
+      errLoadingDataPath
+    );
   }, [orcaDataDirectory]);
 
   useEffect(() => {
@@ -69,6 +82,15 @@ function App() {
       vendorConfigs,
       installedPrinterConfigs,
       instantiatedInstalledPrinterConfigs,
+      errLoadingInstallationPath
+    );
+
+    installedFilamentConfigLoader(
+      os,
+      orcaInstallationPath,
+      vendorConfigs,
+      installedFilamentConfigs,
+      instantiatedInstalledFilamentConfigs,
       errLoadingInstallationPath
     );
   }, [vendorConfigs]);

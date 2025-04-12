@@ -1,11 +1,10 @@
-export const INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY =
-  "/resources/profiles";
-export const INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS =
+export const INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY = "/resources/profiles";
+export const INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS =
   "/Contents/Resources/profiles";
-export const LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY = "/system";
-export const LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY = "/user/default";
-export const LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY = "/base";
-export const LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY = "/machine";
+export const LOADED_SYSTEM_PROFILES_SUBDIRECTORY = "/system";
+export const LOADED_USER_PROFILES_SUBDIRECTORY = "/user/default";
+export const LOADED_USER_PROFILES_BASE_SUBDIRECTORY = "/base";
+export const LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY = "/machine";
 
 export const directoryDefaults = {
   win32: {

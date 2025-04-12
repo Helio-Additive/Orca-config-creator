@@ -1,22 +1,21 @@
-import { invoke } from "@tauri-apps/api/tauri";
-import {
-  directoryDefaults,
-  INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
-  INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS,
-  LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
-  LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY,
-  LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY,
-  LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY,
-} from "./constants";
 import { State } from "@hookstate/core";
-import { toast } from "react-toastify";
 import { homeDir } from "@tauri-apps/api/path";
-import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
+import { invoke } from "@tauri-apps/api/tauri";
+import { toast } from "react-toastify";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
+import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
+import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
+import {
+  directoryDefaults,
+  INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY,
+  INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS,
+  LOADED_SYSTEM_PROFILES_SUBDIRECTORY,
+  LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
+  LOADED_USER_PROFILES_SUBDIRECTORY,
+} from "./constants";
 import { fileProperty } from "./state-store";
-import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -205,7 +204,11 @@ export async function dataConfigLoader<
   >,
   loadedUserConfigs: State<Record<string, T & fileProperty>>,
   errLoadingDataPath: State<string | undefined>,
-  propKey: string
+  messageKey: string,
+  propKey: string,
+  systemConfigLoaderFunction: string,
+  userConfigLoaderFunction: string,
+  loadedUserProfilesConfigSubdirectory: string
 ) {
   try {
     if (
@@ -217,64 +220,64 @@ export async function dataConfigLoader<
         {
           path:
             orcaDataDirectory.get({ stealth: true }) +
-            LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY,
+            LOADED_SYSTEM_PROFILES_SUBDIRECTORY,
         }
       );
 
       Object.keys(vendorConfigsRead).map(async (key) => {
         const vendorConfig = vendorConfigsRead[key];
-        const machine_list = vendorConfig[propKey] as ConfigNameAndPath[];
+        const configList = vendorConfig[propKey] as ConfigNameAndPath[];
 
         const printerConfigsParsed: (T & fileProperty)[] = await invoke(
-          "load_all_printer_presets",
+          systemConfigLoaderFunction,
           {
             path:
               orcaDataDirectory.get({ stealth: true }) +
-              LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+              LOADED_SYSTEM_PROFILES_SUBDIRECTORY +
               "/" +
               key,
-            configNameAndPaths: machine_list,
+            configNameAndPaths: configList,
           }
         );
 
-        for (let i = 0; i < machine_list.length; i++) {
+        for (let i = 0; i < configList.length; i++) {
           printerConfigsParsed[i].fileName =
             orcaDataDirectory.get({ stealth: true }) +
-            LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+            LOADED_SYSTEM_PROFILES_SUBDIRECTORY +
             "/" +
             key +
             "/" +
-            machine_list[i].sub_path;
+            configList[i].sub_path;
 
           loadedSystemConfigs[key].merge({
-            [machine_list[i].name]: printerConfigsParsed[i],
+            [configList[i].name]: printerConfigsParsed[i],
           });
         }
       });
 
-      const userMachineDirectory =
+      const userConfigDirectory =
         orcaDataDirectory.get({ stealth: true }) +
-        LOADED_USER_PROFILES_SUBDIRECTORY_DIRECTORY +
-        LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY_DIRECTORY;
-      const userMachineBaseDirectory =
-        userMachineDirectory + LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY;
+        LOADED_USER_PROFILES_SUBDIRECTORY +
+        loadedUserProfilesConfigSubdirectory;
+      const userBaseDirectory =
+        userConfigDirectory + LOADED_USER_PROFILES_BASE_SUBDIRECTORY;
 
-      const inheritedPrinterConfigs: [String, T][] = await invoke(
-        "load_all_user_printer_profiles_in_dir",
+      const inheritedConfigs: [String, T][] = await invoke(
+        userConfigLoaderFunction,
         {
-          path: userMachineDirectory,
+          path: userConfigDirectory,
         }
       );
 
       try {
-        const basePrinterConfigs: [String, T][] = await invoke(
-          "load_all_user_printer_profiles_in_dir",
+        const baseConfigs: [String, T][] = await invoke(
+          userConfigLoaderFunction,
           {
-            path: userMachineBaseDirectory,
+            path: userBaseDirectory,
           }
         );
 
-        basePrinterConfigs.forEach(([path, config]) => {
+        baseConfigs.forEach(([path, config]) => {
           const configWithFileName: T & fileProperty = {
             ...config,
             fileName: path.toString(),
@@ -287,7 +290,7 @@ export async function dataConfigLoader<
         console.log("base directory does not exist, skipping");
       }
 
-      inheritedPrinterConfigs.forEach(([path, config]) => {
+      inheritedConfigs.forEach(([path, config]) => {
         const configWithFileName: T & fileProperty = {
           ...config,
           fileName: path.toString(),
@@ -298,7 +301,7 @@ export async function dataConfigLoader<
       });
 
       errLoadingDataPath.set(undefined);
-      toast("Loaded user printer profiles", { type: "success" });
+      toast(`Loaded user ${messageKey} profiles`, { type: "success" });
     } else {
       loadedSystemConfigs.set({});
       errLoadingDataPath.set(undefined);
@@ -331,7 +334,39 @@ export const dataPrinterConfigLoader = async (
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
     errLoadingDataPath,
-    "machine_list"
+    "printer",
+    "machine_list",
+    "load_all_printer_presets",
+    "load_all_user_printer_profiles_in_dir",
+    "/machine"
+  );
+
+export const dataFilamentConfigLoader = async (
+  orcaDataDirectory: State<string | undefined>,
+  loadedSystemFilamentConfigs: State<
+    Record<
+      string,
+      Record<
+        string,
+        { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty
+      >
+    >
+  >,
+  loadedUserFilamentConfigs: State<
+    Record<string, MinFilamentJsonSchema & fileProperty>
+  >,
+  errLoadingDataPath: State<string | undefined>
+) =>
+  dataConfigLoader(
+    orcaDataDirectory,
+    loadedSystemFilamentConfigs,
+    loadedUserFilamentConfigs,
+    errLoadingDataPath,
+    "filament",
+    "filament_list",
+    "load_all_filament_presets",
+    "load_all_user_filaments_profiles_in_dir",
+    "/filament"
   );
 
 export function installedConfigLoader<
@@ -345,7 +380,9 @@ export function installedConfigLoader<
   >,
   instantiatedInstalledConfigs: State<Record<string, T & fileProperty>>,
   errLoading: State<string | undefined>,
-  configNameAndPathKey: string
+  messageKey: string,
+  configNameAndPathKey: string,
+  configLoaderFunction: string
 ) {
   try {
     if (
@@ -360,7 +397,7 @@ export function installedConfigLoader<
         const printerConfigsParsed: ({
           Ok?: T;
           Err?: string;
-        } & fileProperty)[] = await invoke("load_all_printer_presets", {
+        } & fileProperty)[] = await invoke(configLoaderFunction, {
           path:
             orcaInstallationPath.get({ stealth: true }) +
             get_installed_system_profiles_subdirectory_directory(os.get()) +
@@ -392,7 +429,7 @@ export function installedConfigLoader<
         }
       });
 
-      toast("Loaded system machine configs", { type: "success" });
+      toast(`Loaded installed ${messageKey} configs`, { type: "success" });
     } else {
       installedConfigs.set({});
     }
@@ -428,13 +465,44 @@ export const installedPrinterConfigLoader = async (
     installedPrinterConfigs,
     instantiatedInstalledPrinterConfigs,
     errLoadingInstallationPath,
-    "machine_list"
+    "printer",
+    "machine_list",
+    "load_all_printer_presets"
+  );
+
+export const installedFilamentConfigLoader = async (
+  os: State<string>,
+  orcaInstallationPath: State<string | undefined>,
+  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  installedFilamentConfigs: State<
+    Record<
+      string,
+      Record<
+        string,
+        { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty
+      >
+    >
+  >,
+  instantiatedInstalledFilamentConfigs: State<
+    Record<string, MinFilamentJsonSchema & fileProperty>
+  >,
+  errLoadingInstallationPath: State<string | undefined>
+) =>
+  installedConfigLoader(
+    os,
+    orcaInstallationPath,
+    vendorConfigs,
+    installedFilamentConfigs,
+    instantiatedInstalledFilamentConfigs,
+    errLoadingInstallationPath,
+    "filament",
+    "filament_list",
+    "load_all_filament_presets"
   );
 
 export const get_installed_system_profiles_subdirectory_directory = (
   os: string
 ) => {
-  if (os == "darwin")
-    return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY_MACOS;
-  else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY;
+  if (os == "darwin") return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS;
+  else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY;
 };

@@ -204,6 +204,13 @@ pub fn load_all_user_printer_profiles_in_dir(
     load_all_user_profiles_in_dir(path)
 }
 
+#[tauri::command]
+pub fn load_all_user_filaments_profiles_in_dir(
+    path: &str,
+) -> Result<Vec<(String, MinFilamentJsonSchema)>, String> {
+    load_all_user_profiles_in_dir(path)
+}
+
 pub fn load_all_user_profiles_in_dir<T: DeserializeOwned>(
     path: &str,
 ) -> Result<Vec<(String, T)>, String> {
@@ -248,6 +255,14 @@ pub fn load_all_printer_model_presets(
     path: &str,
     config_name_and_paths: Vec<ConfigNameAndPath>,
 ) -> Vec<Result<MinPrinterModelJsonSchema, String>> {
+    load_all_x_presets(path, config_name_and_paths)
+}
+
+#[tauri::command]
+pub fn load_all_filament_presets(
+    path: &str,
+    config_name_and_paths: Vec<ConfigNameAndPath>,
+) -> Vec<Result<MinFilamentJsonSchema, String>> {
     load_all_x_presets(path, config_name_and_paths)
 }
 

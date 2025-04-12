@@ -6,6 +6,7 @@ import TabTemplate from "./tab-template";
 import VendorConfigTab from "./tab-panels/vendor-config-tab";
 import ModelConfigTab from "./tab-panels/model-config-tab";
 import PrinterConfigTab from "./tab-panels/printer-config-tab";
+import FilamentConfigTab from "./tab-panels/filament-config-tab";
 
 export default function TabbedWindow() {
   const { vendorConfigs, orcaInstallationPath, orcaDataDirectory } =
@@ -34,6 +35,16 @@ export default function TabbedWindow() {
     {
       name: "Printers",
       component: PrinterConfigTab,
+      loadCondition: () => {
+        return (
+          orcaInstallationPath.get() !== undefined ||
+          orcaDataDirectory.get() !== undefined
+        );
+      },
+    },
+    {
+      name: "Filaments",
+      component: FilamentConfigTab,
       loadCondition: () => {
         return (
           orcaInstallationPath.get() !== undefined ||

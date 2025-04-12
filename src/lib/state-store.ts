@@ -31,7 +31,7 @@ export const globalStateObject = {
     string,
     MinPrinterVariantJsonSchema & fileProperty
   >,
-  instantiatedFilamentPrinterConfigs: {} as Record<
+  instantiatedInstalledFilamentConfigs: {} as Record<
     string,
     MinFilamentJsonSchema & fileProperty
   >,
@@ -45,6 +45,14 @@ export const globalStateObject = {
   loadedUserPrinterConfigs: {} as Record<
     string,
     MinPrinterVariantJsonSchema & fileProperty
+  >,
+  loadedSystemFilamentConfigs: {} as Record<
+    string,
+    Record<string, { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty>
+  >,
+  loadedUserFilamentConfigs: {} as Record<
+    string,
+    MinFilamentJsonSchema & fileProperty
   >,
 };
 
