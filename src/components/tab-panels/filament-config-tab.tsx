@@ -176,7 +176,6 @@ export default function FilamentConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={() => export_flattened(machineConfig.name)}
       />
     );
   });
