@@ -5,7 +5,8 @@ mod commons;
 mod configuration_loader;
 use commons::{check_directory, check_file};
 use configuration_loader::{
-    load_all_printer_model_presets, load_all_printer_presets, load_all_system_vendor_profiles,
+    load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
+    load_all_system_vendor_profiles, load_all_user_filaments_profiles_in_dir,
     load_all_user_printer_profiles_in_dir, load_printer_model_preset, load_printer_variant_preset,
     MinFilamentJsonSchema, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
     PrinterModelJsonSchema, PrinterVariantJsonSchema, VendorJsonSchema,
@@ -90,9 +91,11 @@ fn main() {
             load_all_system_vendor_profiles,
             load_printer_model_preset,
             load_printer_variant_preset,
+            load_all_filament_presets,
             load_all_printer_model_presets,
             load_all_printer_presets,
             load_all_user_printer_profiles_in_dir,
+            load_all_user_filaments_profiles_in_dir,
             save_and_zip_json,
             check_directory,
             check_file
