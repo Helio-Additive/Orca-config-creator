@@ -16,6 +16,7 @@ import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
 import { fileProperty } from "./state-store";
+import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -195,22 +196,17 @@ export const modelConfigLoader = async (
   }
 };
 
-export const dataPrinterConfigLoader = async (
+export async function dataConfigLoader<
+  T extends MinPrinterVariantJsonSchema | MinFilamentJsonSchema
+>(
   orcaDataDirectory: State<string | undefined>,
-  loadedSystemPrinterConfigs: State<
-    Record<
-      string,
-      Record<
-        string,
-        { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
-      >
-    >
+  loadedSystemConfigs: State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
   >,
-  loadedUserPrinterConfigs: State<
-    Record<string, MinPrinterVariantJsonSchema & fileProperty>
-  >,
-  errLoadingDataPath: State<string | undefined>
-) => {
+  loadedUserConfigs: State<Record<string, T & fileProperty>>,
+  errLoadingDataPath: State<string | undefined>,
+  propKey: string
+) {
   try {
     if (
       orcaDataDirectory.get({ stealth: true }) &&
@@ -227,18 +223,19 @@ export const dataPrinterConfigLoader = async (
 
       Object.keys(vendorConfigsRead).map(async (key) => {
         const vendorConfig = vendorConfigsRead[key];
-        const machine_list = vendorConfig.machine_list as ConfigNameAndPath[];
+        const machine_list = vendorConfig[propKey] as ConfigNameAndPath[];
 
-        const printerConfigsParsed: (MinPrinterModelJsonSchema & {
-          fileName: string;
-        })[] = await invoke("load_all_printer_presets", {
-          path:
-            orcaDataDirectory.get({ stealth: true }) +
-            LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
-            "/" +
-            key,
-          configNameAndPaths: machine_list,
-        });
+        const printerConfigsParsed: (T & fileProperty)[] = await invoke(
+          "load_all_printer_presets",
+          {
+            path:
+              orcaDataDirectory.get({ stealth: true }) +
+              LOADED_SYSTEM_PROFILES_SUBDIRECTORY_DIRECTORY +
+              "/" +
+              key,
+            configNameAndPaths: machine_list,
+          }
+        );
 
         for (let i = 0; i < machine_list.length; i++) {
           printerConfigsParsed[i].fileName =
@@ -249,7 +246,7 @@ export const dataPrinterConfigLoader = async (
             "/" +
             machine_list[i].sub_path;
 
-          loadedSystemPrinterConfigs[key].merge({
+          loadedSystemConfigs[key].merge({
             [machine_list[i].name]: printerConfigsParsed[i],
           });
         }
@@ -262,21 +259,27 @@ export const dataPrinterConfigLoader = async (
       const userMachineBaseDirectory =
         userMachineDirectory + LOADED_USER_PROFILES_BASE_SUBDIRECTORY_DIRECTORY;
 
-      const inheritedPrinterConfigs: [String, MinPrinterVariantJsonSchema][] =
-        await invoke("load_all_user_printer_profiles_in_dir", {
+      const inheritedPrinterConfigs: [String, T][] = await invoke(
+        "load_all_user_printer_profiles_in_dir",
+        {
           path: userMachineDirectory,
-        });
+        }
+      );
 
       try {
-        const basePrinterConfigs: [String, MinPrinterVariantJsonSchema][] =
-          await invoke("load_all_user_printer_profiles_in_dir", {
+        const basePrinterConfigs: [String, T][] = await invoke(
+          "load_all_user_printer_profiles_in_dir",
+          {
             path: userMachineBaseDirectory,
-          });
+          }
+        );
 
         basePrinterConfigs.forEach(([path, config]) => {
-          const configWithFileName: MinPrinterVariantJsonSchema & fileProperty =
-            { ...config, fileName: path.toString() };
-          loadedUserPrinterConfigs.merge({
+          const configWithFileName: T & fileProperty = {
+            ...config,
+            fileName: path.toString(),
+          };
+          loadedUserConfigs.merge({
             [config.name]: configWithFileName,
           });
         });
@@ -285,11 +288,11 @@ export const dataPrinterConfigLoader = async (
       }
 
       inheritedPrinterConfigs.forEach(([path, config]) => {
-        const configWithFileName: MinPrinterVariantJsonSchema & fileProperty = {
+        const configWithFileName: T & fileProperty = {
           ...config,
           fileName: path.toString(),
         };
-        loadedUserPrinterConfigs.merge({
+        loadedUserConfigs.merge({
           [config.name]: configWithFileName,
         });
       });
@@ -297,21 +300,108 @@ export const dataPrinterConfigLoader = async (
       errLoadingDataPath.set(undefined);
       toast("Loaded user printer profiles", { type: "success" });
     } else {
-      loadedSystemPrinterConfigs.set({});
+      loadedSystemConfigs.set({});
       errLoadingDataPath.set(undefined);
     }
   } catch (error: any) {
-    loadedSystemPrinterConfigs.set({});
+    loadedSystemConfigs.set({});
     errLoadingDataPath.set(error);
     toast(error, { type: "error" });
   }
-};
+}
 
-export function installedConfigLoader<T, S, M>(
+export const dataPrinterConfigLoader = async (
+  orcaDataDirectory: State<string | undefined>,
+  loadedSystemPrinterConfigs: State<
+    Record<
+      string,
+      Record<
+        string,
+        { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
+      >
+    >
+  >,
+  loadedUserPrinterConfigs: State<
+    Record<string, MinPrinterVariantJsonSchema & fileProperty>
+  >,
+  errLoadingDataPath: State<string | undefined>
+) =>
+  dataConfigLoader(
+    orcaDataDirectory,
+    loadedSystemPrinterConfigs,
+    loadedUserPrinterConfigs,
+    errLoadingDataPath,
+    "machine_list"
+  );
+
+export function installedConfigLoader<
+  T extends MinPrinterVariantJsonSchema | MinFilamentJsonSchema
+>(
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>
-) {}
+  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  installedConfigs: State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
+  >,
+  instantiatedInstalledConfigs: State<Record<string, T & fileProperty>>,
+  errLoading: State<string | undefined>,
+  configNameAndPathKey: string
+) {
+  try {
+    if (
+      orcaInstallationPath.get({ stealth: true }) &&
+      !errLoading.get({ stealth: true })
+    ) {
+      vendorConfigs.keys.map(async (key) => {
+        const vendorConfig = vendorConfigs[key].get({ stealth: true });
+        const configList = vendorConfig[
+          configNameAndPathKey
+        ] as ConfigNameAndPath[];
+        const printerConfigsParsed: ({
+          Ok?: T;
+          Err?: string;
+        } & fileProperty)[] = await invoke("load_all_printer_presets", {
+          path:
+            orcaInstallationPath.get({ stealth: true }) +
+            get_installed_system_profiles_subdirectory_directory(os.get()) +
+            "/" +
+            key,
+          configNameAndPaths: configList,
+        });
+
+        for (let i = 0; i < configList.length; i++) {
+          printerConfigsParsed[i].fileName =
+            orcaInstallationPath.get({ stealth: true }) +
+            get_installed_system_profiles_subdirectory_directory(os.get()) +
+            "/" +
+            key +
+            "/" +
+            configList[i].sub_path;
+
+          installedConfigs[key].merge({
+            [configList[i].name]: printerConfigsParsed[i],
+          });
+
+          if (printerConfigsParsed[i].Ok?.instantiation)
+            instantiatedInstalledConfigs.merge({
+              [configList[i].name]: {
+                ...printerConfigsParsed[i].Ok!,
+                fileName: printerConfigsParsed[i].fileName,
+              },
+            });
+        }
+      });
+
+      toast("Loaded system machine configs", { type: "success" });
+    } else {
+      installedConfigs.set({});
+    }
+  } catch (error: any) {
+    toast(error, { type: "error" });
+    console.log(error);
+    installedConfigs.set({});
+  }
+}
 
 export const installedPrinterConfigLoader = async (
   os: State<string>,
@@ -330,62 +420,16 @@ export const installedPrinterConfigLoader = async (
     Record<string, MinPrinterVariantJsonSchema & fileProperty>
   >,
   errLoadingInstallationPath: State<string | undefined>
-) => {
-  try {
-    if (
-      orcaInstallationPath.get({ stealth: true }) &&
-      !errLoadingInstallationPath.get({ stealth: true })
-    ) {
-      vendorConfigs.keys.map(async (key) => {
-        const vendorConfig = vendorConfigs[key].get({ stealth: true });
-        const machine_list = vendorConfig.machine_list as ConfigNameAndPath[];
-        const printerConfigsParsed: ({
-          Ok?: MinPrinterVariantJsonSchema;
-          Err?: string;
-        } & {
-          fileName: string;
-        })[] = await invoke("load_all_printer_presets", {
-          path:
-            orcaInstallationPath.get({ stealth: true }) +
-            get_installed_system_profiles_subdirectory_directory(os.get()) +
-            "/" +
-            key,
-          configNameAndPaths: machine_list,
-        });
-
-        for (let i = 0; i < machine_list.length; i++) {
-          printerConfigsParsed[i].fileName =
-            orcaInstallationPath.get({ stealth: true }) +
-            get_installed_system_profiles_subdirectory_directory(os.get()) +
-            "/" +
-            key +
-            "/" +
-            machine_list[i].sub_path;
-
-          installedPrinterConfigs[key].merge({
-            [machine_list[i].name]: printerConfigsParsed[i],
-          });
-
-          if (printerConfigsParsed[i].Ok?.instantiation)
-            instantiatedInstalledPrinterConfigs.merge({
-              [machine_list[i].name]: {
-                ...printerConfigsParsed[i].Ok!,
-                fileName: printerConfigsParsed[i].fileName,
-              },
-            });
-        }
-      });
-
-      toast("Loaded system machine configs", { type: "success" });
-    } else {
-      installedPrinterConfigs.set({});
-    }
-  } catch (error: any) {
-    toast(error, { type: "error" });
-    console.log(error);
-    installedPrinterConfigs.set({});
-  }
-};
+) =>
+  installedConfigLoader(
+    os,
+    orcaInstallationPath,
+    vendorConfigs,
+    installedPrinterConfigs,
+    instantiatedInstalledPrinterConfigs,
+    errLoadingInstallationPath,
+    "machine_list"
+  );
 
 export const get_installed_system_profiles_subdirectory_directory = (
   os: string
