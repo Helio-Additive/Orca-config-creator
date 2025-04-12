@@ -2,6 +2,7 @@ import { hookstate } from "@hookstate/core";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
+import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 
 export type fileProperty = { fileName: string };
 export const globalStateObject = {
@@ -22,9 +23,17 @@ export const globalStateObject = {
       { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
     >
   >,
+  installedFilamentConfigs: {} as Record<
+    string,
+    Record<string, { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty>
+  >,
   instantiatedInstalledPrinterConfigs: {} as Record<
     string,
     MinPrinterVariantJsonSchema & fileProperty
+  >,
+  instantiatedFilamentPrinterConfigs: {} as Record<
+    string,
+    MinFilamentJsonSchema & fileProperty
   >,
   loadedSystemPrinterConfigs: {} as Record<
     string,

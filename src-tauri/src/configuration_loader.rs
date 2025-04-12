@@ -102,6 +102,32 @@ pub struct VendorJsonSchema {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+pub struct FilamentJsonSchema {
+    name: String,
+
+    #[serde(rename = "type")]
+    preset_type: Option<String>,
+    inherits: Option<String>,
+    instantiation: Option<String>,
+
+    #[serde(flatten)]
+    #[ts(flatten)]
+    extra: Extra,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MinFilamentJsonSchema {
+    name: String,
+
+    #[serde(rename = "type")]
+    preset_type: Option<String>,
+    inherits: Option<String>,
+    instantiation: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ConfigNameAndPath {
     name: String,
     sub_path: String,

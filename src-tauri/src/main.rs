@@ -7,8 +7,8 @@ use commons::{check_directory, check_file};
 use configuration_loader::{
     load_all_printer_model_presets, load_all_printer_presets, load_all_system_vendor_profiles,
     load_all_user_printer_profiles_in_dir, load_printer_model_preset, load_printer_variant_preset,
-    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, PrinterModelJsonSchema,
-    PrinterVariantJsonSchema, VendorJsonSchema,
+    MinFilamentJsonSchema, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
+    PrinterModelJsonSchema, PrinterVariantJsonSchema, VendorJsonSchema,
 };
 use std::fs::File;
 use std::io::Write;
@@ -75,11 +75,13 @@ async fn save_and_zip_json(data: serde_json::Value) -> Result<bool, String> {
 }
 
 fn main() {
-    VendorJsonSchema::export_all_to("../src/lib/bindings").unwrap();
-    PrinterModelJsonSchema::export_all_to("../src/lib/bindings").unwrap();
-    MinPrinterModelJsonSchema::export_all_to("../src/lib/bindings").unwrap();
-    PrinterVariantJsonSchema::export_all_to("../src/lib/bindings").unwrap();
-    MinPrinterVariantJsonSchema::export_all_to("../src/lib/bindings").unwrap();
+    let type_export_directory = "../src/lib/bindings";
+    VendorJsonSchema::export_all_to(type_export_directory).unwrap();
+    PrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
+    MinPrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
+    PrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
+    MinPrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
+    MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
