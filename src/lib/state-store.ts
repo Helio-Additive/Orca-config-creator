@@ -5,6 +5,8 @@ import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 
 export type fileProperty = { fileName: string };
+export type familyProperty = { family: string };
+
 export const globalStateObject = {
   orcaInstallationPath: undefined as string | undefined,
   orcaDataDirectory: undefined as string | undefined,
@@ -29,11 +31,11 @@ export const globalStateObject = {
   >,
   instantiatedInstalledPrinterConfigs: {} as Record<
     string,
-    MinPrinterVariantJsonSchema & fileProperty
+    MinPrinterVariantJsonSchema & fileProperty & familyProperty
   >,
   instantiatedInstalledFilamentConfigs: {} as Record<
     string,
-    MinFilamentJsonSchema & fileProperty
+    MinFilamentJsonSchema & fileProperty & familyProperty
   >,
   loadedSystemPrinterConfigs: {} as Record<
     string,
