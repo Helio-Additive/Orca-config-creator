@@ -15,7 +15,10 @@ import {
   LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY,
 } from "./constants";
-import { fileProperty } from "./state-store";
+import { familyProperty, fileProperty } from "./state-store";
+import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
+import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
+import { v4 as uuidv4, validate as isUuid } from "uuid";
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -378,7 +381,9 @@ export function installedConfigLoader<
   installedConfigs: State<
     Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
   >,
-  instantiatedInstalledConfigs: State<Record<string, T & fileProperty>>,
+  instantiatedInstalledConfigs: State<
+    Record<string, T & fileProperty & familyProperty>
+  >,
   errLoading: State<string | undefined>,
   messageKey: string,
   configNameAndPathKey: string,
@@ -394,7 +399,7 @@ export function installedConfigLoader<
         const configList = vendorConfig[
           configNameAndPathKey
         ] as ConfigNameAndPath[];
-        const printerConfigsParsed: ({
+        const configsParsed: ({
           Ok?: T;
           Err?: string;
         } & fileProperty)[] = await invoke(configLoaderFunction, {
@@ -407,7 +412,7 @@ export function installedConfigLoader<
         });
 
         for (let i = 0; i < configList.length; i++) {
-          printerConfigsParsed[i].fileName =
+          configsParsed[i].fileName =
             orcaInstallationPath.get({ stealth: true }) +
             get_installed_system_profiles_subdirectory_directory(os.get()) +
             "/" +
@@ -416,16 +421,25 @@ export function installedConfigLoader<
             configList[i].sub_path;
 
           installedConfigs[key].merge({
-            [configList[i].name]: printerConfigsParsed[i],
+            [configList[i].name]: configsParsed[i],
           });
 
-          if (printerConfigsParsed[i].Ok?.instantiation)
+          if (configsParsed[i].Ok?.instantiation) {
+            const fileTempObj: fileProperty = {
+              fileName: configsParsed[i].fileName,
+            };
+            const familyTempObj: familyProperty = { family: key };
+
+            const tempObj: (T & fileProperty) & familyProperty = {
+              ...configsParsed[i].Ok!,
+              ...fileTempObj,
+              ...familyTempObj,
+            };
+
             instantiatedInstalledConfigs.merge({
-              [configList[i].name]: {
-                ...printerConfigsParsed[i].Ok!,
-                fileName: printerConfigsParsed[i].fileName,
-              },
+              [configList[i].name]: tempObj,
             });
+          }
         }
       });
 
@@ -454,7 +468,7 @@ export const installedPrinterConfigLoader = async (
     >
   >,
   instantiatedInstalledPrinterConfigs: State<
-    Record<string, MinPrinterVariantJsonSchema & fileProperty>
+    Record<string, MinPrinterVariantJsonSchema & fileProperty & familyProperty>
   >,
   errLoadingInstallationPath: State<string | undefined>
 ) =>
@@ -484,7 +498,7 @@ export const installedFilamentConfigLoader = async (
     >
   >,
   instantiatedInstalledFilamentConfigs: State<
-    Record<string, MinFilamentJsonSchema & fileProperty>
+    Record<string, MinFilamentJsonSchema & fileProperty & familyProperty>
   >,
   errLoadingInstallationPath: State<string | undefined>
 ) =>
@@ -505,4 +519,86 @@ export const get_installed_system_profiles_subdirectory_directory = (
 ) => {
   if (os == "darwin") return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS;
   else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY;
+};
+
+export const deinherit_and_load_all_props: any = async <
+  T extends PrinterVariantJsonSchema | FilamentJsonSchema
+>(
+  instantiatedInstalledConfigs: State<
+    Record<string, T & fileProperty & familyProperty>
+  >,
+  loadedSystemConfigs: State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
+  >,
+  loadedUserConfigs: State<Record<string, T & fileProperty>>,
+  configName: string,
+  family?: string
+) => {
+  let configFile: string | undefined = undefined;
+
+  const loadedUserPrinterConfigRes = loadedUserConfigs.nested(configName).get({
+    stealth: true,
+  });
+
+  if (loadedUserPrinterConfigRes) {
+    configFile = loadedUserPrinterConfigRes.fileName;
+  } else if (!family) {
+    const instantiatedInstalledPrinterConfigRes = instantiatedInstalledConfigs
+      .nested(configName)
+      .get({
+        stealth: true,
+      });
+    configFile = instantiatedInstalledPrinterConfigRes.fileName;
+    family = instantiatedInstalledPrinterConfigRes.family;
+  } else {
+    const possibleConfigRes = loadedSystemConfigs
+      .nested(family)
+      .nested(configName)
+      .get({ stealth: true });
+    configFile = possibleConfigRes.fileName;
+  }
+
+  try {
+    const res: T = await invoke("load_generic_preset", {
+      path: configFile,
+    });
+
+    if (res.inherits) {
+      let printerFamily = family;
+
+      const inherited_props = await deinherit_and_load_all_props(
+        instantiatedInstalledConfigs,
+        loadedSystemConfigs,
+        loadedUserConfigs,
+        res.inherits,
+        printerFamily
+      );
+
+      return {
+        ...inherited_props,
+        ...Object.fromEntries(
+          Object.entries(res).filter(([_, v]) => v != null)
+        ),
+      };
+    } else {
+      return res;
+    }
+  } catch (error: any) {
+    console.log("Something went wrong: " + error);
+    throw "Could not complete inheritance hierarchy: " + error;
+  }
+};
+
+export const updateUuid = (name: string) => {
+  const splitString = (name as string).split("_");
+
+  if (splitString.length > 1) {
+    const endId = splitString[splitString.length - 1];
+    if (isUuid(endId))
+      return (
+        splitString.slice(0, splitString.length - 1).join("_") + "_" + uuidv4()
+      );
+  }
+
+  return name + "_" + uuidv4();
 };

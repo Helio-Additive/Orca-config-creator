@@ -90,10 +90,10 @@ pub struct MinPrinterVariantJsonSchema {
 pub struct VendorJsonSchema {
     name: String,
     version: String,
-    machine_model_list: Vec<ConfigNameAndPath>,
-    process_list: Vec<ConfigNameAndPath>,
-    filament_list: Vec<ConfigNameAndPath>,
-    machine_list: Vec<ConfigNameAndPath>,
+    machine_model_list: Option<Vec<ConfigNameAndPath>>,
+    process_list: Option<Vec<ConfigNameAndPath>>,
+    filament_list: Option<Vec<ConfigNameAndPath>>,
+    machine_list: Option<Vec<ConfigNameAndPath>>,
 
     #[serde(flatten)]
     #[ts(flatten)]
@@ -131,6 +131,17 @@ pub struct MinFilamentJsonSchema {
 pub struct ConfigNameAndPath {
     name: String,
     sub_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct GenericJsonSchema {
+    name: String,
+    inherits: Option<String>,
+
+    #[serde(flatten)]
+    #[ts(flatten)]
+    extra: Extra,
 }
 
 fn get_all_json_files(path: &str) -> Result<Vec<String>, String> {
@@ -297,5 +308,10 @@ pub fn load_printer_model_preset(path: &str) -> Result<PrinterModelJsonSchema, S
 
 #[tauri::command]
 pub fn load_printer_variant_preset(path: &str) -> Result<PrinterVariantJsonSchema, String> {
+    load_preset(path)
+}
+
+#[tauri::command]
+pub fn load_generic_preset(path: &str) -> Result<GenericJsonSchema, String> {
     load_preset(path)
 }

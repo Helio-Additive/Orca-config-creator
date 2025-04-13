@@ -7,9 +7,10 @@ use commons::{check_directory, check_file};
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
     load_all_system_vendor_profiles, load_all_user_filaments_profiles_in_dir,
-    load_all_user_printer_profiles_in_dir, load_printer_model_preset, load_printer_variant_preset,
-    MinFilamentJsonSchema, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
-    PrinterModelJsonSchema, PrinterVariantJsonSchema, VendorJsonSchema,
+    load_all_user_printer_profiles_in_dir, load_generic_preset, load_printer_model_preset,
+    load_printer_variant_preset, FilamentJsonSchema, MinFilamentJsonSchema,
+    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, PrinterModelJsonSchema,
+    PrinterVariantJsonSchema, VendorJsonSchema,
 };
 use std::fs::File;
 use std::io::Write;
@@ -31,7 +32,7 @@ fn greet2(name: &str) -> String {
 }
 
 #[tauri::command]
-async fn save_and_zip_json(data: serde_json::Value) -> Result<bool, String> {
+async fn save_and_zip_json(data: serde_json::Value, file_name: String) -> Result<bool, String> {
     // Run the blocking folder picker in a separate thread
     let save_path: Option<PathBuf> = spawn_blocking(move || {
         FileDialogBuilder::new()
@@ -45,7 +46,7 @@ async fn save_and_zip_json(data: serde_json::Value) -> Result<bool, String> {
         return Err("No path selected".into());
     };
 
-    let zip_path = base_path.join("Printer presets.zip");
+    let zip_path = base_path.join(file_name);
 
     // Now spawn the blocking zip logic
     let data_clone = data.clone(); // clone to move into thread
@@ -81,6 +82,7 @@ fn main() {
     PrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
     MinPrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
     PrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
+    FilamentJsonSchema::export_all_to(type_export_directory).unwrap();
     MinPrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
     MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
 
@@ -91,6 +93,7 @@ fn main() {
             load_all_system_vendor_profiles,
             load_printer_model_preset,
             load_printer_variant_preset,
+            load_generic_preset,
             load_all_filament_presets,
             load_all_printer_model_presets,
             load_all_printer_presets,

@@ -2,11 +2,9 @@ import { useHookstate } from "@hookstate/core";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { invoke } from "@tauri-apps/api/tauri";
-import { PrinterVariantJsonSchema } from "../../lib/bindings/PrinterVariantJsonSchema";
-import { v4 as uuidv4 } from "uuid";
-import { basename, dirname } from "@tauri-apps/api/path";
 import { toast } from "react-toastify";
 import ConfigTabTemplate from "./config-tab-template";
+import { deinherit_and_load_all_props, updateUuid } from "../../lib/commons";
 
 export default function PrinterConfigTab() {
   const {
@@ -14,81 +12,23 @@ export default function PrinterConfigTab() {
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
     instantiatedInstalledPrinterConfigs,
-    modelConfigs,
   } = useHookstate(globalState);
-
-  const load_all_printer_props: any = async (
-    configName: string,
-    family?: string
-  ) => {
-    let configFile: string | undefined = undefined;
-    const loadedUserPrinterConfigRes = loadedUserPrinterConfigs
-      .nested(configName)
-      .get({
-        stealth: true,
-      });
-
-    if (loadedUserPrinterConfigRes) {
-      configFile = loadedUserPrinterConfigRes.fileName;
-    } else if (!family) {
-      const instantiatedInstalledPrinterConfigRes =
-        instantiatedInstalledPrinterConfigs.nested(configName).get({
-          stealth: true,
-        });
-      configFile = instantiatedInstalledPrinterConfigRes.fileName;
-    } else {
-      const possibleConfigRes = loadedSystemPrinterConfigs
-        .nested(family)
-        .nested(configName)
-        .get({ stealth: true });
-      configFile = possibleConfigRes.fileName;
-    }
-
-    try {
-      const res: PrinterVariantJsonSchema = await invoke(
-        "load_printer_variant_preset",
-        {
-          path: configFile,
-        }
-      );
-
-      if (res.inherits) {
-        let printerFamily = family;
-        if (res.printer_model) {
-          const modelFile = modelConfigs
-            .nested(res.printer_model)
-            .get({ stealth: true }).fileName;
-
-          const machineDirectory = await dirname(modelFile);
-          const familyDirectory = await dirname(machineDirectory);
-          printerFamily = await basename(familyDirectory);
-        }
-
-        const inherited_props = await load_all_printer_props(
-          res.inherits,
-          printerFamily
-        );
-        return {
-          ...inherited_props,
-          ...Object.fromEntries(
-            Object.entries(res).filter(([_, v]) => v != null)
-          ),
-        };
-      } else {
-        return res;
-      }
-    } catch (error: any) {
-      console.log("Something went wrong: " + error);
-      throw "Could complete inheritance hierarchy: " + error;
-    }
-  };
 
   const export_flattened = async (configName: string) => {
     try {
-      const res = await load_all_printer_props(configName);
-      res.name = res.name + "_" + uuidv4();
+      const res = await deinherit_and_load_all_props(
+        instantiatedInstalledPrinterConfigs,
+        loadedSystemPrinterConfigs,
+        loadedUserPrinterConfigs,
+        configName
+      );
 
-      await invoke("save_and_zip_json", { data: res });
+      res.name = updateUuid(res.name);
+
+      await invoke("save_and_zip_json", {
+        data: res,
+        fileName: "Printer presets.zip",
+      });
 
       toast("Saved 'Printer presets.zip'", { type: "success" });
     } catch (error: any) {
