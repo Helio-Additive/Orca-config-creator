@@ -9,8 +9,7 @@ import PrinterConfigTab from "./tab-panels/printer-config-tab";
 import FilamentConfigTab from "./tab-panels/filament-config-tab";
 
 export default function TabbedWindow() {
-  const { vendorConfigs, orcaInstallationPath, orcaDataDirectory } =
-    useHookstate(globalState);
+  const { orcaInstallationPath, orcaDataDirectory } = useHookstate(globalState);
 
   const categories = [
     {

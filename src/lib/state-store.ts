@@ -13,7 +13,7 @@ export const globalStateObject = {
   errLoadingInstallationPath: undefined as string | undefined,
   errLoadingDataPath: undefined as string | undefined,
   os: "none",
-  vendorConfigs: {} as Record<string, VendorJsonSchema>,
+  vendorConfigs: {} as Record<string, VendorJsonSchema & fileProperty>,
   modelConfigs: {} as Record<
     string,
     { Ok?: MinPrinterModelJsonSchema; Err?: string } & fileProperty

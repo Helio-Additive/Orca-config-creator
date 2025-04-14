@@ -3,7 +3,7 @@
 
 mod commons;
 mod configuration_loader;
-use commons::{check_directory, check_file};
+use commons::{check_directory, check_file, show_in_folder};
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
     load_all_system_vendor_profiles, load_all_user_filaments_profiles_in_dir,
@@ -101,7 +101,8 @@ fn main() {
             load_all_user_filaments_profiles_in_dir,
             save_and_zip_json,
             check_directory,
-            check_file
+            check_file,
+            show_in_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

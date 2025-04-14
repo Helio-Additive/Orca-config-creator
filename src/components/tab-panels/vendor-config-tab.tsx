@@ -8,10 +8,18 @@ export default function VendorConfigTab() {
     <div className="h-full overflow-y-auto">
       {vendorConfigs.keys.map((key) => {
         const config = vendorConfigs[key].get();
-        const model_num = config.machine_model_list.length;
-        const machine_num = config.machine_model_list.length;
-        const filament_num = config.machine_model_list.length;
-        const process_num = config.machine_model_list.length;
+        const model_num = config.machine_model_list
+          ? config.machine_model_list.length
+          : 0;
+        const machine_num = config.machine_list
+          ? config.machine_list.length
+          : 0;
+        const filament_num = config.filament_list
+          ? config.filament_list.length
+          : 0;
+        const process_num = config.process_list
+          ? config.process_list.length
+          : 0;
 
         return (
           <ConfigItem
@@ -24,6 +32,7 @@ export default function VendorConfigTab() {
               `filaments: ${filament_num}`,
               `processes: ${process_num}`,
             ]}
+            fileName={config.fileName}
           />
         );
       })}
