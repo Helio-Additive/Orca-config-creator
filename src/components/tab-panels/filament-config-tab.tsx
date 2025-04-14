@@ -54,6 +54,7 @@ export default function FilamentConfigTab() {
                 key={key + printerName}
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
+                fileName={config.fileName}
               />
             );
           } else {
@@ -63,6 +64,7 @@ export default function FilamentConfigTab() {
                 name={printerName}
                 text2={[config.Err!]}
                 className="bg-transparent-error"
+                fileName={config.fileName}
               />
             );
           }
@@ -88,6 +90,7 @@ export default function FilamentConfigTab() {
                 key={key + printerName}
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
+                fileName={config.fileName}
               />
             );
           } else {
@@ -97,6 +100,7 @@ export default function FilamentConfigTab() {
                 name={printerName}
                 text2={[config.Err!]}
                 className="bg-transparent-error"
+                fileName={config.fileName}
               />
             );
           }
@@ -118,6 +122,7 @@ export default function FilamentConfigTab() {
             : "base",
         ]}
         onClick={() => export_flattened(machineConfig.name)}
+        fileName={machineConfig.fileName}
       />
     );
   });

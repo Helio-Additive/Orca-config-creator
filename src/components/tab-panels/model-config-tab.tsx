@@ -16,6 +16,7 @@ export default function ModelConfigTab() {
               key={key}
               name={config.Ok.name}
               text2={config.Ok.nozzle_diameter.split(";")}
+              fileName={config.fileName}
             />
           );
         } else {
@@ -25,6 +26,7 @@ export default function ModelConfigTab() {
               name={key}
               text2={[config.Err!]}
               className="bg-transparent-error"
+              fileName={config.fileName}
             />
           );
         }
