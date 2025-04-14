@@ -115,19 +115,23 @@ export const setOsAndDefaultDirectories = async (
 export const vendorConfigLoader = async (
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
   errLoadingInstallationPath: State<string | undefined>
 ) => {
   try {
     if (orcaInstallationPath.get({ stealth: true })) {
-      const vendorConfigsRead: Record<string, VendorJsonSchema> = await invoke(
-        "load_all_system_vendor_profiles",
-        {
-          path:
-            orcaInstallationPath.get({ stealth: true }) +
-            get_installed_system_profiles_subdirectory_directory(os.get()),
-        }
-      );
+      const vendorConfigsPath =
+        orcaInstallationPath.get({ stealth: true }) +
+        get_installed_system_profiles_subdirectory_directory(os.get());
+
+      const vendorConfigsRead: Record<string, VendorJsonSchema & fileProperty> =
+        await invoke("load_all_system_vendor_profiles", {
+          path: vendorConfigsPath,
+        });
+
+      Object.entries(vendorConfigsRead).forEach(([key, value]) => {
+        value.fileName = vendorConfigsPath + "/" + key + ".json";
+      });
 
       vendorConfigs.set(vendorConfigsRead);
       errLoadingInstallationPath.set(undefined);
