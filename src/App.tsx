@@ -13,6 +13,8 @@ import {
   vendorConfigLoader,
   installedFilamentConfigLoader,
   dataFilamentConfigLoader,
+  installedProcessConfigLoader,
+  dataProcessConfigLoader,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
 
@@ -24,12 +26,16 @@ function App() {
     modelConfigs,
     installedPrinterConfigs,
     installedFilamentConfigs,
+    installedProcessConfigs,
     loadedSystemPrinterConfigs,
-    loadedUserPrinterConfigs,
     loadedSystemFilamentConfigs,
+    loadedSystemProcessConfigs,
+    loadedUserPrinterConfigs,
     loadedUserFilamentConfigs,
+    loadedUserProcessConfigs,
     instantiatedInstalledPrinterConfigs,
     instantiatedInstalledFilamentConfigs,
+    instantiatedInstalledProcessConfigs,
     os,
     errLoadingDataPath,
     errLoadingInstallationPath,
@@ -65,6 +71,13 @@ function App() {
       loadedUserFilamentConfigs,
       errLoadingDataPath
     );
+
+    dataProcessConfigLoader(
+      orcaDataDirectory,
+      loadedSystemProcessConfigs,
+      loadedUserProcessConfigs,
+      errLoadingDataPath
+    );
   }, [orcaDataDirectory]);
 
   useEffect(() => {
@@ -91,6 +104,15 @@ function App() {
       vendorConfigs,
       installedFilamentConfigs,
       instantiatedInstalledFilamentConfigs,
+      errLoadingInstallationPath
+    );
+
+    installedProcessConfigLoader(
+      os,
+      orcaInstallationPath,
+      vendorConfigs,
+      installedProcessConfigs,
+      instantiatedInstalledProcessConfigs,
       errLoadingInstallationPath
     );
   }, [vendorConfigs]);
