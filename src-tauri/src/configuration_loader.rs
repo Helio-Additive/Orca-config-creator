@@ -35,6 +35,32 @@ impl TS for Extra {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+pub struct ProcessJsonSchema {
+    name: String,
+
+    #[serde(rename = "type")]
+    preset_type: Option<String>,
+    inherits: Option<String>,
+    instantiation: Option<String>,
+
+    #[serde(flatten)]
+    #[ts(flatten)]
+    extra: Extra,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MinProcessJsonSchema {
+    name: String,
+
+    #[serde(rename = "type")]
+    preset_type: Option<String>,
+    inherits: Option<String>,
+    instantiation: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PrinterModelJsonSchema {
     name: String,
 
@@ -222,6 +248,13 @@ pub fn load_all_user_filaments_profiles_in_dir(
     load_all_user_profiles_in_dir(path)
 }
 
+#[tauri::command]
+pub fn load_all_user_process_profiles_in_dir(
+    path: &str,
+) -> Result<Vec<(String, MinProcessJsonSchema)>, String> {
+    load_all_user_profiles_in_dir(path)
+}
+
 pub fn load_all_user_profiles_in_dir<T: DeserializeOwned>(
     path: &str,
 ) -> Result<Vec<(String, T)>, String> {
@@ -282,6 +315,14 @@ pub fn load_all_printer_presets(
     path: &str,
     config_name_and_paths: Vec<ConfigNameAndPath>,
 ) -> Vec<Result<MinPrinterVariantJsonSchema, String>> {
+    load_all_x_presets(path, config_name_and_paths)
+}
+
+#[tauri::command]
+pub fn load_all_process_presets(
+    path: &str,
+    config_name_and_paths: Vec<ConfigNameAndPath>,
+) -> Vec<Result<MinProcessJsonSchema, String>> {
     load_all_x_presets(path, config_name_and_paths)
 }
 

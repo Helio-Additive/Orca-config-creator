@@ -19,6 +19,8 @@ import { familyProperty, fileProperty } from "./state-store";
 import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
 import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { v4 as uuidv4, validate as isUuid } from "uuid";
+import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
+import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -150,7 +152,7 @@ export const vendorConfigLoader = async (
 export const modelConfigLoader = async (
   os: State<string>,
   orcaInstallationPath: State<string | undefined, {}>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
   modelConfigs: State<
     Record<
       string,
@@ -203,7 +205,10 @@ export const modelConfigLoader = async (
 };
 
 export async function dataConfigLoader<
-  T extends MinPrinterVariantJsonSchema | MinFilamentJsonSchema
+  T extends
+    | MinPrinterVariantJsonSchema
+    | MinFilamentJsonSchema
+    | MinProcessJsonSchema
 >(
   orcaDataDirectory: State<string | undefined>,
   loadedSystemConfigs: State<
@@ -376,12 +381,40 @@ export const dataFilamentConfigLoader = async (
     "/filament"
   );
 
+export const dataProcessConfigLoader = async (
+  orcaDataDirectory: State<string | undefined>,
+  loadedSystemProcessConfigs: State<
+    Record<
+      string,
+      Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
+    >
+  >,
+  loadedUserProcessConfigs: State<
+    Record<string, MinProcessJsonSchema & fileProperty>
+  >,
+  errLoadingDataPath: State<string | undefined>
+) =>
+  dataConfigLoader(
+    orcaDataDirectory,
+    loadedSystemProcessConfigs,
+    loadedUserProcessConfigs,
+    errLoadingDataPath,
+    "process",
+    "process_list",
+    "load_all_process_presets",
+    "load_all_user_process_profiles_in_dir",
+    "/process"
+  );
+
 export function installedConfigLoader<
-  T extends MinPrinterVariantJsonSchema | MinFilamentJsonSchema
+  T extends
+    | MinPrinterVariantJsonSchema
+    | MinFilamentJsonSchema
+    | MinProcessJsonSchema
 >(
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
   installedConfigs: State<
     Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
   >,
@@ -461,7 +494,7 @@ export function installedConfigLoader<
 export const installedPrinterConfigLoader = async (
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
   installedPrinterConfigs: State<
     Record<
       string,
@@ -491,7 +524,7 @@ export const installedPrinterConfigLoader = async (
 export const installedFilamentConfigLoader = async (
   os: State<string>,
   orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema>>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
   installedFilamentConfigs: State<
     Record<
       string,
@@ -518,6 +551,33 @@ export const installedFilamentConfigLoader = async (
     "load_all_filament_presets"
   );
 
+export const installedProcessConfigLoader = async (
+  os: State<string>,
+  orcaInstallationPath: State<string | undefined>,
+  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
+  installedProcessConfigs: State<
+    Record<
+      string,
+      Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
+    >
+  >,
+  instantiatedInstalledProcessConfigs: State<
+    Record<string, MinProcessJsonSchema & fileProperty & familyProperty>
+  >,
+  errLoadingInstallationPath: State<string | undefined>
+) =>
+  installedConfigLoader(
+    os,
+    orcaInstallationPath,
+    vendorConfigs,
+    installedProcessConfigs,
+    instantiatedInstalledProcessConfigs,
+    errLoadingInstallationPath,
+    "process",
+    "process_list",
+    "load_all_process_presets"
+  );
+
 export const get_installed_system_profiles_subdirectory_directory = (
   os: string
 ) => {
@@ -526,7 +586,7 @@ export const get_installed_system_profiles_subdirectory_directory = (
 };
 
 export const deinherit_and_load_all_props: any = async <
-  T extends PrinterVariantJsonSchema | FilamentJsonSchema
+  T extends PrinterVariantJsonSchema | FilamentJsonSchema | ProcessJsonSchema
 >(
   instantiatedInstalledConfigs: State<
     Record<string, T & fileProperty & familyProperty>

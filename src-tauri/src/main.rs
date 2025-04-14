@@ -6,11 +6,12 @@ mod configuration_loader;
 use commons::{check_directory, check_file, show_in_folder};
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
-    load_all_system_vendor_profiles, load_all_user_filaments_profiles_in_dir,
-    load_all_user_printer_profiles_in_dir, load_generic_preset, load_printer_model_preset,
+    load_all_process_presets, load_all_system_vendor_profiles,
+    load_all_user_filaments_profiles_in_dir, load_all_user_printer_profiles_in_dir,
+    load_all_user_process_profiles_in_dir, load_generic_preset, load_printer_model_preset,
     load_printer_variant_preset, FilamentJsonSchema, MinFilamentJsonSchema,
-    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, PrinterModelJsonSchema,
-    PrinterVariantJsonSchema, VendorJsonSchema,
+    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, MinProcessJsonSchema,
+    PrinterModelJsonSchema, PrinterVariantJsonSchema, ProcessJsonSchema, VendorJsonSchema,
 };
 use std::fs::File;
 use std::io::Write;
@@ -85,6 +86,8 @@ fn main() {
     FilamentJsonSchema::export_all_to(type_export_directory).unwrap();
     MinPrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
     MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
+    ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
+    MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -99,10 +102,12 @@ fn main() {
             load_all_printer_presets,
             load_all_user_printer_profiles_in_dir,
             load_all_user_filaments_profiles_in_dir,
+            load_all_user_process_profiles_in_dir,
             save_and_zip_json,
             check_directory,
             check_file,
-            show_in_folder
+            show_in_folder,
+            load_all_process_presets
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

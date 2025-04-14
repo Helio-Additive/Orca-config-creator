@@ -7,6 +7,7 @@ import VendorConfigTab from "./tab-panels/vendor-config-tab";
 import ModelConfigTab from "./tab-panels/model-config-tab";
 import PrinterConfigTab from "./tab-panels/printer-config-tab";
 import FilamentConfigTab from "./tab-panels/filament-config-tab";
+import ProcessConfigTab from "./tab-panels/process-config-tab";
 
 export default function TabbedWindow() {
   const { orcaInstallationPath, orcaDataDirectory } = useHookstate(globalState);
@@ -44,6 +45,16 @@ export default function TabbedWindow() {
     {
       name: "Filaments",
       component: FilamentConfigTab,
+      loadCondition: () => {
+        return (
+          orcaInstallationPath.get() !== undefined ||
+          orcaDataDirectory.get() !== undefined
+        );
+      },
+    },
+    {
+      name: "Processes",
+      component: ProcessConfigTab,
       loadCondition: () => {
         return (
           orcaInstallationPath.get() !== undefined ||
