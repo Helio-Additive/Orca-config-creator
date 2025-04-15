@@ -24,6 +24,7 @@ export default function ProcessConfigTab() {
       );
 
       res.name = updateUuid(res.name);
+      res["compatible_printers"] = [];
 
       await invoke("save_and_zip_json", {
         data: res,
