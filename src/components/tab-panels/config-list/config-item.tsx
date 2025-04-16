@@ -2,6 +2,7 @@ import { twMerge } from "tailwind-merge";
 import { BsFiletypeJson } from "react-icons/bs";
 import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
+import { FaEdit } from "react-icons/fa";
 
 export default function ConfigItem({
   name,
@@ -52,7 +53,8 @@ export default function ConfigItem({
             {text1}
           </span>
         )}
-        <div className="absolute right-0 mr-1 text-text-primary">
+        <div className="flex absolute right-0 mr-1 text-text-primary">
+          <FaEdit className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1" />
           {fileName && (
             <BsFiletypeJson
               className="hover:text-text-secondary hover:scale-95 w-6 h-6"

@@ -16,14 +16,17 @@ export default function PrinterConfigTab() {
 
   const export_flattened = async (configName: string) => {
     try {
-      const res = await deinherit_and_load_all_props(
+      const configObject = await deinherit_and_load_all_props(
+        installedPrinterConfigs,
         instantiatedInstalledPrinterConfigs,
         loadedSystemPrinterConfigs,
         loadedUserPrinterConfigs,
         configName
       );
 
+      const res = configObject.res;
       res.name = updateUuid(res.name);
+      delete res["inherits"];
 
       await invoke("save_and_zip_json", {
         data: res,

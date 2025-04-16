@@ -24,7 +24,7 @@ export default function ConfigTabTemplate({
         <div className="font-semibold text-text-secondary text-2xl mb-3 pl-3">
           System
         </div>
-        <div className="flex flex-col flex-1/2 align-middle justify-center mb-1 overflow-y-auto">
+        <div className="flex flex-col flex-1/2 mb-1 overflow-y-auto">
           {loadedSystemConfigs}
         </div>
         <div className="w-[50%] h-2 rounded-full bg-text-secondary my-1" />
