@@ -16,15 +16,18 @@ export default function ProcessConfigTab() {
 
   const export_flattened = async (configName: string) => {
     try {
-      const res = await deinherit_and_load_all_props(
+      const configObject = await deinherit_and_load_all_props(
+        installedProcessConfigs,
         instantiatedInstalledProcessConfigs,
         loadedSystemProcessConfigs,
         loadedUserProcessConfigs,
         configName
       );
 
+      const res = configObject;
       res.name = updateUuid(res.name);
       res["compatible_printers"] = [];
+      delete res["inherits"];
 
       await invoke("save_and_zip_json", {
         data: res,

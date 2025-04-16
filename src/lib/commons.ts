@@ -588,6 +588,9 @@ export const get_installed_system_profiles_subdirectory_directory = (
 export const deinherit_and_load_all_props: any = async <
   T extends PrinterVariantJsonSchema | FilamentJsonSchema | ProcessJsonSchema
 >(
+  installedConfigs: State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
+  >,
   instantiatedInstalledConfigs: State<
     Record<string, T & fileProperty & familyProperty>
   >,
@@ -596,7 +599,8 @@ export const deinherit_and_load_all_props: any = async <
   >,
   loadedUserConfigs: State<Record<string, T & fileProperty>>,
   configName: string,
-  family?: string
+  family?: string,
+  level = 0
 ) => {
   let configFile: string | undefined = undefined;
 
@@ -615,11 +619,23 @@ export const deinherit_and_load_all_props: any = async <
     configFile = instantiatedInstalledPrinterConfigRes.fileName;
     family = instantiatedInstalledPrinterConfigRes.family;
   } else {
-    const possibleConfigRes = loadedSystemConfigs
-      .nested(family)
-      .nested(configName)
-      .get({ stealth: true });
-    configFile = possibleConfigRes.fileName;
+    try {
+      const possibleConfigRes = loadedSystemConfigs
+        .nested(family)
+        .nested(configName)
+        .get({ stealth: true });
+      configFile = possibleConfigRes.fileName;
+    } catch {
+      const possibleConfigRes = installedConfigs
+        .nested(family)
+        .nested(configName)
+        .get({ stealth: true });
+      configFile = possibleConfigRes.fileName;
+      toast(
+        "The expected parent config is not loaded. You can ignore this warning",
+        { type: "warning" }
+      );
+    }
   }
 
   try {
@@ -631,21 +647,36 @@ export const deinherit_and_load_all_props: any = async <
       let printerFamily = family;
 
       const inherited_props = await deinherit_and_load_all_props(
+        installedConfigs,
         instantiatedInstalledConfigs,
         loadedSystemConfigs,
         loadedUserConfigs,
         res.inherits,
-        printerFamily
+        printerFamily,
+        level + 1
       );
 
+      const filteredRes = Object.fromEntries(
+        Object.entries(res).filter(([_, v]) => v != null)
+      );
+
+      const keyDetails = Object.keys(filteredRes).reduce((acc, key) => {
+        acc[key] = [res.name, level];
+        return acc;
+      }, {} as Record<string, [string, number]>);
+
       return {
-        ...inherited_props,
-        ...Object.fromEntries(
-          Object.entries(res).filter(([_, v]) => v != null)
-        ),
+        res: { ...inherited_props.res, ...filteredRes },
+
+        keyDetails: { ...inherited_props.keyDetails, ...keyDetails },
       };
     } else {
-      return res;
+      const keyDetails = Object.keys(res).reduce((acc, key) => {
+        acc[key] = [res.name, level];
+        return acc;
+      }, {} as Record<string, [string, number]>);
+
+      return { res, keyDetails };
     }
   } catch (error: any) {
     console.log("Something went wrong: " + error);

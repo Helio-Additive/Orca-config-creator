@@ -16,22 +16,25 @@ export default function FilamentConfigTab() {
 
   const export_flattened = async (configName: string) => {
     try {
-      const res = await deinherit_and_load_all_props(
+      const configObject = await deinherit_and_load_all_props(
+        installedFilamentConfigs,
         instantiatedInstalledFilamentConfigs,
         loadedSystemFilamentConfigs,
         loadedUserFilamentConfigs,
         configName
       );
 
+      const res = configObject.res;
       res.name = updateUuid(res.name);
       res["compatible_printers"] = [];
+      delete res["inherits"];
 
       await invoke("save_and_zip_json", {
         data: res,
         fileName: "Filament presets.zip",
       });
 
-      toast("Saved 'Printer presets.zip'", { type: "success" });
+      toast("Saved 'Filament presets.zip'", { type: "success" });
     } catch (error: any) {
       toast(error, { type: "error" });
     }
