@@ -58,6 +58,7 @@ export default function FilamentConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="filament"
               />
             );
           } else {
@@ -68,6 +69,7 @@ export default function FilamentConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="filament"
               />
             );
           }
@@ -94,6 +96,7 @@ export default function FilamentConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="filament"
               />
             );
           } else {
@@ -104,6 +107,7 @@ export default function FilamentConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="filament"
               />
             );
           }
@@ -126,6 +130,7 @@ export default function FilamentConfigTab() {
         ]}
         onClick={() => export_flattened(machineConfig.name)}
         fileName={machineConfig.fileName}
+        type="filament"
       />
     );
   });

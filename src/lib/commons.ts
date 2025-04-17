@@ -15,12 +15,19 @@ import {
   LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY,
 } from "./constants";
-import { familyProperty, fileProperty } from "./state-store";
+import { familyProperty, fileProperty, globalState } from "./state-store";
 import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
 import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { v4 as uuidv4, validate as isUuid } from "uuid";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
 import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
+
+export type ConfigType =
+  | "printer"
+  | "printer-model"
+  | "filament"
+  | "process"
+  | "vendor";
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -697,3 +704,59 @@ export const updateUuid = (name: string) => {
 
   return name + "_" + uuidv4();
 };
+
+export function sanitizeWindowLabel(input: string): string {
+  return input.replace(/[^a-zA-Z0-9\-\/:_]/g, "_");
+}
+
+export async function deinherit_config_by_type(
+  configName: string,
+  type: ConfigType
+) {
+  const printerConfigs = {
+    installedConfigs: globalState.installedPrinterConfigs,
+    instantiatedInstalledConfigs:
+      globalState.instantiatedInstalledPrinterConfigs,
+    loadedSystemConfigs: globalState.loadedSystemPrinterConfigs,
+    loadedUserConfigs: globalState.loadedUserPrinterConfigs,
+  };
+
+  const filamentConfigs = {
+    installedConfigs: globalState.installedFilamentConfigs,
+    instantiatedInstalledConfigs:
+      globalState.instantiatedInstalledFilamentConfigs,
+    loadedSystemConfigs: globalState.loadedSystemFilamentConfigs,
+    loadedUserConfigs: globalState.loadedUserFilamentConfigs,
+  };
+
+  const processConfigs = {
+    installedConfigs: globalState.installedProcessConfigs,
+    instantiatedInstalledConfigs:
+      globalState.instantiatedInstalledProcessConfigs,
+    loadedSystemConfigs: globalState.loadedSystemProcessConfigs,
+    loadedUserConfigs: globalState.loadedUserProcessConfigs,
+  };
+
+  const neededConfigs = (() => {
+    switch (type) {
+      case "printer":
+        return printerConfigs;
+
+      case "filament":
+        return filamentConfigs;
+
+      case "process":
+        return processConfigs;
+    }
+  })();
+
+  const res = await deinherit_and_load_all_props(
+    neededConfigs!.installedConfigs,
+    neededConfigs!.instantiatedInstalledConfigs,
+    neededConfigs!.loadedSystemConfigs,
+    neededConfigs!.loadedUserConfigs,
+    configName
+  );
+
+  return res;
+}

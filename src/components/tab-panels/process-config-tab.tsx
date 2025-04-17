@@ -58,6 +58,7 @@ export default function ProcessConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="process"
               />
             );
           } else {
@@ -68,6 +69,7 @@ export default function ProcessConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="process"
               />
             );
           }
@@ -94,6 +96,7 @@ export default function ProcessConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="process"
               />
             );
           } else {
@@ -104,6 +107,7 @@ export default function ProcessConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="process"
               />
             );
           }
@@ -126,6 +130,7 @@ export default function ProcessConfigTab() {
         ]}
         onClick={() => export_flattened(machineConfig.name)}
         fileName={machineConfig.fileName}
+        type="process"
       />
     );
   });

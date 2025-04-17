@@ -17,6 +17,7 @@ export default function ModelConfigTab() {
               name={config.Ok.name}
               text2={config.Ok.nozzle_diameter.split(";")}
               fileName={config.fileName}
+              type="printer-model"
             />
           );
         } else {
@@ -27,6 +28,7 @@ export default function ModelConfigTab() {
               text2={[config.Err!]}
               className="bg-transparent-error"
               fileName={config.fileName}
+              type="printer-model"
             />
           );
         }

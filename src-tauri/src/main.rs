@@ -9,7 +9,7 @@ use configuration_loader::{
     load_all_process_presets, load_all_system_vendor_profiles,
     load_all_user_filaments_profiles_in_dir, load_all_user_printer_profiles_in_dir,
     load_all_user_process_profiles_in_dir, load_generic_preset, load_printer_model_preset,
-    load_printer_variant_preset, FilamentJsonSchema, MinFilamentJsonSchema,
+    load_printer_variant_preset, FilamentJsonSchema, GenericJsonSchema, MinFilamentJsonSchema,
     MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, MinProcessJsonSchema,
     PrinterModelJsonSchema, PrinterVariantJsonSchema, ProcessJsonSchema, VendorJsonSchema,
 };
@@ -88,6 +88,7 @@ fn main() {
     MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
     ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
     MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
+    GenericJsonSchema::export_all_to(type_export_directory).unwrap();
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
