@@ -1,24 +1,34 @@
-import { twMerge } from "tailwind-merge";
-import { BsFiletypeJson } from "react-icons/bs";
+import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
-import { toast } from "react-toastify";
+import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { twMerge } from "tailwind-merge";
+import { globalState } from "../../../lib/state-store";
+import { ConfigType } from "../../../lib/commons";
 
 export default function ConfigItem({
   name,
+  type,
   text1,
   text2,
   className,
   onClick,
   fileName,
+  allowEdit = false,
 }: {
   name: string;
+  type: ConfigType;
   text1?: string;
   text2?: string[];
   className?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   fileName?: string;
+  allowEdit?: boolean;
 }) {
+  const { editWindowState } = useHookstate(globalState);
+
   const folderOpener = (path: string) => {
     invoke("check_file", { path }).then((exists) => {
       if (exists) {
@@ -27,6 +37,21 @@ export default function ConfigItem({
         toast(`${path} does not exist`, { type: "error" });
       }
     });
+  };
+
+  const navigate = useNavigate();
+
+  const editConfig = () => {
+    const encodedFileName = encodeURIComponent(fileName!);
+    editWindowState[fileName!].set({
+      fileName: fileName!,
+      type: type,
+      name: name,
+      properties: { res: {}, keyDetails: {} },
+      changedProps: {},
+    });
+
+    navigate(`/edit?fileName=${encodedFileName}`);
   };
 
   return (
@@ -39,22 +64,29 @@ export default function ConfigItem({
       )}
       onClick={onClick}
     >
-      <div className="flex mb-2 relative">
-        <span className="text-text-primary text-lg/6 font-medium mr-1">
-          {name}
-        </span>
-        {text1 && (
-          <span className="text-text-secondary text-lg/6 font-medium mr-1">
-            &middot;
+      <div className="flex mb-2 relative justify-between">
+        <div>
+          <span className="text-text-primary text-lg/6 font-medium mr-1">
+            {name}
           </span>
-        )}
-        {text1 && (
-          <span className="text-text-secondary text-lg/6 font-medium mr-1">
-            {text1}
-          </span>
-        )}
-        <div className="flex absolute right-0 mr-1 text-text-primary">
-          <FaEdit className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1" />
+          {text1 && (
+            <span className="text-text-secondary text-lg/6 font-medium mr-1">
+              &middot;
+            </span>
+          )}
+          {text1 && (
+            <span className="text-text-secondary text-lg/6 font-medium mr-1">
+              {text1}
+            </span>
+          )}
+        </div>
+        <div className="flex text-text-primary">
+          {allowEdit && fileName && (
+            <FaEdit
+              className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1"
+              onClick={editConfig}
+            />
+          )}
           {fileName && (
             <BsFiletypeJson
               className="hover:text-text-secondary hover:scale-95 w-6 h-6"

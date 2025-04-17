@@ -1,10 +1,10 @@
 import { useHookstate } from "@hookstate/core";
 import { platform } from "@tauri-apps/api/os";
 import { useEffect } from "react";
-import { ToastContainer } from "react-toastify";
 import "./App.css";
-import BackgroundPlate from "./components/background-plate";
-import TabbedWindow from "./components/tabbed-window";
+import EditConfig from "./edit-config";
+import Home from "./Home";
+import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import {
   dataPrinterConfigLoader,
   modelConfigLoader,
@@ -17,6 +17,8 @@ import {
   dataProcessConfigLoader,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
+import { ToastContainer } from "react-toastify";
+import BackgroundPlate from "./components/background-plate";
 
 function App() {
   const {
@@ -118,10 +120,20 @@ function App() {
   }, [vendorConfigs]);
 
   return (
-    <main className="h-screen max-h-screen">
+    <main>
       <ToastContainer theme="colored" />
       <BackgroundPlate />
-      <TabbedWindow />
+
+      <div className="flex h-screen w-full max-h-screen max-w-screen justify-start py-10 px-10">
+        <div className="w-full h-full">
+          <Router>
+            <Routes>
+              <Route path="/home" element={<Home />} />
+              <Route path="/edit" element={<EditConfig />} />
+            </Routes>
+          </Router>
+        </div>
+      </div>
     </main>
   );
 }

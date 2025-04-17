@@ -4,6 +4,7 @@ import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSch
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
+import { ConfigType } from "./commons";
 
 export type fileProperty = { fileName: string };
 export type familyProperty = { family: string };
@@ -73,6 +74,20 @@ export const globalStateObject = {
     string,
     MinProcessJsonSchema & fileProperty
   >,
+  editWindowState: {} as Record<
+    string,
+    {
+      fileName: string;
+      type: ConfigType;
+      name: string;
+      properties: {
+        res: Record<string, unknown>;
+        keyDetails: Record<string, [string, number]>;
+      };
+      changedProps: Record<string, unknown>;
+    }
+  >,
+  routeStack: [] as string[],
 };
 
 export const globalState = hookstate(globalStateObject);

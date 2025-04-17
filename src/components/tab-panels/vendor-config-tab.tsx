@@ -33,6 +33,7 @@ export default function VendorConfigTab() {
               `processes: ${process_num}`,
             ]}
             fileName={config.fileName}
+            type="vendor"
           />
         );
       })}

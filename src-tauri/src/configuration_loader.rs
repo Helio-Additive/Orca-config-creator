@@ -165,6 +165,9 @@ pub struct GenericJsonSchema {
     name: String,
     inherits: Option<String>,
 
+    #[serde(rename = "type")]
+    preset_type: Option<String>,
+
     #[serde(flatten)]
     #[ts(flatten)]
     extra: Extra,

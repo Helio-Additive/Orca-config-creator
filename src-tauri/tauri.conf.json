@@ -26,13 +26,18 @@
       },
       "path": {
         "all": true
+      },
+      "window": {
+        "create": true,
+        "setFocus": true
       }
     },
     "windows": [
       {
         "title": "orca-config-manager",
         "width": 1024,
-        "height": 1024
+        "height": 1024,
+        "url": "/#/home"
       }
     ],
     "security": {

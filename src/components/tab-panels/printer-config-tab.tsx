@@ -14,7 +14,9 @@ export default function PrinterConfigTab() {
     instantiatedInstalledPrinterConfigs,
   } = useHookstate(globalState);
 
-  const export_flattened = async (configName: string) => {
+  const export_flattened = async (e: React.MouseEvent, configName: string) => {
+    if (e.target !== e.currentTarget) return;
+
     try {
       const configObject = await deinherit_and_load_all_props(
         installedPrinterConfigs,
@@ -57,6 +59,7 @@ export default function PrinterConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="printer"
               />
             );
           } else {
@@ -67,6 +70,7 @@ export default function PrinterConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="printer"
               />
             );
           }
@@ -93,6 +97,7 @@ export default function PrinterConfigTab() {
                 name={config.Ok.name}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
+                type="printer"
               />
             );
           } else {
@@ -103,6 +108,7 @@ export default function PrinterConfigTab() {
                 text2={[config.Err!]}
                 className="bg-transparent-error"
                 fileName={config.fileName}
+                type="printer"
               />
             );
           }
@@ -123,8 +129,12 @@ export default function PrinterConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={() => export_flattened(machineConfig.name)}
+        onClick={(e: React.MouseEvent) =>
+          export_flattened(e, machineConfig.name)
+        }
         fileName={machineConfig.fileName}
+        allowEdit
+        type="printer"
       />
     );
   });
