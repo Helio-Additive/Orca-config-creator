@@ -80,6 +80,7 @@ export const globalStateObject = {
       fileName: string;
       type: ConfigType;
       name: string;
+      family: string;
       properties: {
         res: Record<string, unknown>;
         keyDetails: Record<string, [string, number]>;
@@ -88,6 +89,7 @@ export const globalStateObject = {
     }
   >,
   routeStack: [] as string[],
+  selectedTab: 0,
 };
 
 export const globalState = hookstate(globalStateObject);

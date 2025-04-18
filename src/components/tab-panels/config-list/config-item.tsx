@@ -10,6 +10,7 @@ import { ConfigType } from "../../../lib/commons";
 
 export default function ConfigItem({
   name,
+  family,
   type,
   text1,
   text2,
@@ -19,6 +20,7 @@ export default function ConfigItem({
   allowEdit = false,
 }: {
   name: string;
+  family?: string;
   type: ConfigType;
   text1?: string;
   text2?: string[];
@@ -47,6 +49,7 @@ export default function ConfigItem({
       fileName: fileName!,
       type: type,
       name: name,
+      family: family!,
       properties: { res: {}, keyDetails: {} },
       changedProps: {},
     });

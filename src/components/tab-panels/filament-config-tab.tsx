@@ -14,7 +14,9 @@ export default function FilamentConfigTab() {
     instantiatedInstalledFilamentConfigs,
   } = useHookstate(globalState);
 
-  const export_flattened = async (configName: string) => {
+  const export_flattened = async (e: React.MouseEvent, configName: string) => {
+    if (e.target !== e.currentTarget) return;
+
     try {
       const configObject = await deinherit_and_load_all_props(
         installedFilamentConfigs,
@@ -59,6 +61,8 @@ export default function FilamentConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="filament"
+                family={key}
+                allowEdit
               />
             );
           } else {
@@ -97,6 +101,7 @@ export default function FilamentConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="filament"
+                family={key}
               />
             );
           } else {
@@ -128,9 +133,12 @@ export default function FilamentConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={() => export_flattened(machineConfig.name)}
+        onClick={(e: React.MouseEvent) =>
+          export_flattened(e, machineConfig.name)
+        }
         fileName={machineConfig.fileName}
         type="filament"
+        allowEdit
       />
     );
   });

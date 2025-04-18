@@ -1,6 +1,7 @@
+import { ConfigType } from "./commons";
 import { ConfigOptionMode, ConfigOptionType } from "./config-option-types";
 
-interface Property {
+interface ConfigProperty {
   label: string;
   id: string;
   default: any;
@@ -17,10 +18,20 @@ interface Property {
   mode?: ConfigOptionMode;
   example?: any;
   is_per_extruder?: boolean;
+  search?: ConfigType;
 }
 
 // prettier-ignore
-export const printer_properties: Property[] = [
+export const printer_properties: ConfigProperty[] = [
+{ id: "name", type: ConfigOptionType.coString, fixed: true, required: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
+{ id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
+{ id: "version", type: ConfigOptionType.coString, fixed: false, required: false, label: "Version", tooltip: "Version of the preset", default: ""},
+{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "System"]], default: 0},
+{ id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: true, label: "Instantiation", tooltip: "Should the preset be instantiated",   default: false},
+{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: true, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "printer"},
+{ id: "default_filament_profile", type: ConfigOptionType.coStrings, fixed: false, required: false, label: "Default filament profile", tooltip: "Default filament profile when switch to this machine profile", default: [''], search: "filament"},
+{ id: "setting_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Setting id", tooltip: "not required and unclear what it does", default: "" },
+{ id: "printer_settings_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Printer settings id", tooltip: "not required and unclear what it does", default: "" },
 { id: "printer_technology", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "Printer technology", tooltip: "Printer technology", enumList: [["FFF", "FFF"]], default: 0},
 { id: "helio_printer_id", type: ConfigOptionType.coString, fixed: false, required: false, label: "Helio Printer ID", tooltip: "UUID of the printer provided by Helio", mode: ConfigOptionMode.comSimple, default: "" },
 { id: "helio_initial_room_air_temp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial room airtemp", sidetext: "Â°C", tooltip: "Specifies the starting ambient air temperature within the room or environment where the printing process begins. This parameter establishes the baseline thermal conditions for the printing operation.  ", mode: ConfigOptionMode.comSimple, default: 25 },
@@ -43,8 +54,7 @@ export const printer_properties: Property[] = [
 { id: "extruder_clearance_height_to_lid", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Height to lid", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 120 },
 { id: "extruder_clearance_height_to_rod", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Height to rod", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 40 },
 { id: "nozzle_height", type: ConfigOptionType.coFloat, fixed: false, required: true, label: "Nozzle height", sidetext: "mm", tooltip: "The height of nozzle tip.", mode: ConfigOptionMode.comDevelop, min: 0, default: 2.5 },
-{ id: "default_print_profile", type: ConfigOptionType.coString, fixed: false, required: false, label: "Default process profile", tooltip: "Default process profile when switch to this machine profile", default: null },     
-{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: true, label: "Inherits profile", tooltip: "Name of parent profile", default: ""},
+{ id: "default_print_profile", type: ConfigOptionType.coString, fixed: false, required: false, label: "Default process profile", tooltip: "Default process profile when switch to this machine profile", default: null , search: "process"},     
 { id: "silent_mode", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Supports silent mode", tooltip: "Whether the machine supports silent mode in which machine use lower acceleration to print", mode: ConfigOptionMode.comDevelop, default: false },
 { id: "scan_first_layer", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Scan first layer", tooltip: "Enable this to enable the camera on printer to check the quality of first layer", mode: ConfigOptionMode.comAdvanced, default: false },
 { id: "machine_load_filament_time", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Filament load time", sidetext: "s", tooltip: "Time to load new filament when switch filament. It's usually applicable for single-extruder multi-material machines. For tool changers or multi-tool machines, it's typically 0. For statistics only", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0.0 },
@@ -98,12 +108,52 @@ export const printer_properties: Property[] = [
 
     //per extruder properties
 
-{ id: "z_hop_types", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "Z-hop type", tooltip: "Z hop type", mode: ConfigOptionMode.comAdvanced, default: [2], enumList: [[ 'Auto', 'Auto Lift' ], [ 'Normal', 'Normal Lift' ], [ 'Slope', 'Slope Lift' ], [ 'Spiral', 'Spiral Lift' ]], is_per_extruder: true},
-{ id: "travel_slope", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Traveling angle", sidetext: "°", tooltip: "Traveling angle for Slope and Spiral Z hop type. Setting it to 90° results in Normal Lift", mode: ConfigOptionMode.comAdvanced, min: 1, max: 90, default: [3], is_per_extruder: true},
-{ id: "retract_lift_enforce", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "On surfaces", tooltip: "Enforce Z Hop behavior. This setting is impacted by the above settings (Only lift Z above/below).", mode: ConfigOptionMode.comAdvanced, default: [0], enumList: [[ 'All Surfaces', 'All Surfaces' ], [ 'Top Only', 'Top Only' ], [ 'Bottom Only', 'Bottom Only' ], [ 'Top and Bottom', 'Top and Bottom' ]], is_per_extruder: true},
-{ id: "long_retractions_when_cut", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Long retraction when cut(beta)", mode: ConfigOptionMode.comDevelop, default: [false], is_per_extruder: true},
-{ id: "retraction_distances_when_cut", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Retraction distance when cut", tooltip: "Experimental feature.Retraction length before cutting off during filament change", mode: ConfigOptionMode.comDevelop, min: 10, max: 18, default: [18], is_per_extruder: true },
+{ id: "z_hop_types", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "Z-hop type", tooltip: "Z hop type", mode: ConfigOptionMode.comAdvanced, default: 2, enumList: [[ 'Auto', 'Auto Lift' ], [ 'Normal', 'Normal Lift' ], [ 'Slope', 'Slope Lift' ], [ 'Spiral', 'Spiral Lift' ]], is_per_extruder: true},
+{ id: "travel_slope", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Traveling angle", sidetext: "°", tooltip: "Traveling angle for Slope and Spiral Z hop type. Setting it to 90° results in Normal Lift", mode: ConfigOptionMode.comAdvanced, min: 1, max: 90, default: 3, is_per_extruder: true},
+{ id: "retract_lift_enforce", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "On surfaces", tooltip: "Enforce Z Hop behavior. This setting is impacted by the above settings (Only lift Z above/below).", mode: ConfigOptionMode.comAdvanced, default: 0, enumList: [[ 'All Surfaces', 'All Surfaces' ], [ 'Top Only', 'Top Only' ], [ 'Bottom Only', 'Bottom Only' ], [ 'Top and Bottom', 'Top and Bottom' ]], is_per_extruder: true},
+{ id: "long_retractions_when_cut", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Long retraction when cut(beta)", mode: ConfigOptionMode.comDevelop, default: false, is_per_extruder: true},
+{ id: "retraction_distances_when_cut", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Retraction distance when cut", tooltip: "Experimental feature.Retraction length before cutting off during filament change", mode: ConfigOptionMode.comDevelop, min: 10, max: 18, default: 18, is_per_extruder: true },
+{ id: "retract_restart_extra", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Extra length on restart", sidetext:"mm", tooltip: "When the retraction is compensated after the travel move, the extruder will push ", mode: ConfigOptionMode.comDevelop,  default: 0, is_per_extruder: true },
+{ id: "retract_restart_extra_toolchange", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Extra length on restart toolchange", sidetext:"mm", tooltip: "When the retraction is compensated after changing tool, the extruder will push ", mode: ConfigOptionMode.comDevelop,  default: 0, is_per_extruder: true },
+{ id: "extruder_offset", type: ConfigOptionType.coPoints, fixed: false, required: false, label: "Extruder offset", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: [0,0], is_per_extruder: true },
+{ id: "min_layer_height", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Min", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0.07, is_per_extruder: true },
+{ id: "deretraction_speed", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "De-retraction Speed", sidetext: "mm/s",  tooltip: "Speed for reloading filament into extruder. Zero means same speed with retraction", mode: ConfigOptionMode.comAdvanced, default: 0, is_per_extruder: true },
+{ id: "retraction_speed", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Retraction Speed", sidetext: "mm/s",  tooltip: "Speed of retractions", mode: ConfigOptionMode.comAdvanced, default: 30, is_per_extruder: true },
+{ id: "z_hop", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Z-hop height", sidetext: "mm", mode: ConfigOptionMode.comSimple, min: 0, max: 5, default: 0.4  , is_per_extruder: true},
+{ id: "wipe", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Wipe while retracting", mode: ConfigOptionMode.comAdvanced, default: [false], is_per_extruder: true},
+{ id: "retract_before_wipe", type: ConfigOptionType.coPercents, fixed: false, required: false, label: "Retract amount before wipe", sidetext: "%", tooltip: "The length of fast retraction before wipe, relative to retraction length", mode: ConfigOptionMode.comAdvanced, default: 100 , is_per_extruder: true},
+{ id: "retract_when_changing_layer", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Retract when change layer", tooltip: "Force a retraction when changes layer", mode: ConfigOptionMode.comAdvanced, default: false , is_per_extruder: true},        
+{ id: "retraction_length", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Length", sidetext: "mm",  mode: ConfigOptionMode.comSimple, default: ['0.8 '] },
+{ id: "extruder_colour", type: ConfigOptionType.coStrings, fixed: false, required: false, label: "Extruder Color", tooltip: "Only used as a visual help on UI", mode: ConfigOptionMode.comAdvanced, default: ""  , is_per_extruder: true},
+{ id: "retraction_minimum_travel", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Travel distance threshold", sidetext: "mm", tooltip: "Only trigger retraction when the travel distance is longer than this threshold", mode: ConfigOptionMode.comAdvanced, default: 2 , is_per_extruder: true},
+{ id: "max_layer_height", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Max", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: 0 , is_per_extruder: true},
+{ id: "retract_length_toolchange", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Length", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, default: 10 , is_per_extruder: true},
+{ id: "nozzle_diameter", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Nozzle diameter", sidetext: "mm", tooltip: "Diameter of nozzle", mode: ConfigOptionMode.comAdvanced, max: 100, default: 0.4  , is_per_extruder: true},
+{ id: "retract_on_top_layer", type: ConfigOptionType.coBools, fixed: false, required: false, label: "Retract on top layer", tooltip: "Force a retraction on top layer. Disabling could prevent clog on very slow patterns with small movements, like Hilbert curve", mode: ConfigOptionMode.comAdvanced, default: true  , is_per_extruder: true},
+{ id: "retract_lift_above", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Only lift Z above", sidetext: "mm", tooltip: "If you set this to a positive value, Z lift will only take place above the specified absolute Z.", mode: ConfigOptionMode.comAdvanced, default: 0 , is_per_extruder: true},
+{ id: "retract_lift_below", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Only lift Z below", sidetext: "mm", tooltip: "If this value is positive, Z hop will only come into effect when Z is above the parameter", mode: ConfigOptionMode.comAdvanced, default: 0 , is_per_extruder: true},
+{ id: "wipe_distance", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Wipe Distance", sidetext: "mm", tooltip: "Describe how long the nozzle will move along the last path when retracting. \n\nDepending on how long the wipe operation lasts, how fast and long the extruder/filament retraction settings are, a retraction move may be needed to retract the remaining filament. \n\nSetting a value in the retract amount before wipe setting below will perform any excess retraction before the wipe, else it will be performed after.", mode: ConfigOptionMode.comAdvanced, min: 0, default: 1  , is_per_extruder: true},
+    //machine limit properties
 
+{ id: "machine_min_travel_rate", type: ConfigOptionType.coFloats, fixed: false, required: false, sidetext: "mm/s", label: "Minimum travel speed", tooltip: "Minimum travel speed (M205 T)", mode: ConfigOptionMode.comDevelop, min: 0, default: [0, 0] },
+{ id: "machine_max_acceleration_x", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration X", sidetext: "mm/s²", tooltip: "Maximum acceleration in the X axis", mode: ConfigOptionMode.comSimple, min: 0, default: [1000]},
+{ id: "machine_max_acceleration_y", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration Y", sidetext: "mm/s²", tooltip: "Maximum acceleration in the Y axis", mode: ConfigOptionMode.comSimple, min: 0, default: [1000]},
+{ id: "machine_max_acceleration_z", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration Z", sidetext: "mm/s²", tooltip: "Maximum acceleration in the Z axis", mode: ConfigOptionMode.comSimple, min: 0, default: [200]},
+{ id: "machine_max_acceleration_e", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration E", sidetext: "mm/s²", tooltip: "Maximum acceleration in the E axis", mode: ConfigOptionMode.comSimple, min: 0, default: [ 5000 ]},
+{ id: "machine_max_acceleration_extruding", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration extrusion", sidetext: "mm/s²", tooltip: "Maximum acceleration for extruding", mode: ConfigOptionMode.comSimple, min: 0, default: [ 1500 ]},
+{ id: "machine_max_acceleration_retracting", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration retraction", sidetext: "mm/s²", tooltip: "Maximum acceleration for retracting", mode: ConfigOptionMode.comSimple, min: 0, default: [ 1500 ]},
+{ id: "machine_max_acceleration_travel", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum acceleration travel", sidetext: "mm/s²", tooltip: "Maximum acceleration for travel", mode: ConfigOptionMode.comSimple, min: 0, default: [ 0 ]},
+{ id: "machine_min_extruding_rate", type: ConfigOptionType.coFloats, fixed: false, required: false, sidetext: "mm/s", label: "Minimum speed for extruding", tooltip: "Minimum speed for extruding (M205 S)", mode: ConfigOptionMode.comDevelop, min: 0, default: [0, 0]},
+
+{ id: "machine_max_speed_x", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum speed X", sidetext: "mm/s", tooltip: "Maximum speed for X axis", mode: ConfigOptionMode.comSimple, min: 0, default: [500]},
+{ id: "machine_max_speed_y", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum speed Y", sidetext: "mm/s", tooltip: "Maximum speed for Y axis", mode: ConfigOptionMode.comSimple, min: 0, default: [500]},
+{ id: "machine_max_speed_z", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum speed Z", sidetext: "mm/s", tooltip: "Maximum speed for Z axis", mode: ConfigOptionMode.comSimple, min: 0, default: [12]},
+{ id: "machine_max_speed_e", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum speed E", sidetext: "mm/s", tooltip: "Maximum speed for E axis", mode: ConfigOptionMode.comSimple, min: 0, default: [120]},
+
+{ id: "machine_max_jerk_x", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum jerk X", sidetext: "mm/s", tooltip: "Maximum jerk for X axis", mode: ConfigOptionMode.comSimple, min: 0, default: [10]},
+{ id: "machine_max_jerk_y", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum jerk Y", sidetext: "mm/s", tooltip: "Maximum jerk for Y axis", mode: ConfigOptionMode.comSimple, min: 0, default: [10]},
+{ id: "machine_max_jerk_z", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum jerk Z", sidetext: "mm/s", tooltip: "Maximum jerk for Z axis", mode: ConfigOptionMode.comSimple, min: 0, default: [0.2]},
+{ id: "machine_max_jerk_e", type: ConfigOptionType.coFloats, fixed: false, required: false, label: "Maximum jerk E", sidetext: "mm/s", tooltip: "Maximum jerk for E axis", mode: ConfigOptionMode.comSimple, min: 0, default: [2.5]},
     //GCode properties
 
 { id: "machine_start_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Start G-code", tooltip: "Start G-code when start the whole printing", mode: ConfigOptionMode.comAdvanced, default: "G28 ; home all axes\nG1 Z5 F5000 ; lift nozzle\n" },
@@ -117,3 +167,8 @@ export const printer_properties: Property[] = [
 { id: "machine_pause_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Pause G-code", tooltip: "This G-code will be used as a code for the pause print. User can insert pause G-code in gcode viewer", mode: ConfigOptionMode.comAdvanced, default: "" },
 { id: "template_custom_gcode", type: ConfigOptionType.coString, fixed: false, required: false, label: "Custom G-code", tooltip: "This G-code will be used as a custom code", mode: ConfigOptionMode.comAdvanced, default: "" },
 ];
+
+export const printer_properties_map = printer_properties.reduce((acc, el) => {
+  acc[el.id] = el;
+  return acc;
+}, {} as Record<string, ConfigProperty>);

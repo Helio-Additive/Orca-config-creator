@@ -711,7 +711,8 @@ export function sanitizeWindowLabel(input: string): string {
 
 export async function deinherit_config_by_type(
   configName: string,
-  type: ConfigType
+  type: ConfigType,
+  family?: string
 ) {
   const printerConfigs = {
     installedConfigs: globalState.installedPrinterConfigs,
@@ -755,7 +756,8 @@ export async function deinherit_config_by_type(
     neededConfigs!.instantiatedInstalledConfigs,
     neededConfigs!.loadedSystemConfigs,
     neededConfigs!.loadedUserConfigs,
-    configName
+    configName,
+    family
   );
 
   return res;
