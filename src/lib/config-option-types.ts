@@ -42,3 +42,12 @@ export enum ConfigOptionMode {
   comAdvanced,
   comDevelop,
 }
+
+export const configOptionTypeToInputTypeString = (a: ConfigOptionType) => {
+  switch (a) {
+    case ConfigOptionType.coEnum:
+      return "dropdown";
+    default:
+      return "text";
+  }
+};

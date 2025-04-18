@@ -1,7 +1,18 @@
-import { Field, Input, Label } from "@headlessui/react";
+import {
+  Field,
+  Input,
+  Label,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { twMerge } from "tailwind-merge";
+import { FaChevronDown } from "react-icons/fa";
+import ValueInput from "./input-components/value-input";
+import DropdownInput from "./input-components/dropdown-input";
 
 export default function InputComponent({
   label,
@@ -14,6 +25,9 @@ export default function InputComponent({
   inputClassName,
   extraLabel,
   labelClassName,
+  allowEdit,
+  onChange = () => {},
+  enumValues,
 }: {
   label?: string;
   type?: string;
@@ -25,6 +39,9 @@ export default function InputComponent({
   inputClassName?: string;
   extraLabel?: string;
   labelClassName?: string;
+  allowEdit?: boolean;
+  onChange?: (value: string) => void;
+  enumValues?: [string, string][];
 }) {
   return (
     <Field className={"mb-3"}>
@@ -52,20 +69,29 @@ export default function InputComponent({
         )}
       </div>
       <div className="flex w-full max-w-[1024px] relative">
-        <Input
-          placeholder={placeholder}
-          value={value ?? placeholder}
-          className={twMerge(
-            "w-full flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
-            "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
-            err ? "bg-transparent-error" : "bg-transparent-white-input",
-            value ? "text-text-primary" : "text-text-secondary",
-            "mr-1",
-            inputClassName
-          )}
-          onClick={onClick}
-          type={type}
-        />
+        {{
+          dropdown: (
+            <DropdownInput
+              value={value!}
+              inputClassName={inputClassName}
+              onChange={onChange}
+              allowEdit={allowEdit}
+              err={err}
+              enumValues={enumValues!}
+            />
+          ),
+        }[type] ?? (
+          <ValueInput
+            placeholder={placeholder}
+            value={value ?? placeholder}
+            inputClassName={inputClassName}
+            onClick={onClick}
+            onChange={onChange}
+            type={type}
+            allowEdit={allowEdit}
+            err={err}
+          />
+        )}
         {rightChild && rightChild}
       </div>
     </Field>

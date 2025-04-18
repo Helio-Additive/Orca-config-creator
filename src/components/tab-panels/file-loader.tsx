@@ -46,6 +46,7 @@ export default function FileLoader() {
           />
         }
         err={errLoadingInstallationPath.get()}
+        allowEdit
       />
       <InputComponent
         label="Orca Data Directory"
@@ -60,6 +61,7 @@ export default function FileLoader() {
           />
         }
         err={errLoadingDataPath.get()}
+        allowEdit
       />
     </>
   );

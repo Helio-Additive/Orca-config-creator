@@ -60,6 +60,8 @@ export default function PrinterConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="printer"
+                family={key}
+                allowEdit
               />
             );
           } else {
@@ -98,6 +100,7 @@ export default function PrinterConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="printer"
+                family={key}
               />
             );
           } else {

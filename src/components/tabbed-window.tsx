@@ -10,7 +10,8 @@ import FilamentConfigTab from "./tab-panels/filament-config-tab";
 import ProcessConfigTab from "./tab-panels/process-config-tab";
 
 export default function TabbedWindow() {
-  const { orcaInstallationPath, orcaDataDirectory } = useHookstate(globalState);
+  const { orcaInstallationPath, orcaDataDirectory, selectedTab } =
+    useHookstate(globalState);
 
   const categories = [
     {
@@ -65,8 +66,12 @@ export default function TabbedWindow() {
   ];
 
   return (
-    <TabGroup className="flex flex-col w-full h-full">
-      <TabList className="rounded-xl bg-transparent-base backdrop-blur-xs max-w-fit">
+    <TabGroup
+      className="flex flex-col w-full h-full"
+      selectedIndex={selectedTab.get()}
+      onChange={selectedTab.set}
+    >
+      <TabList className="rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit">
         {categories
           .filter(({ loadCondition }) => {
             return loadCondition();
@@ -81,7 +86,7 @@ export default function TabbedWindow() {
           .map(({ name, component: Component }) => (
             <TabPanel
               key={name}
-              className="h-full rounded-xl bg-transparent-base p-3 backdrop-blur-xs"
+              className="h-full rounded-xl bg-transparent-base p-3 backdrop-blur-lg"
             >
               <Component />
             </TabPanel>
