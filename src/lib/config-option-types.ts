@@ -37,6 +37,15 @@ export enum ConfigOptionType {
   coEnums = coEnum + coVectorType,
 }
 
+export function isVector(a: ConfigOptionType) {
+  return a >= ConfigOptionType.coVectorType;
+}
+
+function getNonVectorType(a: ConfigOptionType) {
+  if (isVector(a)) return a - ConfigOptionType.coVectorType;
+  else return a;
+}
+
 export enum ConfigOptionMode {
   comSimple = 0,
   comAdvanced,
@@ -44,9 +53,11 @@ export enum ConfigOptionMode {
 }
 
 export const configOptionTypeToInputTypeString = (a: ConfigOptionType) => {
-  switch (a) {
+  switch (getNonVectorType(a)) {
     case ConfigOptionType.coEnum:
       return "dropdown";
+    case ConfigOptionType.coBool:
+      return "boolean";
     default:
       return "text";
   }

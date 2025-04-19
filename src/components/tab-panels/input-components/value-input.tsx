@@ -10,6 +10,7 @@ export default function ValueInput({
   inputClassName,
   allowEdit,
   onChange = () => {},
+  idx = 0,
 }: {
   type?: string;
   value?: string;
@@ -18,12 +19,13 @@ export default function ValueInput({
   err?: string;
   inputClassName?: string;
   allowEdit?: boolean;
-  onChange?: (value: string) => void;
+  onChange?: (value: string, idx?: number) => void;
+  idx?: number;
 }) {
   const changeFunction = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!allowEdit) return;
 
-    onChange(e.target.value);
+    onChange(e.target.value, idx);
   };
 
   return (

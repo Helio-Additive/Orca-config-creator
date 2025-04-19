@@ -45,14 +45,16 @@ export default function ConfigItem({
 
   const editConfig = () => {
     const encodedFileName = encodeURIComponent(fileName!);
-    editWindowState[fileName!].set({
-      fileName: fileName!,
-      type: type,
-      name: name,
-      family: family!,
-      properties: { res: {}, keyDetails: {} },
-      changedProps: {},
-    });
+
+    if (!editWindowState[fileName!].get({ stealth: true }))
+      editWindowState[fileName!].set({
+        fileName: fileName!,
+        type: type,
+        name: name,
+        family: family!,
+        properties: { res: {}, keyDetails: {} },
+        changedProps: {},
+      });
 
     navigate(`/edit?fileName=${encodedFileName}`);
   };
