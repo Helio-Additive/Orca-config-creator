@@ -1,7 +1,7 @@
 import { ConfigType } from "./commons";
 import { ConfigOptionMode, ConfigOptionType } from "./config-option-types";
 
-interface ConfigProperty {
+export interface ConfigProperty {
   label: string;
   id: string;
   default: any;
@@ -70,7 +70,7 @@ export const printer_properties: ConfigProperty[] = [
 { id: "support_air_filtration", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Support air filtration", tooltip: "Enable this if printer support air filtration\nG-code command: M106 P3 S(0-255)", mode: ConfigOptionMode.comDevelop, default: true },
 { id: "printer_structure", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Printer structure", tooltip: "The physical arrangement and components of a printing device", mode: ConfigOptionMode.comDevelop, enumList: [[ 'Undefine', 'undefine' ], [ 'CoreXY', 'corexy' ], [ 'I3', 'i3' ], [ 'Hbot', 'hbot' ], [ 'Delta', 'delta' ]], default: 0},
 { id: "best_object_pos", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Best object position", tooltip: "Best auto arranging position in range [0,1] w.r.t. bed shape.", mode: ConfigOptionMode.comAdvanced, default: [ 0.5, 0.5 ] },
-{ id: "head_wrap_detect_zone", type: ConfigOptionType.coPoints, fixed: false, required: false, label: "Head wrap detect zone", mode: ConfigOptionMode.comDevelop, default: [''] },
+{ id: "head_wrap_detect_zone", type: ConfigOptionType.coPoints, fixed: false, required: false, label: "Head wrap detect zone", mode: ConfigOptionMode.comDevelop, default: [] },
 { id: "host_type", type: ConfigOptionType.coEnum, fixed: false, required: false, label: "Host Type", mode: ConfigOptionMode.comAdvanced, enumList: [[ 'PrusaLink', 'prusalink' ], [ 'PrusaConnect', 'prusaconnect' ], [ 'Octo/Klipper', 'octoprint' ], [ 'Duet', 'duet' ], [ 'FlashAir', 'flashair' ], [ 'AstroBox', 'astrobox' ], [ 'Repetier', 'repetier' ], [ 'MKS', 'mks' ], [ 'ESP3D', 'esp3d' ], [ 'CrealityPrint', 'crealityprint' ], [ 'Obico', 'obico' ], [ 'Flashforge', 'flashforge' ], [ 'SimplyPrint', 'simplyprint' ], [ 'Elegoo Link', 'elegoolink' ]], default: 2},
 { id: "print_host", type: ConfigOptionType.coString, fixed: false, required: false, label: "Hostname, IP or URL", mode: ConfigOptionMode.comAdvanced, default: "" },
 { id: "printhost_apikey", type: ConfigOptionType.coString, fixed: false, required: false, label: "API Key / Password", mode: ConfigOptionMode.comAdvanced, default: "" },

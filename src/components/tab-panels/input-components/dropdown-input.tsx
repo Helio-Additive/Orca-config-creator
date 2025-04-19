@@ -9,18 +9,20 @@ export default function DropdownInput({
   allowEdit,
   onChange = () => {},
   enumValues,
+  idx = 0,
 }: {
   value: string;
   err?: string;
   inputClassName?: string;
   allowEdit?: boolean;
-  onChange?: (value: string) => void;
+  onChange?: (value: string, idx?: number) => void;
   enumValues: [string, string][];
+  idx?: number;
 }) {
   const changeDropdown = (value: string) => {
     if (!allowEdit) return;
 
-    onChange(value);
+    onChange(value, idx);
   };
 
   return (
@@ -53,7 +55,7 @@ export default function DropdownInput({
       >
         {enumValues!.map((enEl) => {
           return (
-            <MenuItem>
+            <MenuItem key={enEl[1]}>
               <button
                 className="group flex w-full items-center gap-2 rounded-lg py-1.5 px-3 data-[focus]:bg-transparent-black-hover"
                 onClick={() => changeDropdown(enEl[1])}

@@ -18,6 +18,7 @@ export default function InputComponent({
   label,
   type = "text",
   value,
+  arrayValue,
   placeholder,
   onClick,
   rightChild,
@@ -28,10 +29,14 @@ export default function InputComponent({
   allowEdit,
   onChange = () => {},
   enumValues,
+  tooltip,
+  arraySize,
 }: {
   label?: string;
   type?: string;
+  arraySize?: number;
   value?: string;
+  arrayValue?: string[];
   placeholder?: string;
   onClick?: () => void;
   rightChild?: ReactNode;
@@ -40,9 +45,15 @@ export default function InputComponent({
   extraLabel?: string;
   labelClassName?: string;
   allowEdit?: boolean;
-  onChange?: (value: string) => void;
+  onChange?: (value: string, idx?: number) => void;
   enumValues?: [string, string][];
+  tooltip?: string;
 }) {
+  const arr = Array.from(
+    { length: arraySize ?? (arrayValue ? arrayValue?.length : 1) },
+    (_, i) => i
+  );
+
   return (
     <Field className={"mb-3"}>
       <div className="flex">
@@ -56,6 +67,7 @@ export default function InputComponent({
             {label}
           </Label>
         )}
+
         {extraLabel && (
           <span
             className={twMerge(
@@ -69,29 +81,52 @@ export default function InputComponent({
         )}
       </div>
       <div className="flex w-full max-w-[1024px] relative">
-        {{
-          dropdown: (
-            <DropdownInput
-              value={value!}
-              inputClassName={inputClassName}
-              onChange={onChange}
-              allowEdit={allowEdit}
-              err={err}
-              enumValues={enumValues!}
-            />
-          ),
-        }[type] ?? (
-          <ValueInput
-            placeholder={placeholder}
-            value={value ?? placeholder}
-            inputClassName={inputClassName}
-            onClick={onClick}
-            onChange={onChange}
-            type={type}
-            allowEdit={allowEdit}
-            err={err}
-          />
-        )}
+        {arr.map((idx) => {
+          const inputValue = arrayValue ? arrayValue[idx] : value;
+
+          return (
+            {
+              dropdown: (
+                <DropdownInput
+                  key={idx}
+                  value={inputValue!}
+                  inputClassName={inputClassName}
+                  onChange={onChange}
+                  allowEdit={allowEdit}
+                  err={err}
+                  enumValues={enumValues!}
+                />
+              ),
+              boolean: (
+                <DropdownInput
+                  key={idx}
+                  value={inputValue!}
+                  inputClassName={inputClassName}
+                  onChange={onChange}
+                  allowEdit={allowEdit}
+                  err={err}
+                  enumValues={[
+                    ["true", "true"],
+                    ["false", "false"],
+                  ]}
+                />
+              ),
+            }[type] ?? (
+              <ValueInput
+                key={idx}
+                placeholder={placeholder}
+                value={inputValue}
+                inputClassName={inputClassName}
+                onClick={onClick}
+                onChange={onChange}
+                type={type}
+                allowEdit={allowEdit}
+                err={err}
+              />
+            )
+          );
+        })}
+
         {rightChild && rightChild}
       </div>
     </Field>

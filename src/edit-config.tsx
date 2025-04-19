@@ -2,15 +2,29 @@ import { none, State, useHookstate } from "@hookstate/core";
 import { useEffect, useState } from "react";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { deinherit_config_by_type } from "./lib/commons";
+import { ConfigType, deinherit_config_by_type } from "./lib/commons";
 import { globalState } from "./lib/state-store";
 import InputComponent from "./components/tab-panels/input-component";
-import { printer_properties_map } from "./lib/printer-configuration-options";
+import {
+  ConfigProperty,
+  printer_properties_map,
+} from "./lib/printer-configuration-options";
 import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
 
 export default function EditConfig() {
+  const propMaps: Record<ConfigType, Record<string, ConfigProperty>> = {
+    printer: printer_properties_map,
+    "printer-model": {},
+    filament: {},
+    process: {},
+    vendor: {},
+  };
+
+  const [configType, setConfigType] = useState("printer" as ConfigType);
+
   const [knownKeys, setKnownKeys] = useState([] as string[]);
   const [unknownKeys, setUnknownKeys] = useState([] as string[]);
+  const [numExtruders, setNumExtruders] = useState(1);
 
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;
@@ -19,30 +33,50 @@ export default function EditConfig() {
   const { editWindowState } = useHookstate(globalState);
 
   useEffect(() => {
+    setConfigType(
+      editWindowState[fileName].type.get({ stealth: true }) as ConfigType
+    );
+
     deinherit_config_by_type(
       editWindowState[fileName].name.get({ stealth: true }),
       editWindowState[fileName].type.get({ stealth: true }),
       editWindowState[fileName].family.get({ stealth: true })
     ).then((res) => {
       const allKeysInRes = Object.keys(res.res);
-      const knownKeysTemp = Object.keys(printer_properties_map).filter((el) =>
+
+      const propMap =
+        propMaps[
+          editWindowState[fileName].type.get({ stealth: true }) as ConfigType
+        ] ?? {};
+
+      const knownKeysTemp = Object.keys(propMap).filter((el) =>
         allKeysInRes.includes(el)
       );
       const unknownKeysTemp = allKeysInRes.filter(
         (el) => !knownKeysTemp.includes(el)
       );
 
+      if (res.res["nozzle_diameter"])
+        setNumExtruders(res.res["nozzle_diameter"].length);
+
       setKnownKeys(knownKeysTemp);
       setUnknownKeys(unknownKeysTemp);
 
       editWindowState[fileName].properties.set(res);
     });
-  }, []);
+  }, [fileName]);
 
-  const handleChange = (value: string, stateProp: State<unknown, {}>) => {
-    stateProp.set(value);
+  const handleChange = (
+    value: string,
+    stateProp: State<unknown, {}>,
+    idx: number
+  ) => {
+    if (Array.isArray(stateProp.get({ stealth: true }))) {
+      stateProp.merge({ [idx]: value });
+    } else stateProp.set(value);
   };
 
+  useEffect(() => {}, []);
   return (
     <div className="flex flex-col h-full">
       <div className="flex rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit">
@@ -74,37 +108,36 @@ export default function EditConfig() {
           const inputType = configOptionTypeToInputTypeString(
             knownPrinterProp.type
           );
-          return changedProperty ? (
+
+          const value = !Array.isArray(property)
+            ? (changedProperty as string) ?? (property as string)
+            : undefined;
+          const arrayValue = Array.isArray(property)
+            ? (changedProperty as string[]) ?? (property as string[])
+            : undefined;
+
+          return (
             <InputComponent
               key={key}
               label={key}
-              value={changedProperty as string}
+              value={value}
+              arrayValue={arrayValue}
               extraLabel={keyDetails[0] + " · " + keyDetails[1]}
               labelClassName="text-lg"
-              onChange={(value: string) =>
-                handleChange(value, editWindowState[fileName].changedProps[key])
+              onChange={(value: string, idx = 0) =>
+                handleChange(
+                  value,
+                  editWindowState[fileName].changedProps[key],
+                  idx
+                )
               }
               allowEdit={!knownPrinterProp.fixed}
-              inputClassName="outline-input-changed-value outline-2 -outline-offset-2"
+              inputClassName={
+                changedProperty
+                  ? "outline-input-changed-value outline-2 -outline-offset-2 bg-input-changed-value/20"
+                  : ""
+              }
               type={inputType}
-              enumValues={
-                inputType === "dropdown"
-                  ? knownPrinterProp.enumList!
-                  : undefined
-              }
-            />
-          ) : (
-            <InputComponent
-              key={key}
-              label={key}
-              value={property as string}
-              extraLabel={keyDetails[0] + " · " + keyDetails[1]}
-              labelClassName="text-lg"
-              onChange={(value: string) =>
-                handleChange(value, editWindowState[fileName].changedProps[key])
-              }
-              allowEdit={!knownPrinterProp.fixed}
-              type={configOptionTypeToInputTypeString(knownPrinterProp.type)}
               enumValues={
                 inputType === "dropdown"
                   ? knownPrinterProp.enumList!
