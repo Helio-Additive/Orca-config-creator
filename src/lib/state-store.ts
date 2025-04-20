@@ -80,10 +80,13 @@ export const globalStateObject = {
       fileName: string;
       type: ConfigType;
       name: string;
-      family: string;
+      family?: string;
       properties: {
         res: Record<string, unknown>;
-        keyDetails: Record<string, [string, number]>;
+        keyDetails: Record<
+          string,
+          [string, number, string | undefined, string]
+        >;
       };
       changedProps: Record<string, unknown>;
     }

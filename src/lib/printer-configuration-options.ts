@@ -6,6 +6,7 @@ export interface ConfigProperty {
   id: string;
   default: any;
   nullable?: boolean;
+  derived?: boolean;
   tooltip?: string;
   type: ConfigOptionType;
   required?: boolean;
@@ -26,9 +27,10 @@ export const printer_properties: ConfigProperty[] = [
 { id: "name", type: ConfigOptionType.coString, fixed: true, required: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
 { id: "version", type: ConfigOptionType.coString, fixed: false, required: false, label: "Version", tooltip: "Version of the preset", default: ""},
-{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "System"]], default: 0},
-{ id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: true, label: "Instantiation", tooltip: "Should the preset be instantiated",   default: false},
+{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
+{ id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Instantiation", tooltip: "Should the preset be instantiated",   enumList: [["true", "true"], ["false", "false"]], default: false},
 { id: "inherits", type: ConfigOptionType.coString, fixed: false, required: true, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "printer"},
+{ id: "num_extruders", type: ConfigOptionType.coInt, fixed: false, required: false, label: "Number of extruders", tooltip: "Number of extruders in the printer", default: 1, derived: true},
 { id: "default_filament_profile", type: ConfigOptionType.coStrings, fixed: false, required: false, label: "Default filament profile", tooltip: "Default filament profile when switch to this machine profile", default: [''], search: "filament"},
 { id: "setting_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Setting id", tooltip: "not required and unclear what it does", default: "" },
 { id: "printer_settings_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Printer settings id", tooltip: "not required and unclear what it does", default: "" },

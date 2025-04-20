@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import { globalState } from "../../../lib/state-store";
-import { ConfigType } from "../../../lib/commons";
+import { ConfigType, editConfigFile } from "../../../lib/commons";
 
 export default function ConfigItem({
   name,
@@ -29,8 +29,6 @@ export default function ConfigItem({
   fileName?: string;
   allowEdit?: boolean;
 }) {
-  const { editWindowState } = useHookstate(globalState);
-
   const folderOpener = (path: string) => {
     invoke("check_file", { path }).then((exists) => {
       if (exists) {
@@ -44,19 +42,7 @@ export default function ConfigItem({
   const navigate = useNavigate();
 
   const editConfig = () => {
-    const encodedFileName = encodeURIComponent(fileName!);
-
-    if (!editWindowState[fileName!].get({ stealth: true }))
-      editWindowState[fileName!].set({
-        fileName: fileName!,
-        type: type,
-        name: name,
-        family: family!,
-        properties: { res: {}, keyDetails: {} },
-        changedProps: {},
-      });
-
-    navigate(`/edit?fileName=${encodedFileName}`);
+    editConfigFile(name, type, fileName!, navigate, family);
   };
 
   return (

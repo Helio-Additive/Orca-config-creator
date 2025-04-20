@@ -33,7 +33,7 @@ export default function ValueInput({
       placeholder={placeholder}
       value={value ?? placeholder}
       className={twMerge(
-        "w-full flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
+        "w-full min-w-fit flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
         "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
         err ? "bg-transparent-error" : "bg-transparent-white-input",
         allowEdit

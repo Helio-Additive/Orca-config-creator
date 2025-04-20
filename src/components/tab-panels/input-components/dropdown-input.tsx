@@ -29,7 +29,7 @@ export default function DropdownInput({
     <Menu>
       <MenuButton
         className={twMerge(
-          "flex items-center w-fit rounded-lg border-none py-1.5 px-3 text-sm/6",
+          "flex min-w-fit items-center w-fit rounded-lg border-none py-1.5 px-3 text-sm/6",
           "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
           err ? "bg-transparent-error" : "bg-transparent-white-input",
           allowEdit

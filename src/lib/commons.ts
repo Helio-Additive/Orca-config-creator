@@ -21,6 +21,7 @@ import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { v4 as uuidv4, validate as isUuid } from "uuid";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
 import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
+import { NavigateFunction } from "react-router-dom";
 
 export type ConfigType =
   | "printer"
@@ -668,9 +669,9 @@ export const deinherit_and_load_all_props: any = async <
       );
 
       const keyDetails = Object.keys(filteredRes).reduce((acc, key) => {
-        acc[key] = [res.name, level];
+        acc[key] = [res.name, level, family, configFile];
         return acc;
-      }, {} as Record<string, [string, number]>);
+      }, {} as Record<string, [string, number, string | undefined, string]>);
 
       return {
         res: { ...inherited_props.res, ...filteredRes },
@@ -679,9 +680,9 @@ export const deinherit_and_load_all_props: any = async <
       };
     } else {
       const keyDetails = Object.keys(res).reduce((acc, key) => {
-        acc[key] = [res.name, level];
+        acc[key] = [res.name, level, family, configFile];
         return acc;
-      }, {} as Record<string, [string, number]>);
+      }, {} as Record<string, [string, number, string | undefined, string]>);
 
       return { res, keyDetails };
     }
@@ -761,4 +762,28 @@ export async function deinherit_config_by_type(
   );
 
   return res;
+}
+
+export function editConfigFile(
+  name: string,
+  type: ConfigType,
+  fileName: string,
+  navigate: NavigateFunction,
+  family?: string
+) {
+  const { editWindowState } = globalState;
+
+  const encodedFileName = encodeURIComponent(fileName);
+
+  if (!editWindowState[fileName].get({ stealth: true }))
+    editWindowState[fileName].set({
+      fileName: fileName,
+      type: type,
+      name: name,
+      family: family,
+      properties: { res: {}, keyDetails: {} },
+      changedProps: {},
+    });
+
+  navigate(`/edit?fileName=${encodedFileName}`);
 }
