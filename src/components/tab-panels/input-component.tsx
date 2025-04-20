@@ -22,6 +22,7 @@ export default function InputComponent({
   placeholder,
   onClick,
   rightChild,
+  labelChild,
   err,
   inputClassName,
   extraLabel,
@@ -40,6 +41,7 @@ export default function InputComponent({
   placeholder?: string;
   onClick?: () => void;
   rightChild?: ReactNode;
+  labelChild?: ReactNode;
   err?: string;
   inputClassName?: string;
   extraLabel?: string;
@@ -56,7 +58,7 @@ export default function InputComponent({
 
   return (
     <Field className={"mb-3"}>
-      <div className="flex">
+      <div className="flex items-center">
         {label && (
           <Label
             className={twMerge(
@@ -79,8 +81,11 @@ export default function InputComponent({
             &middot; {extraLabel}{" "}
           </span>
         )}
+
+        {labelChild && labelChild}
       </div>
-      <div className="flex w-full max-w-[1024px] relative">
+
+      <div className="flex w-full max-w-[1024px] relative overflow-x-auto">
         {arr.map((idx) => {
           const inputValue = arrayValue ? arrayValue[idx] : value;
 
@@ -95,6 +100,7 @@ export default function InputComponent({
                   allowEdit={allowEdit}
                   err={err}
                   enumValues={enumValues!}
+                  idx={idx}
                 />
               ),
               boolean: (
@@ -105,10 +111,13 @@ export default function InputComponent({
                   onChange={onChange}
                   allowEdit={allowEdit}
                   err={err}
-                  enumValues={[
-                    ["true", "true"],
-                    ["false", "false"],
-                  ]}
+                  enumValues={
+                    enumValues ?? [
+                      ["true", "1"],
+                      ["false", "0"],
+                    ]
+                  }
+                  idx={idx}
                 />
               ),
             }[type] ?? (
@@ -122,6 +131,7 @@ export default function InputComponent({
                 type={type}
                 allowEdit={allowEdit}
                 err={err}
+                idx={idx}
               />
             )
           );

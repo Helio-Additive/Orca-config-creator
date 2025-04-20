@@ -1,8 +1,12 @@
 import { none, State, useHookstate } from "@hookstate/core";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ConfigType, deinherit_config_by_type } from "./lib/commons";
+import {
+  ConfigType,
+  deinherit_config_by_type,
+  editConfigFile,
+} from "./lib/commons";
 import { globalState } from "./lib/state-store";
 import InputComponent from "./components/tab-panels/input-component";
 import {
@@ -10,6 +14,59 @@ import {
   printer_properties_map,
 } from "./lib/printer-configuration-options";
 import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
+import { IconType } from "react-icons/lib";
+import { RiResetLeftFill } from "react-icons/ri";
+import { twMerge } from "tailwind-merge";
+import { BsFiletypeJson } from "react-icons/bs";
+import { MdAdd } from "react-icons/md";
+
+function LabelButtonTemplate({
+  Icon,
+  onClick,
+  className,
+}: {
+  className?: string;
+  Icon: (a: { className?: string }) => ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={twMerge(
+        "text-text-primary text-2xl rounded-xl bg-transparent-white-input shadow-md ml-2",
+        "hover:scale-110 transition duration-200",
+        "active:scale-95",
+        className
+      )}
+    >
+      <Icon className="w-full h-full" />
+    </div>
+  );
+}
+
+function ResetButton({ onClick }: { onClick: () => void }) {
+  return (
+    <LabelButtonTemplate
+      Icon={RiResetLeftFill}
+      onClick={onClick}
+      className="hover:-rotate-45"
+    />
+  );
+}
+
+function EditConfigButton({ onClick }: { onClick: () => void }) {
+  return <LabelButtonTemplate Icon={BsFiletypeJson} onClick={onClick} />;
+}
+
+function AddButton({ onClick }: { onClick: () => void }) {
+  return (
+    <LabelButtonTemplate
+      Icon={MdAdd}
+      onClick={onClick}
+      className="hover:scale-125"
+    />
+  );
+}
 
 export default function EditConfig() {
   const propMaps: Record<ConfigType, Record<string, ConfigProperty>> = {
@@ -24,7 +81,6 @@ export default function EditConfig() {
 
   const [knownKeys, setKnownKeys] = useState([] as string[]);
   const [unknownKeys, setUnknownKeys] = useState([] as string[]);
-  const [numExtruders, setNumExtruders] = useState(1);
 
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;
@@ -33,6 +89,7 @@ export default function EditConfig() {
   const { editWindowState } = useHookstate(globalState);
 
   useEffect(() => {
+    console.count("useEffect");
     setConfigType(
       editWindowState[fileName].type.get({ stealth: true }) as ConfigType
     );
@@ -56,27 +113,28 @@ export default function EditConfig() {
         (el) => !knownKeysTemp.includes(el)
       );
 
-      if (res.res["nozzle_diameter"])
-        setNumExtruders(res.res["nozzle_diameter"].length);
-
       setKnownKeys(knownKeysTemp);
       setUnknownKeys(unknownKeysTemp);
 
       editWindowState[fileName].properties.set(res);
     });
-  }, [fileName]);
+  }, []);
 
-  const handleChange = (
-    value: string,
-    stateProp: State<unknown, {}>,
-    idx: number
-  ) => {
-    if (Array.isArray(stateProp.get({ stealth: true }))) {
-      stateProp.merge({ [idx]: value });
-    } else stateProp.set(value);
+  const handleChange = (value: string, key: string, idx: number) => {
+    const property = editWindowState[fileName].properties.res[key].get();
+    const changedProperty = editWindowState[fileName].changedProps[key];
+    if (Array.isArray(property)) {
+      if (changedProperty.get({ stealth: true }))
+        changedProperty.merge({ [idx]: value });
+      else {
+        const arr = [...property];
+        arr.splice(idx, 1, value);
+
+        changedProperty.set(arr);
+      }
+    } else changedProperty.set(value);
   };
 
-  useEffect(() => {}, []);
   return (
     <div className="flex flex-col h-full">
       <div className="flex rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit">
@@ -95,6 +153,7 @@ export default function EditConfig() {
           {editWindowState[fileName].name.get()}
         </div>
       </div>
+
       <div className="flex-1 min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
         {knownKeys.map((key) => {
           const property = editWindowState[fileName].properties.res[key].get();
@@ -116,8 +175,47 @@ export default function EditConfig() {
             ? (changedProperty as string[]) ?? (property as string[])
             : undefined;
 
+          const labelButtons = (
+            <div className="flex">
+              <EditConfigButton
+                onClick={() => {
+                  editConfigFile(
+                    keyDetails[0] as string,
+                    editWindowState[fileName].type.get({ stealth: true }),
+                    keyDetails[3] as string,
+                    navigate,
+                    keyDetails[2] as string | undefined
+                  );
+                }}
+              />
+              {arrayValue && (
+                <AddButton
+                  onClick={() => {
+                    if (changedProperty)
+                      editWindowState[fileName].changedProps[key].merge([
+                        arrayValue[arrayValue.length - 1],
+                      ]);
+                    else
+                      editWindowState[fileName].changedProps[key].set([
+                        ...arrayValue,
+                        arrayValue[arrayValue.length - 1],
+                      ]);
+                  }}
+                />
+              )}
+              {changedProperty && (
+                <ResetButton
+                  onClick={() =>
+                    editWindowState[fileName].changedProps[key].set(none)
+                  }
+                />
+              )}
+            </div>
+          );
+
           return (
             <InputComponent
+              labelChild={labelButtons}
               key={key}
               label={key}
               value={value}
@@ -125,11 +223,7 @@ export default function EditConfig() {
               extraLabel={keyDetails[0] + " · " + keyDetails[1]}
               labelClassName="text-lg"
               onChange={(value: string, idx = 0) =>
-                handleChange(
-                  value,
-                  editWindowState[fileName].changedProps[key],
-                  idx
-                )
+                handleChange(value, key, idx)
               }
               allowEdit={!knownPrinterProp.fixed}
               inputClassName={
@@ -138,11 +232,7 @@ export default function EditConfig() {
                   : ""
               }
               type={inputType}
-              enumValues={
-                inputType === "dropdown"
-                  ? knownPrinterProp.enumList!
-                  : undefined
-              }
+              enumValues={knownPrinterProp.enumList}
             />
           );
         })}

@@ -58,6 +58,9 @@ export const configOptionTypeToInputTypeString = (a: ConfigOptionType) => {
       return "dropdown";
     case ConfigOptionType.coBool:
       return "boolean";
+    case ConfigOptionType.coInt:
+    case ConfigOptionType.coFloat:
+      return "number";
     default:
       return "text";
   }
