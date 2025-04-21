@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import { globalState } from "../../../lib/state-store";
 import { ConfigType, editConfigFile } from "../../../lib/commons";
+import { FaFileExport } from "react-icons/fa";
 
 export default function ConfigItem({
   name,
@@ -18,6 +19,7 @@ export default function ConfigItem({
   onClick,
   fileName,
   allowEdit = false,
+  flatExportFunction,
 }: {
   name: string;
   family?: string;
@@ -28,6 +30,7 @@ export default function ConfigItem({
   onClick?: (e: React.MouseEvent) => void;
   fileName?: string;
   allowEdit?: boolean;
+  flatExportFunction?: (configName: string, family?: string) => void;
 }) {
   const folderOpener = (path: string) => {
     invoke("check_file", { path }).then((exists) => {
@@ -80,9 +83,17 @@ export default function ConfigItem({
           )}
           {fileName && (
             <BsFiletypeJson
-              className="hover:text-text-secondary hover:scale-95 w-6 h-6"
+              className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1"
               onClick={() => {
                 folderOpener(fileName);
+              }}
+            />
+          )}
+          {flatExportFunction && (
+            <FaFileExport
+              className="hover:text-text-secondary hover:scale-95 w-6 h-6"
+              onClick={() => {
+                flatExportFunction(name);
               }}
             />
           )}

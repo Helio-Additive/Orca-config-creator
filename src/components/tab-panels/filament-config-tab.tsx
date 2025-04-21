@@ -14,9 +14,7 @@ export default function FilamentConfigTab() {
     instantiatedInstalledFilamentConfigs,
   } = useHookstate(globalState);
 
-  const export_flattened = async (e: React.MouseEvent, configName: string) => {
-    if (e.target !== e.currentTarget) return;
-
+  const export_flattened = async (configName: string) => {
     try {
       const configObject = await deinherit_and_load_all_props(
         installedFilamentConfigs,
@@ -33,12 +31,12 @@ export default function FilamentConfigTab() {
 
       await invoke("save_and_zip_json", {
         data: res,
-        fileName: "Filament presets.zip",
+        fileName: `Filament presets_${res.name}.zip`,
       });
 
-      toast("Saved 'Filament presets.zip'", { type: "success" });
+      toast(`Saved 'Filament presets_${res.name}.zip'`, { type: "success" });
     } catch (error: any) {
-      toast(error, { type: "error" });
+      toast(error.toString(), { type: "error" });
     }
   };
 
@@ -133,12 +131,10 @@ export default function FilamentConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={(e: React.MouseEvent) =>
-          export_flattened(e, machineConfig.name)
-        }
         fileName={machineConfig.fileName}
         type="filament"
         allowEdit
+        flatExportFunction={export_flattened}
       />
     );
   });

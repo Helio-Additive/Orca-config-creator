@@ -14,9 +14,7 @@ export default function PrinterConfigTab() {
     instantiatedInstalledPrinterConfigs,
   } = useHookstate(globalState);
 
-  const export_flattened = async (e: React.MouseEvent, configName: string) => {
-    if (e.target !== e.currentTarget) return;
-
+  const export_flattened = async (configName: string) => {
     try {
       const configObject = await deinherit_and_load_all_props(
         installedPrinterConfigs,
@@ -32,12 +30,12 @@ export default function PrinterConfigTab() {
 
       await invoke("save_and_zip_json", {
         data: res,
-        fileName: "Printer presets.zip",
+        fileName: `Printer presets_${res.name}.zip`,
       });
 
-      toast("Saved 'Printer presets.zip'", { type: "success" });
+      toast(`Saved 'Printer presets_${res.name}.zip'`, { type: "success" });
     } catch (error: any) {
-      toast(error, { type: "error" });
+      toast(error.toString(), { type: "error" });
     }
   };
 
@@ -132,9 +130,7 @@ export default function PrinterConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={(e: React.MouseEvent) =>
-          export_flattened(e, machineConfig.name)
-        }
+        flatExportFunction={export_flattened}
         fileName={machineConfig.fileName}
         allowEdit
         type="printer"
