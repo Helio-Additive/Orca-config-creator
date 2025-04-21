@@ -89,6 +89,8 @@ export const globalStateObject = {
         >;
       };
       changedProps: Record<string, unknown>;
+      knownKeys: string[];
+      unknownKeys: string[];
     }
   >,
   routeStack: [] as string[],

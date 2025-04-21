@@ -1,10 +1,44 @@
-import { invoke } from "@tauri-apps/api/tauri";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaFileExport } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
-import { ConfigType, editConfigFile } from "../../../lib/commons";
+import { ConfigType, editConfigFile, folderOpener } from "../../../lib/commons";
+import { ReactNode } from "react";
+import { Tooltip } from "radix-ui";
+import Infotip from "../../tooltip/infotip";
+
+function TopButton({
+  Icon,
+  onClick,
+  className,
+  tooltip,
+}: {
+  className?: string;
+  Icon: (a: { className?: string }) => ReactNode;
+  onClick: () => void;
+  tooltip?: string;
+}) {
+  return (
+    <Tooltip.Root delayDuration={800}>
+      <Tooltip.Trigger asChild>
+        <div
+          onClick={onClick}
+          className={twMerge(
+            "hover:text-text-secondary hover:scale-95 w-6 h-6 active:scale-85",
+            className
+          )}
+        >
+          <Icon className="w-full h-full" />
+        </div>
+      </Tooltip.Trigger>
+      {tooltip && (
+        <Tooltip.Content>
+          <Infotip tooltip={tooltip} />
+        </Tooltip.Content>
+      )}
+    </Tooltip.Root>
+  );
+}
 
 export default function ConfigItem({
   name,
@@ -29,16 +63,6 @@ export default function ConfigItem({
   allowEdit?: boolean;
   flatExportFunction?: (configName: string, family?: string) => void;
 }) {
-  const folderOpener = (path: string) => {
-    invoke("check_file", { path }).then((exists) => {
-      if (exists) {
-        invoke("show_in_folder", { path });
-      } else {
-        toast(`${path} does not exist`, { type: "error" });
-      }
-    });
-  };
-
   const navigate = useNavigate();
 
   const editConfig = () => {
@@ -73,25 +97,30 @@ export default function ConfigItem({
         </div>
         <div className="flex text-text-primary">
           {allowEdit && fileName && (
-            <FaEdit
-              className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1"
+            <TopButton
               onClick={editConfig}
+              Icon={FaEdit}
+              className="mr-1"
+              tooltip="Edit config"
             />
           )}
           {fileName && (
-            <BsFiletypeJson
-              className="hover:text-text-secondary hover:scale-95 w-6 h-6 mr-1"
+            <TopButton
               onClick={() => {
                 folderOpener(fileName);
               }}
+              Icon={BsFiletypeJson}
+              className="mr-1"
+              tooltip="Open containing folder"
             />
           )}
           {flatExportFunction && (
-            <FaFileExport
-              className="hover:text-text-secondary hover:scale-95 w-6 h-6"
+            <TopButton
               onClick={() => {
                 flatExportFunction(name);
               }}
+              Icon={FaFileExport}
+              tooltip="Export flattened config"
             />
           )}
         </div>
