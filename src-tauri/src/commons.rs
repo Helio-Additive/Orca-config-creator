@@ -3,7 +3,6 @@ use fork::{daemon, Fork};
 use std::fs;
 use std::path;
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::Command;
 #[cfg(target_os = "linux")]
 use std::{fs::metadata, path::PathBuf}; // dep: fork = "0.1"
@@ -77,5 +76,14 @@ pub fn show_in_folder(path: String) {
     #[cfg(target_os = "macos")]
     {
         Command::new("open").args(["-R", &path]).spawn().unwrap();
+    }
+}
+
+#[tauri::command]
+pub fn write_to_file(path: String, content: String) -> Result<(), String> {
+    let write_res = fs::write(path, content);
+    match write_res {
+        Ok(()) => Ok(()),
+        Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
     }
 }

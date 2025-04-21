@@ -783,7 +783,19 @@ export function editConfigFile(
       family: family,
       properties: { res: {}, keyDetails: {} },
       changedProps: {},
+      knownKeys: [],
+      unknownKeys: [],
     });
 
   navigate(`/edit?fileName=${encodedFileName}`);
 }
+
+export const folderOpener = (path: string) => {
+  invoke("check_file", { path }).then((exists) => {
+    if (exists) {
+      invoke("show_in_folder", { path });
+    } else {
+      toast(`${path} does not exist`, { type: "error" });
+    }
+  });
+};

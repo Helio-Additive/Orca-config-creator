@@ -41,7 +41,6 @@ export default function ValueInput({
             ? "text-text-primary"
             : "text-text-secondary"
           : "text-text-secondary",
-        "mr-1",
         inputClassName
       )}
       onClick={onClick}

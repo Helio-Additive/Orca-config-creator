@@ -1,4 +1,5 @@
 import { useHookstate } from "@hookstate/core";
+import { Tooltip } from "radix-ui";
 import { platform } from "@tauri-apps/api/os";
 import { useEffect } from "react";
 import "./App.css";
@@ -121,19 +122,21 @@ function App() {
 
   return (
     <main>
-      <ToastContainer theme="colored" />
-      <BackgroundPlate />
+      <Tooltip.Provider delayDuration={800}>
+        <ToastContainer theme="colored" />
+        <BackgroundPlate />
 
-      <div className="flex h-screen w-full max-h-screen max-w-screen justify-start py-10 px-10">
-        <div className="w-full h-full">
-          <Router>
-            <Routes>
-              <Route path="/home" element={<Home />} />
-              <Route path="/edit" element={<EditConfig />} />
-            </Routes>
-          </Router>
+        <div className="flex h-screen w-full max-h-screen max-w-screen justify-start py-10 px-10">
+          <div className="w-full h-full">
+            <Router>
+              <Routes>
+                <Route path="/home" element={<Home />} />
+                <Route path="/edit" element={<EditConfig />} />
+              </Routes>
+            </Router>
+          </div>
         </div>
-      </div>
+      </Tooltip.Provider>
     </main>
   );
 }

@@ -30,6 +30,9 @@
       "window": {
         "create": true,
         "setFocus": true
+      },
+      "fs": {
+        "writeFile": true
       }
     },
     "windows": [
