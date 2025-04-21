@@ -1,13 +1,10 @@
-import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { BsFiletypeJson } from "react-icons/bs";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaFileExport } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
-import { globalState } from "../../../lib/state-store";
 import { ConfigType, editConfigFile } from "../../../lib/commons";
-import { FaFileExport } from "react-icons/fa";
 
 export default function ConfigItem({
   name,
