@@ -24,19 +24,19 @@ export default function ProcessConfigTab() {
         configName
       );
 
-      const res = configObject;
+      const res = configObject.res;
       res.name = updateUuid(res.name);
       res["compatible_printers"] = [];
       delete res["inherits"];
 
       await invoke("save_and_zip_json", {
         data: res,
-        fileName: "Process presets.zip",
+        fileName: `Process presets_${res.name}.zip`,
       });
 
-      toast("Saved 'Process presets.zip'", { type: "success" });
+      toast(`Saved 'Process presets_${res.name}.zip'`, { type: "success" });
     } catch (error: any) {
-      toast(error, { type: "error" });
+      toast(error.toString(), { type: "error" });
     }
   };
 
@@ -128,9 +128,9 @@ export default function ProcessConfigTab() {
             ? machineConfig.inherits
             : "base",
         ]}
-        onClick={() => export_flattened(machineConfig.name)}
         fileName={machineConfig.fileName}
         type="process"
+        flatExportFunction={export_flattened}
       />
     );
   });
