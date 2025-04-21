@@ -1,24 +1,23 @@
-import { none, State, useHookstate } from "@hookstate/core";
+import { none, useHookstate } from "@hookstate/core";
 import { ReactNode, useEffect, useState } from "react";
+import { BsFiletypeJson } from "react-icons/bs";
 import { IoMdArrowRoundBack } from "react-icons/io";
+import { MdAdd } from "react-icons/md";
+import { RiResetLeftFill } from "react-icons/ri";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { twMerge } from "tailwind-merge";
+import InputComponent from "./components/tab-panels/input-component";
 import {
   ConfigType,
   deinherit_config_by_type,
   editConfigFile,
 } from "./lib/commons";
-import { globalState } from "./lib/state-store";
-import InputComponent from "./components/tab-panels/input-component";
+import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
 import {
   ConfigProperty,
   printer_properties_map,
 } from "./lib/printer-configuration-options";
-import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
-import { IconType } from "react-icons/lib";
-import { RiResetLeftFill } from "react-icons/ri";
-import { twMerge } from "tailwind-merge";
-import { BsFiletypeJson } from "react-icons/bs";
-import { MdAdd } from "react-icons/md";
+import { globalState } from "./lib/state-store";
 
 function LabelButtonTemplate({
   Icon,
@@ -77,10 +76,10 @@ export default function EditConfig() {
     vendor: {},
   };
 
-  const [configType, setConfigType] = useState("printer" as ConfigType);
+  const [_configType, setConfigType] = useState("printer" as ConfigType);
 
   const [knownKeys, setKnownKeys] = useState([] as string[]);
-  const [unknownKeys, setUnknownKeys] = useState([] as string[]);
+  const [_unknownKeys, setUnknownKeys] = useState([] as string[]);
 
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;

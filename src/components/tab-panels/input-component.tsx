@@ -1,18 +1,8 @@
-import {
-  Field,
-  Input,
-  Label,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
-import clsx from "clsx";
-import { ReactNode, useState } from "react";
+import { Field, Label } from "@headlessui/react";
+import { ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
-import { FaChevronDown } from "react-icons/fa";
-import ValueInput from "./input-components/value-input";
 import DropdownInput from "./input-components/dropdown-input";
+import ValueInput from "./input-components/value-input";
 
 export default function InputComponent({
   label,
@@ -30,7 +20,7 @@ export default function InputComponent({
   allowEdit,
   onChange = () => {},
   enumValues,
-  tooltip,
+  tooltip: _tooltip,
   arraySize,
 }: {
   label?: string;
