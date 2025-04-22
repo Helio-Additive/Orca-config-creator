@@ -78,18 +78,20 @@ async fn save_and_zip_json(data: serde_json::Value, file_name: String) -> Result
 }
 
 fn main() {
-    let type_export_directory = "../src/lib/bindings";
-    VendorJsonSchema::export_all_to(type_export_directory).unwrap();
-    PrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
-    MinPrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
-    PrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
-    FilamentJsonSchema::export_all_to(type_export_directory).unwrap();
-    MinPrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
-    MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
-    ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
-    MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
-    GenericJsonSchema::export_all_to(type_export_directory).unwrap();
-
+    #[cfg(dev)]
+    {
+        let type_export_directory = "../src/lib/bindings";
+        VendorJsonSchema::export_all_to(type_export_directory).unwrap();
+        PrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
+        MinPrinterModelJsonSchema::export_all_to(type_export_directory).unwrap();
+        PrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
+        FilamentJsonSchema::export_all_to(type_export_directory).unwrap();
+        MinPrinterVariantJsonSchema::export_all_to(type_export_directory).unwrap();
+        MinFilamentJsonSchema::export_all_to(type_export_directory).unwrap();
+        ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
+        MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
+        GenericJsonSchema::export_all_to(type_export_directory).unwrap();
+    }
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             greet,
