@@ -17,11 +17,8 @@ export default function PrinterConfigTab() {
   const export_flattened = async (configName: string) => {
     try {
       const configObject = await deinherit_and_load_all_props(
-        installedPrinterConfigs,
-        instantiatedInstalledPrinterConfigs,
-        loadedSystemPrinterConfigs,
-        loadedUserPrinterConfigs,
-        configName
+        configName,
+        "printer"
       );
 
       const res = configObject.res;

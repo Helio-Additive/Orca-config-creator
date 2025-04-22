@@ -8,6 +8,17 @@ import { ConfigType } from "./commons";
 
 export type fileProperty = { fileName: string };
 export type familyProperty = { family: string };
+export type KeyDetails = {
+  configName: string;
+  level: number;
+  family?: string;
+  file: string;
+};
+
+export type Warning = {
+  text: string;
+  type: "warning" | "error";
+};
 
 export const globalStateObject = {
   orcaInstallationPath: undefined as string | undefined,
@@ -83,10 +94,8 @@ export const globalStateObject = {
       family?: string;
       properties: {
         res: Record<string, unknown>;
-        keyDetails: Record<
-          string,
-          [string, number, string | undefined, string]
-        >;
+        keyDetails: Record<string, KeyDetails>;
+        warnings: Warning[];
       };
       changedProps: Record<string, unknown>;
       knownKeys: string[];

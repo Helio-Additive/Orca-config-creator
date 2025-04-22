@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
 import ConfigTabTemplate from "./config-tab-template";
 import { deinherit_and_load_all_props, updateUuid } from "../../lib/commons";
+import { ProcessJsonSchema } from "../../lib/bindings/ProcessJsonSchema";
 
 export default function ProcessConfigTab() {
   const {
@@ -17,11 +18,8 @@ export default function ProcessConfigTab() {
   const export_flattened = async (configName: string) => {
     try {
       const configObject = await deinherit_and_load_all_props(
-        installedProcessConfigs,
-        instantiatedInstalledProcessConfigs,
-        loadedSystemProcessConfigs,
-        loadedUserProcessConfigs,
-        configName
+        configName,
+        "process"
       );
 
       const res = configObject.res;

@@ -17,11 +17,8 @@ export default function FilamentConfigTab() {
   const export_flattened = async (configName: string) => {
     try {
       const configObject = await deinherit_and_load_all_props(
-        installedFilamentConfigs,
-        instantiatedInstalledFilamentConfigs,
-        loadedSystemFilamentConfigs,
-        loadedUserFilamentConfigs,
-        configName
+        configName,
+        "filament"
       );
 
       const res = configObject.res;
