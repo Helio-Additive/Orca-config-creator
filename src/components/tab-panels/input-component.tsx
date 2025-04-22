@@ -81,12 +81,12 @@ export default function InputComponent({
 
       <Tooltip.Root delayDuration={1500}>
         <Tooltip.Trigger asChild>
-          <div className="flex w-full max-w-[1024px] relative overflow-x-auto">
+          <div className="flex w-full max-w-[1024px] relative overflow-x-auto ">
             {arr.map((idx) => {
               const inputValue = arrayValue ? arrayValue[idx] : value;
 
               return (
-                <div key={idx} className="flex flex-1 items-center">
+                <div key={idx} className="flex flex-2/3 items-center min-w-fit">
                   {{
                     dropdown: (
                       <DropdownInput

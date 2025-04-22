@@ -22,16 +22,21 @@ import {
   ConfigProperty,
   printer_properties_map,
 } from "./lib/printer-configuration-options";
-import { globalState } from "./lib/state-store";
+import { globalState, KeyDetails } from "./lib/state-store";
 import { BsFiletypeJson } from "react-icons/bs";
 
 function saveFile(
   fileName: string,
   props: State<Record<string, unknown>, {}>,
-  changedProps: State<Record<string, unknown>, {}>
+  changedProps: State<Record<string, unknown>, {}>,
+  keyDetails: State<Record<string, KeyDetails>, {}>
 ) {
   const newProps = {
-    ...props.get({ stealth: true }),
+    ...Object.fromEntries(
+      Object.entries(props.get({ stealth: true })).filter(
+        ([key, _]) => keyDetails[key].get({ stealth: true }).level === 0
+      )
+    ),
     ...changedProps.get({ stealth: true }),
   };
 
@@ -41,7 +46,6 @@ function saveFile(
   })
     .then(() => {
       toast("Wrote new configuration to file", { type: "success" });
-      props.merge(changedProps.get());
       changedProps.set({});
     })
     .catch((error: any) => {
@@ -147,8 +151,6 @@ export default function EditConfig() {
     vendor: {},
   };
 
-  const [_configType, setConfigType] = useState("printer" as ConfigType);
-
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;
   const navigate = useNavigate();
@@ -157,35 +159,34 @@ export default function EditConfig() {
 
   useEffect(() => {
     console.count("useEffect " + fileName);
-    setConfigType(
-      editWindowState[fileName].type.get({ stealth: true }) as ConfigType
-    );
 
-    deinherit_config_by_type(
-      editWindowState[fileName].name.get({ stealth: true }),
-      editWindowState[fileName].type.get({ stealth: true }),
-      editWindowState[fileName].family.get({ stealth: true })
-    ).then((res) => {
-      const allKeysInRes = Object.keys(res.res);
+    if (editWindowState[fileName].changedProps.keys.length === 0) {
+      deinherit_config_by_type(
+        editWindowState[fileName].name.get({ stealth: true }),
+        editWindowState[fileName].type.get({ stealth: true }),
+        editWindowState[fileName].family.get({ stealth: true })
+      ).then((res) => {
+        const allKeysInRes = Object.keys(res.res);
 
-      const propMap =
-        propMaps[
-          editWindowState[fileName].type.get({ stealth: true }) as ConfigType
-        ] ?? {};
+        const propMap =
+          propMaps[
+            editWindowState[fileName].type.get({ stealth: true }) as ConfigType
+          ] ?? {};
 
-      const knownKeysTemp = Object.keys(propMap).filter((el) =>
-        allKeysInRes.includes(el)
-      );
-      const unknownKeysTemp = allKeysInRes.filter(
-        (el) => !knownKeysTemp.includes(el)
-      );
+        const knownKeysTemp = Object.keys(propMap).filter((el) =>
+          allKeysInRes.includes(el)
+        );
+        const unknownKeysTemp = allKeysInRes.filter(
+          (el) => !knownKeysTemp.includes(el)
+        );
 
-      editWindowState[fileName].knownKeys.set(knownKeysTemp);
-      editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
+        editWindowState[fileName].knownKeys.set(knownKeysTemp);
+        editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
 
-      editWindowState[fileName].properties.set(res);
-    });
-  }, [fileName]);
+        editWindowState[fileName].properties.set(res);
+      });
+    }
+  }, [fileName, editWindowState[fileName].changedProps]);
 
   const handleChange = (value: string, key: string, idx: number) => {
     const property = editWindowState[fileName].properties.res[key].get();
@@ -230,7 +231,8 @@ export default function EditConfig() {
               saveFile(
                 fileName,
                 editWindowState[fileName].properties.res,
-                editWindowState[fileName].changedProps
+                editWindowState[fileName].changedProps,
+                editWindowState[fileName].properties.keyDetails
               )
             }
           />
@@ -261,15 +263,15 @@ export default function EditConfig() {
 
           const labelButtons = (
             <div className="flex">
-              {(keyDetails[1] as number) > 0 && (
+              {(keyDetails.level as number) > 0 && (
                 <EditConfigButton
                   onClick={() => {
                     editConfigFile(
-                      keyDetails[0] as string,
+                      keyDetails.configName as string,
                       editWindowState[fileName].type.get({ stealth: true }),
-                      keyDetails[3] as string,
+                      keyDetails.file as string,
                       navigate,
-                      keyDetails[2] as string | undefined
+                      keyDetails.family as string | undefined
                     );
                   }}
                 />
@@ -306,7 +308,7 @@ export default function EditConfig() {
               label={key}
               value={value}
               arrayValue={arrayValue}
-              extraLabel={keyDetails[0] + " · " + keyDetails[1]}
+              extraLabel={keyDetails.configName + " · " + keyDetails.level}
               labelClassName="text-lg"
               onChange={(value: string, idx = 0) =>
                 handleChange(value, key, idx)
@@ -321,6 +323,83 @@ export default function EditConfig() {
               enumValues={knownPrinterProp.enumList}
               tooltip={knownPrinterProp.tooltip}
               sideText={knownPrinterProp.sidetext}
+            />
+          );
+        })}
+        {editWindowState[fileName].unknownKeys.map((keyState) => {
+          const key = keyState.get();
+          const property = editWindowState[fileName].properties.res[key].get();
+          const keyDetails =
+            editWindowState[fileName].properties.keyDetails[key].get();
+
+          const changedProperty =
+            editWindowState[fileName].changedProps[key].get();
+
+          const value = !Array.isArray(property)
+            ? (changedProperty as string) ?? (property as string)
+            : undefined;
+          const arrayValue = Array.isArray(property)
+            ? (changedProperty as string[]) ?? (property as string[])
+            : undefined;
+
+          const labelButtons = (
+            <div className="flex">
+              {(keyDetails.level as number) > 0 && (
+                <EditConfigButton
+                  onClick={() => {
+                    editConfigFile(
+                      keyDetails.configName as string,
+                      editWindowState[fileName].type.get({ stealth: true }),
+                      keyDetails.file as string,
+                      navigate,
+                      keyDetails.family as string | undefined
+                    );
+                  }}
+                />
+              )}
+              {arrayValue && (
+                <AddButton
+                  onClick={() => {
+                    if (changedProperty)
+                      editWindowState[fileName].changedProps[key].merge([
+                        arrayValue[arrayValue.length - 1],
+                      ]);
+                    else
+                      editWindowState[fileName].changedProps[key].set([
+                        ...arrayValue,
+                        arrayValue[arrayValue.length - 1],
+                      ]);
+                  }}
+                />
+              )}
+              {changedProperty && (
+                <ResetButton
+                  onClick={() =>
+                    editWindowState[fileName].changedProps[key].set(none)
+                  }
+                />
+              )}
+            </div>
+          );
+
+          return (
+            <InputComponent
+              labelChild={labelButtons}
+              key={key}
+              label={key}
+              value={value}
+              arrayValue={arrayValue}
+              extraLabel={keyDetails.configName + " · " + keyDetails.level}
+              labelClassName="text-lg"
+              onChange={(value: string, idx = 0) =>
+                handleChange(value, key, idx)
+              }
+              inputClassName={
+                changedProperty
+                  ? "outline-accent outline-2 -outline-offset-2 bg-accent/20"
+                  : ""
+              }
+              allowEdit
             />
           );
         })}

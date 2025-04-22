@@ -15,13 +15,21 @@ import {
   LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY,
 } from "./constants";
-import { familyProperty, fileProperty, globalState } from "./state-store";
+import {
+  familyProperty,
+  fileProperty,
+  globalState,
+  KeyDetails,
+  Warning,
+} from "./state-store";
 import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
 import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { v4 as uuidv4, validate as isUuid } from "uuid";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
 import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 import { NavigateFunction } from "react-router-dom";
+
+export type ConfigLocationType = "installed" | "loaded_system" | "user";
 
 export type ConfigType =
   | "printer"
@@ -593,60 +601,124 @@ export const get_installed_system_profiles_subdirectory_directory = (
   else return INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY;
 };
 
+export const findConfig = (
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) => {
+  const neededConfigs = getRelevantConfigsFromType(type);
+
+  switch (location) {
+    case "user":
+      return neededConfigs!.loadedUserConfigs[configName].get({
+        stealth: true,
+      });
+
+    case "installed": {
+      if (family)
+        return {
+          ...neededConfigs!.installedConfigs[family][configName].get({
+            stealth: true,
+          }),
+          family: family,
+        };
+      else {
+        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
+          configName
+        ].get({ stealth: true });
+
+        if (instantiatedConfig)
+          return {
+            ...neededConfigs!.installedConfigs[instantiatedConfig.family][
+              configName
+            ].get({ stealth: true }),
+            family: instantiatedConfig.family,
+          };
+        break;
+      }
+    }
+
+    case "loaded_system": {
+      if (family)
+        return {
+          ...neededConfigs!.loadedSystemConfigs[family][configName].get({
+            stealth: true,
+          }),
+          family: family,
+        };
+      else {
+        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
+          configName
+        ].get({ stealth: true });
+
+        if (instantiatedConfig)
+          return {
+            ...neededConfigs!.loadedSystemConfigs[instantiatedConfig.family][
+              configName
+            ].get({ stealth: true }),
+            family: instantiatedConfig.family,
+          };
+        break;
+      }
+    }
+  }
+};
+
 export const deinherit_and_load_all_props: any = async <
   T extends PrinterVariantJsonSchema | FilamentJsonSchema | ProcessJsonSchema
 >(
-  installedConfigs: State<
-    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
-  >,
-  instantiatedInstalledConfigs: State<
-    Record<string, T & fileProperty & familyProperty>
-  >,
-  loadedSystemConfigs: State<
-    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
-  >,
-  loadedUserConfigs: State<Record<string, T & fileProperty>>,
   configName: string,
+  type: ConfigType,
   family?: string,
   level = 0
 ) => {
-  let configFile: string | undefined = undefined;
-
-  const loadedUserPrinterConfigRes = loadedUserConfigs.nested(configName).get({
-    stealth: true,
-  });
-
-  if (loadedUserPrinterConfigRes) {
-    configFile = loadedUserPrinterConfigRes.fileName;
-  } else if (!family) {
-    const instantiatedInstalledPrinterConfigRes = instantiatedInstalledConfigs
-      .nested(configName)
-      .get({
-        stealth: true,
-      });
-    configFile = instantiatedInstalledPrinterConfigRes.fileName;
-    family = instantiatedInstalledPrinterConfigRes.family;
-  } else {
-    try {
-      const possibleConfigRes = loadedSystemConfigs
-        .nested(family)
-        .nested(configName)
-        .get({ stealth: true });
-      configFile = possibleConfigRes.fileName;
-    } catch {
-      const possibleConfigRes = installedConfigs
-        .nested(family)
-        .nested(configName)
-        .get({ stealth: true });
-      configFile = possibleConfigRes.fileName;
-      toast(
-        "The expected parent config is not loaded. You can ignore this warning",
-        { type: "warning" }
-      );
-    }
-  }
-
   try {
+    let configFile: string | undefined = undefined;
+    const warnings = [] as Warning[];
+
+    const loadedUserPrinterConfigRes = findConfig(
+      configName,
+      type,
+      "user",
+      family
+    );
+
+    if (loadedUserPrinterConfigRes) {
+      configFile = loadedUserPrinterConfigRes.fileName;
+    } else {
+      const instantiatedLoadedSystemConfigRes = findConfig(
+        configName,
+        type,
+        "loaded_system",
+        family
+      ) as (T & fileProperty & familyProperty) | undefined;
+
+      if (instantiatedLoadedSystemConfigRes) {
+        configFile = instantiatedLoadedSystemConfigRes.fileName;
+        family = instantiatedLoadedSystemConfigRes.family;
+      } else {
+        const instantiatedLoadedUserConfigRes = findConfig(
+          configName,
+          type,
+          "user",
+          family
+        ) as (T & fileProperty & familyProperty) | undefined;
+
+        warnings.push({
+          text: "could not find ancestor in loaded presets. This means the config might not appear in OrcaSlicer.",
+          type: "warning",
+        });
+
+        if (instantiatedLoadedUserConfigRes) {
+          configFile = instantiatedLoadedUserConfigRes.fileName;
+          family = instantiatedLoadedUserConfigRes.family;
+        } else {
+          throw "Could not find parent config " + configName;
+        }
+      }
+    }
+
     const res: T = await invoke("load_generic_preset", {
       path: configFile,
     });
@@ -655,11 +727,8 @@ export const deinherit_and_load_all_props: any = async <
       let printerFamily = family;
 
       const inherited_props = await deinherit_and_load_all_props(
-        installedConfigs,
-        instantiatedInstalledConfigs,
-        loadedSystemConfigs,
-        loadedUserConfigs,
         res.inherits,
+        type,
         printerFamily,
         level + 1
       );
@@ -669,25 +738,34 @@ export const deinherit_and_load_all_props: any = async <
       );
 
       const keyDetails = Object.keys(filteredRes).reduce((acc, key) => {
-        acc[key] = [res.name, level, family, configFile];
+        acc[key] = {
+          configName: res.name,
+          level: level,
+          family: family,
+          file: configFile,
+        };
         return acc;
-      }, {} as Record<string, [string, number, string | undefined, string]>);
+      }, {} as Record<string, KeyDetails>);
 
       return {
         res: { ...inherited_props.res, ...filteredRes },
-
         keyDetails: { ...inherited_props.keyDetails, ...keyDetails },
+        warnings: [...inherited_props.warnings, ...warnings],
       };
     } else {
       const keyDetails = Object.keys(res).reduce((acc, key) => {
-        acc[key] = [res.name, level, family, configFile];
+        acc[key] = {
+          configName: res.name,
+          level: level,
+          family: family,
+          file: configFile,
+        };
         return acc;
-      }, {} as Record<string, [string, number, string | undefined, string]>);
+      }, {} as Record<string, KeyDetails>);
 
-      return { res, keyDetails };
+      return { res, keyDetails, warnings };
     }
   } catch (error: any) {
-    console.log("Something went wrong: " + error);
     throw "Could not complete inheritance hierarchy: " + error;
   }
 };
@@ -710,11 +788,7 @@ export function sanitizeWindowLabel(input: string): string {
   return input.replace(/[^a-zA-Z0-9\-\/:_]/g, "_");
 }
 
-export async function deinherit_config_by_type(
-  configName: string,
-  type: ConfigType,
-  family?: string
-) {
+export function getRelevantConfigsFromType(type: ConfigType) {
   const printerConfigs = {
     installedConfigs: globalState.installedPrinterConfigs,
     instantiatedInstalledConfigs:
@@ -752,14 +826,15 @@ export async function deinherit_config_by_type(
     }
   })();
 
-  const res = await deinherit_and_load_all_props(
-    neededConfigs!.installedConfigs,
-    neededConfigs!.instantiatedInstalledConfigs,
-    neededConfigs!.loadedSystemConfigs,
-    neededConfigs!.loadedUserConfigs,
-    configName,
-    family
-  );
+  return neededConfigs;
+}
+
+export async function deinherit_config_by_type(
+  configName: string,
+  type: ConfigType,
+  family?: string
+) {
+  const res = await deinherit_and_load_all_props(configName, type, family);
 
   return res;
 }
@@ -781,7 +856,7 @@ export function editConfigFile(
       type: type,
       name: name,
       family: family,
-      properties: { res: {}, keyDetails: {} },
+      properties: { res: {}, keyDetails: {}, warnings: [] },
       changedProps: {},
       knownKeys: [],
       unknownKeys: [],
