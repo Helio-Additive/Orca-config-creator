@@ -18,6 +18,7 @@ export default function ModelConfigTab() {
               text2={config.Ok.nozzle_diameter.split(";")}
               fileName={config.fileName}
               type="printer-model"
+              configLocation="installed"
             />
           );
         } else {
@@ -29,6 +30,7 @@ export default function ModelConfigTab() {
               className="bg-transparent-error"
               fileName={config.fileName}
               type="printer-model"
+              configLocation="installed"
             />
           );
         }

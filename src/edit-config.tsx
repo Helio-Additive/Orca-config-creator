@@ -1,7 +1,8 @@
 import { none, State, useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Tooltip } from "radix-ui";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
+import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaSave } from "react-icons/fa";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { MdAdd } from "react-icons/md";
@@ -15,6 +16,7 @@ import {
   ConfigType,
   deinherit_config_by_type,
   editConfigFile,
+  findAvailableConfigs,
   folderOpener,
 } from "./lib/commons";
 import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
@@ -23,7 +25,6 @@ import {
   printer_properties_map,
 } from "./lib/printer-configuration-options";
 import { globalState, KeyDetails } from "./lib/state-store";
-import { BsFiletypeJson } from "react-icons/bs";
 
 function saveFile(
   fileName: string,
@@ -249,10 +250,15 @@ export default function EditConfig() {
           const changedProperty =
             editWindowState[fileName].changedProps[key].get();
 
-          const knownPrinterProp = printer_properties_map[key];
-          const inputType = configOptionTypeToInputTypeString(
-            knownPrinterProp.type
-          );
+          const propMap =
+            propMaps[
+              editWindowState[fileName].type.get({
+                stealth: true,
+              }) as ConfigType
+            ] ?? {};
+
+          const knownProp = propMap[key];
+          let inputType = configOptionTypeToInputTypeString(knownProp.type);
 
           const value = !Array.isArray(property)
             ? (changedProperty as string) ?? (property as string)
@@ -260,6 +266,16 @@ export default function EditConfig() {
           const arrayValue = Array.isArray(property)
             ? (changedProperty as string[]) ?? (property as string[])
             : undefined;
+
+          let enumList = knownProp.enumList;
+          if (knownProp.search) {
+            enumList = findAvailableConfigs(
+              knownProp.search! as ConfigType,
+              editWindowState[fileName].location.get({ stealth: true }),
+              editWindowState[fileName].family.get({ stealth: true })
+            )?.map((el) => [el, el]);
+            inputType = "dropdown";
+          }
 
           const labelButtons = (
             <div className="flex">
@@ -270,6 +286,7 @@ export default function EditConfig() {
                       keyDetails.configName as string,
                       editWindowState[fileName].type.get({ stealth: true }),
                       keyDetails.file as string,
+                      editWindowState[fileName].location.get({ stealth: true }),
                       navigate,
                       keyDetails.family as string | undefined
                     );
@@ -313,16 +330,16 @@ export default function EditConfig() {
               onChange={(value: string, idx = 0) =>
                 handleChange(value, key, idx)
               }
-              allowEdit={!knownPrinterProp.fixed}
+              allowEdit={!knownProp.fixed}
               inputClassName={
                 changedProperty
                   ? "outline-accent outline-2 -outline-offset-2 bg-accent/20"
                   : ""
               }
               type={inputType}
-              enumValues={knownPrinterProp.enumList}
-              tooltip={knownPrinterProp.tooltip}
-              sideText={knownPrinterProp.sidetext}
+              enumValues={enumList}
+              tooltip={knownProp.tooltip}
+              sideText={knownProp.sidetext}
             />
           );
         })}
@@ -351,6 +368,7 @@ export default function EditConfig() {
                       keyDetails.configName as string,
                       editWindowState[fileName].type.get({ stealth: true }),
                       keyDetails.file as string,
+                      editWindowState[fileName].location.get({ stealth: true }),
                       navigate,
                       keyDetails.family as string | undefined
                     );

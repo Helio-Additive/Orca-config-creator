@@ -29,6 +29,12 @@ import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
 import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 import { NavigateFunction } from "react-router-dom";
 
+export enum InheritanceStatus {
+  OK,
+  BROKEN,
+  CIRCULAR,
+}
+
 export type ConfigLocationType = "installed" | "loaded_system" | "user";
 
 export type ConfigType =
@@ -671,8 +677,12 @@ export const deinherit_and_load_all_props: any = async <
   configName: string,
   type: ConfigType,
   family?: string,
-  level = 0
+  level = 0,
+  checkedConfigs: string[] = []
 ) => {
+  if (checkedConfigs.includes(configName))
+    throw "Circular dependency found, cannot be deinherited";
+
   try {
     let configFile: string | undefined = undefined;
     const warnings = [] as Warning[];
@@ -730,7 +740,8 @@ export const deinherit_and_load_all_props: any = async <
         res.inherits,
         type,
         printerFamily,
-        level + 1
+        level + 1,
+        [configName, ...checkedConfigs]
       );
 
       const filteredRes = Object.fromEntries(
@@ -843,6 +854,7 @@ export function editConfigFile(
   name: string,
   type: ConfigType,
   fileName: string,
+  location: ConfigLocationType,
   navigate: NavigateFunction,
   family?: string
 ) {
@@ -860,6 +872,7 @@ export function editConfigFile(
       changedProps: {},
       knownKeys: [],
       unknownKeys: [],
+      location: location,
     });
 
   navigate(`/edit?fileName=${encodedFileName}`);
@@ -874,3 +887,36 @@ export const folderOpener = (path: string) => {
     }
   });
 };
+
+export function findAvailableConfigs(
+  findType: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const neededConfigs = getRelevantConfigsFromType(findType);
+
+  switch (location) {
+    case "user": {
+      const loadedSystemConfigs =
+        neededConfigs!.loadedSystemConfigs.keys.flatMap((familyName) =>
+          neededConfigs!.loadedSystemConfigs[familyName].keys.filter(
+            (configName) =>
+              neededConfigs!.loadedSystemConfigs[familyName][configName].get({
+                stealth: true,
+              }).Ok?.instantiation === "true"
+          )
+        );
+      const userConfigs = neededConfigs!.loadedUserConfigs.keys;
+
+      return [...loadedSystemConfigs, ...userConfigs];
+    }
+
+    case "loaded_system": {
+      return neededConfigs?.loadedSystemConfigs[family!].keys;
+    }
+
+    case "installed": {
+      return neededConfigs?.installedConfigs[family!].keys;
+    }
+  }
+}

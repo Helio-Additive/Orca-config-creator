@@ -1,17 +1,16 @@
 import { useHookstate } from "@hookstate/core";
-import { globalState } from "../../lib/state-store";
-import ConfigItem from "./config-list/config-item";
 import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
-import ConfigTabTemplate from "./config-tab-template";
 import { deinherit_and_load_all_props, updateUuid } from "../../lib/commons";
+import { globalState } from "../../lib/state-store";
+import ConfigItem from "./config-list/config-item";
+import ConfigTabTemplate from "./config-tab-template";
 
 export default function PrinterConfigTab() {
   const {
     installedPrinterConfigs,
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
-    instantiatedInstalledPrinterConfigs,
   } = useHookstate(globalState);
 
   const export_flattened = async (configName: string) => {
@@ -57,6 +56,7 @@ export default function PrinterConfigTab() {
                 type="printer"
                 family={key}
                 allowEdit
+                configLocation="installed"
               />
             );
           } else {
@@ -68,6 +68,7 @@ export default function PrinterConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="printer"
+                configLocation="installed"
               />
             );
           }
@@ -96,6 +97,7 @@ export default function PrinterConfigTab() {
                 fileName={config.fileName}
                 type="printer"
                 family={key}
+                configLocation="loaded_system"
               />
             );
           } else {
@@ -107,6 +109,7 @@ export default function PrinterConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="printer"
+                configLocation="loaded_system"
               />
             );
           }
@@ -131,6 +134,7 @@ export default function PrinterConfigTab() {
         fileName={machineConfig.fileName}
         allowEdit
         type="printer"
+        configLocation="user"
       />
     );
   });

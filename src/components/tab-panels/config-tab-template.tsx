@@ -11,7 +11,7 @@ export default function ConfigTabTemplate({
 }) {
   return (
     <div className="flex min-h-0 h-full">
-      <div className="flex flex-col min-h-0 w-[50%] h-full">
+      <div className="flex flex-col min-h-0 w-[50%] h-full mr-2">
         <div className="font-semibold text-text-primary text-2xl mb-3 pl-3">
           Installation Directory
         </div>

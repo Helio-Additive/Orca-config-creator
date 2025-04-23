@@ -1,44 +1,16 @@
+import { ReactNode } from "react";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaFileExport } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
-import { ConfigType, editConfigFile, folderOpener } from "../../../lib/commons";
-import { ReactNode } from "react";
-import { Tooltip } from "radix-ui";
-import Infotip from "../../tooltip/infotip";
-
-function TopButton({
-  Icon,
-  onClick,
-  className,
-  tooltip,
-}: {
-  className?: string;
-  Icon: (a: { className?: string }) => ReactNode;
-  onClick: () => void;
-  tooltip?: string;
-}) {
-  return (
-    <Tooltip.Root delayDuration={800}>
-      <Tooltip.Trigger asChild>
-        <div
-          onClick={onClick}
-          className={twMerge(
-            "hover:text-text-secondary hover:scale-95 w-6 h-6 active:scale-85",
-            className
-          )}
-        >
-          <Icon className="w-full h-full" />
-        </div>
-      </Tooltip.Trigger>
-      {tooltip && (
-        <Tooltip.Content>
-          <Infotip tooltip={tooltip} />
-        </Tooltip.Content>
-      )}
-    </Tooltip.Root>
-  );
-}
+import {
+  ConfigLocationType,
+  ConfigType,
+  editConfigFile,
+  folderOpener,
+} from "../../../lib/commons";
+import OptionsMenu from "./config-item-components/options-menu";
+import TopButton from "./config-item-components/top-button";
 
 export default function ConfigItem({
   name,
@@ -51,6 +23,7 @@ export default function ConfigItem({
   fileName,
   allowEdit = false,
   flatExportFunction,
+  configLocation,
 }: {
   name: string;
   family?: string;
@@ -62,12 +35,28 @@ export default function ConfigItem({
   fileName?: string;
   allowEdit?: boolean;
   flatExportFunction?: (configName: string, family?: string) => void;
+  configLocation: ConfigLocationType;
 }) {
   const navigate = useNavigate();
 
   const editConfig = () => {
-    editConfigFile(name, type, fileName!, navigate, family);
+    editConfigFile(name, type, fileName!, configLocation, navigate, family);
   };
+
+  const optionsMenuItems: {
+    icon: (a: { className?: string }) => ReactNode;
+    text: string;
+    onClick: () => void;
+  }[] = [];
+
+  flatExportFunction &&
+    optionsMenuItems.push({
+      icon: FaFileExport,
+      onClick: () => {
+        flatExportFunction(name);
+      },
+      text: "Export flattened",
+    });
 
   return (
     <div
@@ -114,14 +103,8 @@ export default function ConfigItem({
               tooltip="Open containing folder"
             />
           )}
-          {flatExportFunction && (
-            <TopButton
-              onClick={() => {
-                flatExportFunction(name);
-              }}
-              Icon={FaFileExport}
-              tooltip="Export flattened config"
-            />
+          {optionsMenuItems.length > 0 && (
+            <OptionsMenu menuItems={optionsMenuItems} />
           )}
         </div>
       </div>

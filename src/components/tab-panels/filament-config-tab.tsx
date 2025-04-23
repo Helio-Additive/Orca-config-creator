@@ -11,7 +11,6 @@ export default function FilamentConfigTab() {
     installedFilamentConfigs,
     loadedSystemFilamentConfigs,
     loadedUserFilamentConfigs,
-    instantiatedInstalledFilamentConfigs,
   } = useHookstate(globalState);
 
   const export_flattened = async (configName: string) => {
@@ -58,6 +57,7 @@ export default function FilamentConfigTab() {
                 type="filament"
                 family={key}
                 allowEdit
+                configLocation="installed"
               />
             );
           } else {
@@ -69,6 +69,7 @@ export default function FilamentConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="filament"
+                configLocation="installed"
               />
             );
           }
@@ -97,6 +98,7 @@ export default function FilamentConfigTab() {
                 fileName={config.fileName}
                 type="filament"
                 family={key}
+                configLocation="loaded_system"
               />
             );
           } else {
@@ -108,6 +110,7 @@ export default function FilamentConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="filament"
+                configLocation="loaded_system"
               />
             );
           }
@@ -132,6 +135,7 @@ export default function FilamentConfigTab() {
         type="filament"
         allowEdit
         flatExportFunction={export_flattened}
+        configLocation="user"
       />
     );
   });
