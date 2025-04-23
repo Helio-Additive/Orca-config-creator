@@ -4,7 +4,7 @@ import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSch
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
-import { ConfigType } from "./commons";
+import { ConfigLocationType, ConfigType } from "./commons";
 
 export type fileProperty = { fileName: string };
 export type familyProperty = { family: string };
@@ -92,6 +92,7 @@ export const globalStateObject = {
       type: ConfigType;
       name: string;
       family?: string;
+      location: ConfigLocationType;
       properties: {
         res: Record<string, unknown>;
         keyDetails: Record<string, KeyDetails>;

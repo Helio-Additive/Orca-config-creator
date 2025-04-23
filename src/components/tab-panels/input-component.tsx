@@ -5,6 +5,7 @@ import DropdownInput from "./input-components/dropdown-input";
 import ValueInput from "./input-components/value-input";
 import { Tooltip } from "radix-ui";
 import Infotip from "../tooltip/infotip";
+import { ConfigType } from "../../lib/commons";
 
 export default function InputComponent({
   label,
@@ -44,6 +45,7 @@ export default function InputComponent({
   enumValues?: [string, string][];
   tooltip?: string;
   sideText?: string;
+  search?: ConfigType;
 }) {
   const arr = Array.from(
     { length: arraySize ?? (arrayValue ? arrayValue?.length : 1) },

@@ -1,18 +1,16 @@
 import { useHookstate } from "@hookstate/core";
-import { globalState } from "../../lib/state-store";
-import ConfigItem from "./config-list/config-item";
 import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
-import ConfigTabTemplate from "./config-tab-template";
 import { deinherit_and_load_all_props, updateUuid } from "../../lib/commons";
-import { ProcessJsonSchema } from "../../lib/bindings/ProcessJsonSchema";
+import { globalState } from "../../lib/state-store";
+import ConfigItem from "./config-list/config-item";
+import ConfigTabTemplate from "./config-tab-template";
 
 export default function ProcessConfigTab() {
   const {
     installedProcessConfigs,
     loadedSystemProcessConfigs,
     loadedUserProcessConfigs,
-    instantiatedInstalledProcessConfigs,
   } = useHookstate(globalState);
 
   const export_flattened = async (configName: string) => {
@@ -57,6 +55,7 @@ export default function ProcessConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="process"
+                configLocation="installed"
               />
             );
           } else {
@@ -68,6 +67,7 @@ export default function ProcessConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="process"
+                configLocation="installed"
               />
             );
           }
@@ -95,6 +95,7 @@ export default function ProcessConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="process"
+                configLocation="loaded_system"
               />
             );
           } else {
@@ -106,6 +107,7 @@ export default function ProcessConfigTab() {
                 className="bg-transparent-error"
                 fileName={config.fileName}
                 type="process"
+                configLocation="loaded_system"
               />
             );
           }
@@ -129,6 +131,7 @@ export default function ProcessConfigTab() {
         fileName={machineConfig.fileName}
         type="process"
         flatExportFunction={export_flattened}
+        configLocation="user"
       />
     );
   });
