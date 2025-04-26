@@ -7,31 +7,49 @@ import { FaEdit, FaSave } from "react-icons/fa";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { MdAdd } from "react-icons/md";
 import { RiResetLeftFill } from "react-icons/ri";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  NavigateFunction,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import InputComponent from "./components/tab-panels/input-component";
 import Infotip from "./components/tooltip/infotip";
 import {
+  ConfigLocationType,
   ConfigType,
   deinherit_config_by_type,
   editConfigFile,
   findAvailableConfigs,
   folderOpener,
+  renameConfig,
 } from "./lib/commons";
 import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
 import {
   ConfigProperty,
   printer_properties_map,
 } from "./lib/printer-configuration-options";
-import { globalState, KeyDetails } from "./lib/state-store";
+import { globalState, KeyDetails, globalStateObject } from "./lib/state-store";
 
-function saveFile(
+async function saveFile(
   fileName: string,
-  props: State<Record<string, unknown>, {}>,
-  changedProps: State<Record<string, unknown>, {}>,
-  keyDetails: State<Record<string, KeyDetails>, {}>
+  type: ConfigType,
+  location: ConfigLocationType,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
+  navigate: NavigateFunction,
+  family?: string
 ) {
+  const props = editWindowState[fileName].properties.res;
+  const keyDetails = editWindowState[fileName].properties.keyDetails;
+  const changedProps = editWindowState[fileName].changedProps;
+
+  let newName: string | undefined = undefined;
+  if (changedProps.keys.includes("name")) {
+    newName = changedProps["name"].get({ stealth: true }) as string;
+    changedProps["name"].set(none);
+  }
+
   const newProps = {
     ...Object.fromEntries(
       Object.entries(props.get({ stealth: true })).filter(
@@ -41,7 +59,7 @@ function saveFile(
     ...changedProps.get({ stealth: true }),
   };
 
-  invoke("write_to_file", {
+  await invoke("write_to_file", {
     path: fileName,
     content: JSON.stringify(newProps, null, 2),
   })
@@ -52,6 +70,31 @@ function saveFile(
     .catch((error: any) => {
       toast(error.toString(), { type: "error" });
     });
+
+  if (newName) {
+    try {
+      const name = props["name"].get({ stealth: true }) as string;
+      const newFileName = await renameConfig(
+        name,
+        newName,
+        type,
+        location,
+        family
+      );
+
+      editConfigFile(
+        newName,
+        editWindowState[fileName].type.get({ stealth: true }),
+        newFileName,
+        editWindowState[fileName].location.get({ stealth: true }),
+        navigate,
+        editWindowState[fileName].family.get({ stealth: true }),
+        true
+      );
+    } catch (error: any) {
+      toast(error.toString(), { type: "error" });
+    }
+  }
 }
 
 function LabelButtonTemplate({
@@ -154,40 +197,74 @@ export default function EditConfig() {
 
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;
-  const navigate = useNavigate();
+  const type: ConfigType = searchParams.get("type")! as ConfigType;
+  const name: string = searchParams.get("name")!;
+  const family: string | undefined = searchParams.get("family") ?? undefined;
+  const location: ConfigLocationType = searchParams.get(
+    "location"
+  )! as ConfigLocationType;
 
+  const navigate = useNavigate();
   const { editWindowState } = useHookstate(globalState);
 
   useEffect(() => {
-    console.count("useEffect " + fileName);
-
-    if (editWindowState[fileName].changedProps.keys.length === 0) {
+    if (
+      editWindowState[fileName].get({ stealth: true }) &&
+      editWindowState[fileName].changedProps.keys.length === 0
+    ) {
       deinherit_config_by_type(
         editWindowState[fileName].name.get({ stealth: true }),
         editWindowState[fileName].type.get({ stealth: true }),
         editWindowState[fileName].family.get({ stealth: true })
-      ).then((res) => {
-        const allKeysInRes = Object.keys(res.res);
+      )
+        .then((res) => {
+          const allKeysInRes = Object.keys(res.res);
 
-        const propMap =
-          propMaps[
-            editWindowState[fileName].type.get({ stealth: true }) as ConfigType
-          ] ?? {};
+          const propMap =
+            propMaps[
+              editWindowState[fileName].type.get({
+                stealth: true,
+              }) as ConfigType
+            ] ?? {};
 
-        const knownKeysTemp = Object.keys(propMap).filter((el) =>
-          allKeysInRes.includes(el)
-        );
-        const unknownKeysTemp = allKeysInRes.filter(
-          (el) => !knownKeysTemp.includes(el)
-        );
+          const knownKeysTemp = Object.keys(propMap).filter((el) =>
+            allKeysInRes.includes(el)
+          );
+          const unknownKeysTemp = allKeysInRes.filter(
+            (el) => !knownKeysTemp.includes(el)
+          );
 
-        editWindowState[fileName].knownKeys.set(knownKeysTemp);
-        editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
+          editWindowState[fileName].knownKeys.set(knownKeysTemp);
+          editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
 
-        editWindowState[fileName].properties.set(res);
-      });
+          editWindowState[fileName].properties.set(res);
+        })
+        .catch((error: any) => toast(error.toString(), { type: "error" }));
+    } else {
+      if (!editWindowState[fileName].get({ stealth: true }))
+        editWindowState[fileName].set({
+          fileName: fileName,
+          type: type,
+          name: name,
+          family: family,
+          properties: { res: {}, keyDetails: {}, warnings: [] },
+          changedProps: {},
+          knownKeys: [],
+          unknownKeys: [],
+          location: location,
+        });
     }
   }, [fileName, editWindowState[fileName].changedProps]);
+
+  useEffect(() => {
+    return () => {
+      if (
+        editWindowState[fileName].get({ stealth: true }) &&
+        editWindowState[fileName].changedProps.keys.length === 0
+      )
+        editWindowState[fileName].set(none);
+    };
+  }, []);
 
   const handleChange = (value: string, key: string, idx: number) => {
     const property = editWindowState[fileName].properties.res[key].get();
@@ -204,7 +281,7 @@ export default function EditConfig() {
     } else changedProperty.set(value);
   };
 
-  return (
+  return editWindowState[fileName].get() ? (
     <div className="flex flex-col h-full">
       <div className="flex rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit items-center p-1">
         <div
@@ -231,9 +308,11 @@ export default function EditConfig() {
             onClick={() =>
               saveFile(
                 fileName,
-                editWindowState[fileName].properties.res,
-                editWindowState[fileName].changedProps,
-                editWindowState[fileName].properties.keyDetails
+                type,
+                location,
+                editWindowState,
+                navigate,
+                family
               )
             }
           />
@@ -423,5 +502,7 @@ export default function EditConfig() {
         })}
       </div>
     </div>
+  ) : (
+    <></>
   );
 }

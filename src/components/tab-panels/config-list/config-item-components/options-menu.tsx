@@ -33,7 +33,7 @@ export default function OptionsMenu({
         )}
       >
         {menuItems.map((el) => (
-          <MenuItem>
+          <MenuItem key={el.text}>
             <MenuEntry Icon={el.icon} text={el.text} onClick={el.onClick} />
           </MenuItem>
         ))}

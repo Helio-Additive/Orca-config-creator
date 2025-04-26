@@ -26,21 +26,7 @@ function App() {
     orcaInstallationPath,
     orcaDataDirectory,
     vendorConfigs,
-    modelConfigs,
-    installedPrinterConfigs,
-    installedFilamentConfigs,
-    installedProcessConfigs,
-    loadedSystemPrinterConfigs,
-    loadedSystemFilamentConfigs,
-    loadedSystemProcessConfigs,
-    loadedUserPrinterConfigs,
-    loadedUserFilamentConfigs,
-    loadedUserProcessConfigs,
-    instantiatedInstalledPrinterConfigs,
-    instantiatedInstalledFilamentConfigs,
-    instantiatedInstalledProcessConfigs,
     os,
-    errLoadingDataPath,
     errLoadingInstallationPath,
   } = useHookstate(globalState);
 
@@ -61,63 +47,21 @@ function App() {
   }, [orcaInstallationPath]);
 
   useEffect(() => {
-    dataPrinterConfigLoader(
-      orcaDataDirectory,
-      loadedSystemPrinterConfigs,
-      loadedUserPrinterConfigs,
-      errLoadingDataPath
-    );
+    dataPrinterConfigLoader();
 
-    dataFilamentConfigLoader(
-      orcaDataDirectory,
-      loadedSystemFilamentConfigs,
-      loadedUserFilamentConfigs,
-      errLoadingDataPath
-    );
+    dataFilamentConfigLoader();
 
-    dataProcessConfigLoader(
-      orcaDataDirectory,
-      loadedSystemProcessConfigs,
-      loadedUserProcessConfigs,
-      errLoadingDataPath
-    );
+    dataProcessConfigLoader();
   }, [orcaDataDirectory]);
 
   useEffect(() => {
-    modelConfigLoader(
-      os,
-      orcaInstallationPath,
-      vendorConfigs,
-      modelConfigs,
-      errLoadingInstallationPath
-    );
+    modelConfigLoader();
 
-    installedPrinterConfigLoader(
-      os,
-      orcaInstallationPath,
-      vendorConfigs,
-      installedPrinterConfigs,
-      instantiatedInstalledPrinterConfigs,
-      errLoadingInstallationPath
-    );
+    installedPrinterConfigLoader();
 
-    installedFilamentConfigLoader(
-      os,
-      orcaInstallationPath,
-      vendorConfigs,
-      installedFilamentConfigs,
-      instantiatedInstalledFilamentConfigs,
-      errLoadingInstallationPath
-    );
+    installedFilamentConfigLoader();
 
-    installedProcessConfigLoader(
-      os,
-      orcaInstallationPath,
-      vendorConfigs,
-      installedProcessConfigs,
-      instantiatedInstalledProcessConfigs,
-      errLoadingInstallationPath
-    );
+    installedProcessConfigLoader();
   }, [vendorConfigs]);
 
   return (

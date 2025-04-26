@@ -5,7 +5,9 @@ use std::path;
 use std::path::Path;
 use std::process::Command;
 #[cfg(target_os = "linux")]
-use std::{fs::metadata, path::PathBuf}; // dep: fork = "0.1"
+use std::{fs::metadata, path::PathBuf};
+
+use crate::configuration_loader::load_generic_preset; // dep: fork = "0.1"
 
 #[tauri::command]
 pub fn check_directory(path: &str) -> bool {
@@ -85,5 +87,29 @@ pub fn write_to_file(path: String, content: String) -> Result<(), String> {
     match write_res {
         Ok(()) => Ok(()),
         Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
+    }
+}
+
+#[tauri::command]
+pub fn rename_file(path: &str, new_path: &str) -> Result<(), String> {
+    let renamed_res = fs::rename(path, new_path);
+    match renamed_res {
+        Ok(()) => Ok(()),
+        Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
+    }
+}
+
+#[tauri::command]
+pub fn rename_config(path: String, new_name: String) -> Result<String, String> {
+    let path_obj = Path::new(&path);
+    let parent_path = path_obj.parent().unwrap();
+
+    let new_path = parent_path.join(new_name + ".json");
+    let new_path_string = new_path.to_str().unwrap().to_string();
+
+    let renamed_res = rename_file(&path, &new_path_string);
+    match renamed_res {
+        Ok(()) => Ok(new_path_string),
+        Err(e) => Err(e),
     }
 }

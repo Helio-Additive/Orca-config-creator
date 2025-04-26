@@ -24,7 +24,7 @@ export interface ConfigProperty {
 
 // prettier-ignore
 export const printer_properties: ConfigProperty[] = [
-{ id: "name", type: ConfigOptionType.coString, fixed: true, required: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
+{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
 { id: "version", type: ConfigOptionType.coString, fixed: false, required: false, label: "Version", tooltip: "Version of the preset", default: ""},
 { id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
