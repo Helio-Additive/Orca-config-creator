@@ -7,6 +7,7 @@ import { FaEdit, FaSave } from "react-icons/fa";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { MdAdd } from "react-icons/md";
 import { RiResetLeftFill } from "react-icons/ri";
+import { RiDeleteBin6Line } from "react-icons/ri";
 import {
   NavigateFunction,
   useNavigate,
@@ -30,7 +31,7 @@ import {
   ConfigProperty,
   printer_properties_map,
 } from "./lib/printer-configuration-options";
-import { globalState, KeyDetails, globalStateObject } from "./lib/state-store";
+import { globalState, globalStateObject } from "./lib/state-store";
 
 async function saveFile(
   fileName: string,
@@ -53,7 +54,11 @@ async function saveFile(
   const newProps = {
     ...Object.fromEntries(
       Object.entries(props.get({ stealth: true })).filter(
-        ([key, _]) => keyDetails[key].get({ stealth: true }).level === 0
+        ([key, _]) =>
+          keyDetails[key].get({ stealth: true }).level === 0 &&
+          !editWindowState[fileName].deleteKeys
+            .get({ stealth: true })
+            .includes(key)
       )
     ),
     ...changedProps.get({ stealth: true }),
@@ -66,6 +71,7 @@ async function saveFile(
     .then(() => {
       toast("Wrote new configuration to file", { type: "success" });
       changedProps.set({});
+      editWindowState[fileName].deleteKeys.set([]);
     })
     .catch((error: any) => {
       toast(error.toString(), { type: "error" });
@@ -138,7 +144,17 @@ function ResetButton({ onClick }: { onClick: () => void }) {
       Icon={RiResetLeftFill}
       onClick={onClick}
       className="hover:-rotate-45"
-      tooltip="reset"
+      tooltip="Reset"
+    />
+  );
+}
+
+function DeleteButton({ onClick }: { onClick: () => void }) {
+  return (
+    <LabelButtonTemplate
+      Icon={RiDeleteBin6Line}
+      onClick={onClick}
+      tooltip="Delete field"
     />
   );
 }
@@ -182,6 +198,17 @@ function ShowDirectoryButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="hover:scale-110 p-2"
       tooltip="Open containing folder"
+    />
+  );
+}
+
+function ResetAllButton({ onClick }: { onClick: () => void }) {
+  return (
+    <LabelButtonTemplate
+      Icon={RiResetLeftFill}
+      onClick={onClick}
+      className="hover:scale-110 p-2"
+      tooltip="Reset all"
     />
   );
 }
@@ -249,6 +276,7 @@ export default function EditConfig() {
           family: family,
           properties: { res: {}, keyDetails: {}, warnings: [] },
           changedProps: {},
+          deleteKeys: [],
           knownKeys: [],
           unknownKeys: [],
           location: location,
@@ -303,7 +331,8 @@ export default function EditConfig() {
             folderOpener(fileName);
           }}
         />
-        {editWindowState[fileName].changedProps.keys.length > 0 && (
+        {(editWindowState[fileName].changedProps.keys.length > 0 ||
+          editWindowState[fileName].deleteKeys.length > 0) && (
           <SaveButton
             onClick={() =>
               saveFile(
@@ -317,6 +346,15 @@ export default function EditConfig() {
             }
           />
         )}
+        {(editWindowState[fileName].changedProps.keys.length > 0 ||
+          editWindowState[fileName].deleteKeys.length > 0) && (
+          <ResetAllButton
+            onClick={() => {
+              editWindowState[fileName].changedProps.set({});
+              editWindowState[fileName].deleteKeys.set([]);
+            }}
+          />
+        )}
       </div>
 
       <div className="flex-1 min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
@@ -328,6 +366,15 @@ export default function EditConfig() {
 
           const changedProperty =
             editWindowState[fileName].changedProps[key].get();
+
+          const markedForDeletion = editWindowState[fileName].deleteKeys
+            .get()
+            .includes(key);
+
+          const isBaseProp =
+            editWindowState[fileName].properties.keyDetails[key].level.get({
+              stealth: true,
+            }) === 0;
 
           const propMap =
             propMaps[
@@ -387,11 +434,22 @@ export default function EditConfig() {
                   }}
                 />
               )}
-              {changedProperty && (
+              {(changedProperty || markedForDeletion) && (
                 <ResetButton
-                  onClick={() =>
-                    editWindowState[fileName].changedProps[key].set(none)
-                  }
+                  onClick={() => {
+                    editWindowState[fileName].changedProps[key].set(none);
+                    editWindowState[fileName].deleteKeys.set((arr) =>
+                      arr.filter((el) => el !== key)
+                    );
+                  }}
+                />
+              )}
+              {!knownProp.required && !markedForDeletion && isBaseProp && (
+                <DeleteButton
+                  onClick={() => {
+                    editWindowState[fileName].deleteKeys.merge([key]);
+                    editWindowState[fileName].changedProps[key].set(none);
+                  }}
                 />
               )}
             </div>
@@ -405,14 +463,18 @@ export default function EditConfig() {
               value={value}
               arrayValue={arrayValue}
               extraLabel={keyDetails.configName + " · " + keyDetails.level}
-              labelClassName="text-lg"
+              labelClassName={
+                "text-lg " + (markedForDeletion ? "opacity-50" : "")
+              }
               onChange={(value: string, idx = 0) =>
                 handleChange(value, key, idx)
               }
-              allowEdit={!knownProp.fixed}
+              allowEdit={!knownProp.fixed && !markedForDeletion}
               inputClassName={
                 changedProperty
                   ? "outline-accent outline-2 -outline-offset-2 bg-accent/20"
+                  : markedForDeletion
+                  ? "opacity-50"
                   : ""
               }
               type={inputType}
@@ -479,6 +541,10 @@ export default function EditConfig() {
             </div>
           );
 
+          const markedForDeletion = editWindowState[fileName].deleteKeys
+            .get()
+            .includes(key);
+
           return (
             <InputComponent
               labelChild={labelButtons}
@@ -487,16 +553,20 @@ export default function EditConfig() {
               value={value}
               arrayValue={arrayValue}
               extraLabel={keyDetails.configName + " · " + keyDetails.level}
-              labelClassName="text-lg"
+              labelClassName={
+                "text-lg " + (markedForDeletion ? "opacity-50" : "")
+              }
               onChange={(value: string, idx = 0) =>
                 handleChange(value, key, idx)
               }
               inputClassName={
                 changedProperty
                   ? "outline-accent outline-2 -outline-offset-2 bg-accent/20"
+                  : markedForDeletion
+                  ? "opacity-50"
                   : ""
               }
-              allowEdit
+              allowEdit={!markedForDeletion}
             />
           );
         })}
