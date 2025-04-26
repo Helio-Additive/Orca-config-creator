@@ -3,7 +3,9 @@
 
 mod commons;
 mod configuration_loader;
-use commons::{check_directory, check_file, show_in_folder, write_to_file};
+use commons::{
+    check_directory, check_file, rename_config, rename_file, show_in_folder, write_to_file,
+};
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
     load_all_process_presets, load_all_system_vendor_profiles,
@@ -111,7 +113,9 @@ fn main() {
             check_file,
             show_in_folder,
             load_all_process_presets,
-            write_to_file
+            write_to_file,
+            rename_file,
+            rename_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

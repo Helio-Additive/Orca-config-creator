@@ -171,18 +171,13 @@ export const vendorConfigLoader = async (
   }
 };
 
-export const modelConfigLoader = async (
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined, {}>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  modelConfigs: State<
-    Record<
-      string,
-      { Ok?: MinPrinterModelJsonSchema; Err?: string } & fileProperty
-    >
-  >,
-  errLoadingInstallationPath: State<string | undefined>
-) => {
+export const modelConfigLoader = async () => {
+  const os = globalState.os;
+  const orcaInstallationPath = globalState.orcaInstallationPath;
+  const vendorConfigs = globalState.vendorConfigs;
+  const modelConfigs = globalState.modelConfigs;
+  const errLoadingInstallationPath = globalState.errLoadingInstallationPath;
+
   try {
     if (
       orcaInstallationPath.get({ stealth: true }) &&
@@ -232,18 +227,26 @@ export async function dataConfigLoader<
     | MinFilamentJsonSchema
     | MinProcessJsonSchema
 >(
-  orcaDataDirectory: State<string | undefined>,
-  loadedSystemConfigs: State<
-    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
-  >,
-  loadedUserConfigs: State<Record<string, T & fileProperty>>,
-  errLoadingDataPath: State<string | undefined>,
-  messageKey: string,
+  type: ConfigType,
   propKey: string,
   systemConfigLoaderFunction: string,
   userConfigLoaderFunction: string,
   loadedUserProfilesConfigSubdirectory: string
 ) {
+  const orcaDataDirectory = globalState.orcaDataDirectory;
+  const relevantConfigs = getRelevantConfigsFromType(type);
+  const loadedSystemConfigs = relevantConfigs!.loadedSystemConfigs! as State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
+  >;
+  const loadedUserConfigs = relevantConfigs!.loadedUserConfigs! as State<
+    Record<string, T & fileProperty>
+  >;
+
+  loadedSystemConfigs.set({});
+  loadedUserConfigs.set({});
+
+  const errLoadingDataPath = globalState.errLoadingDataPath;
+
   try {
     if (
       orcaDataDirectory.get({ stealth: true }) &&
@@ -335,7 +338,7 @@ export async function dataConfigLoader<
       });
 
       errLoadingDataPath.set(undefined);
-      toast(`Loaded user ${messageKey} profiles`, { type: "success" });
+      toast(`Loaded user ${type} profiles`, { type: "success" });
     } else {
       loadedSystemConfigs.set({});
       errLoadingDataPath.set(undefined);
@@ -347,27 +350,8 @@ export async function dataConfigLoader<
   }
 }
 
-export const dataPrinterConfigLoader = async (
-  orcaDataDirectory: State<string | undefined>,
-  loadedSystemPrinterConfigs: State<
-    Record<
-      string,
-      Record<
-        string,
-        { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
-      >
-    >
-  >,
-  loadedUserPrinterConfigs: State<
-    Record<string, MinPrinterVariantJsonSchema & fileProperty>
-  >,
-  errLoadingDataPath: State<string | undefined>
-) =>
+export const dataPrinterConfigLoader = async () =>
   dataConfigLoader(
-    orcaDataDirectory,
-    loadedSystemPrinterConfigs,
-    loadedUserPrinterConfigs,
-    errLoadingDataPath,
     "printer",
     "machine_list",
     "load_all_printer_presets",
@@ -375,27 +359,8 @@ export const dataPrinterConfigLoader = async (
     "/machine"
   );
 
-export const dataFilamentConfigLoader = async (
-  orcaDataDirectory: State<string | undefined>,
-  loadedSystemFilamentConfigs: State<
-    Record<
-      string,
-      Record<
-        string,
-        { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty
-      >
-    >
-  >,
-  loadedUserFilamentConfigs: State<
-    Record<string, MinFilamentJsonSchema & fileProperty>
-  >,
-  errLoadingDataPath: State<string | undefined>
-) =>
+export const dataFilamentConfigLoader = async () =>
   dataConfigLoader(
-    orcaDataDirectory,
-    loadedSystemFilamentConfigs,
-    loadedUserFilamentConfigs,
-    errLoadingDataPath,
     "filament",
     "filament_list",
     "load_all_filament_presets",
@@ -403,24 +368,8 @@ export const dataFilamentConfigLoader = async (
     "/filament"
   );
 
-export const dataProcessConfigLoader = async (
-  orcaDataDirectory: State<string | undefined>,
-  loadedSystemProcessConfigs: State<
-    Record<
-      string,
-      Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
-    >
-  >,
-  loadedUserProcessConfigs: State<
-    Record<string, MinProcessJsonSchema & fileProperty>
-  >,
-  errLoadingDataPath: State<string | undefined>
-) =>
+export const dataProcessConfigLoader = async () =>
   dataConfigLoader(
-    orcaDataDirectory,
-    loadedSystemProcessConfigs,
-    loadedUserProcessConfigs,
-    errLoadingDataPath,
     "process",
     "process_list",
     "load_all_process_presets",
@@ -434,20 +383,23 @@ export function installedConfigLoader<
     | MinFilamentJsonSchema
     | MinProcessJsonSchema
 >(
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  installedConfigs: State<
-    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
-  >,
-  instantiatedInstalledConfigs: State<
-    Record<string, T & fileProperty & familyProperty>
-  >,
-  errLoading: State<string | undefined>,
-  messageKey: string,
+  type: ConfigType,
   configNameAndPathKey: string,
   configLoaderFunction: string
 ) {
+  const os = globalState.os;
+  const orcaInstallationPath = globalState.orcaInstallationPath;
+  const vendorConfigs = globalState.vendorConfigs;
+  const relevantConfigs = getRelevantConfigsFromType(type);
+  const installedConfigs = relevantConfigs!.installedConfigs! as State<
+    Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
+  >;
+  const instantiatedInstalledConfigs = relevantConfigs!
+    .instantiatedInstalledConfigs! as State<
+    Record<string, T & fileProperty & familyProperty>
+  >;
+  const errLoading = globalState.errLoadingInstallationPath;
+
   try {
     if (
       orcaInstallationPath.get({ stealth: true }) &&
@@ -502,7 +454,7 @@ export function installedConfigLoader<
         }
       });
 
-      toast(`Loaded installed ${messageKey} configs`, { type: "success" });
+      toast(`Loaded installed ${type} configs`, { type: "success" });
     } else {
       installedConfigs.set({});
     }
@@ -513,92 +465,18 @@ export function installedConfigLoader<
   }
 }
 
-export const installedPrinterConfigLoader = async (
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  installedPrinterConfigs: State<
-    Record<
-      string,
-      Record<
-        string,
-        { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
-      >
-    >
-  >,
-  instantiatedInstalledPrinterConfigs: State<
-    Record<string, MinPrinterVariantJsonSchema & fileProperty & familyProperty>
-  >,
-  errLoadingInstallationPath: State<string | undefined>
-) =>
-  installedConfigLoader(
-    os,
-    orcaInstallationPath,
-    vendorConfigs,
-    installedPrinterConfigs,
-    instantiatedInstalledPrinterConfigs,
-    errLoadingInstallationPath,
-    "printer",
-    "machine_list",
-    "load_all_printer_presets"
-  );
+export const installedPrinterConfigLoader = async () =>
+  installedConfigLoader("printer", "machine_list", "load_all_printer_presets");
 
-export const installedFilamentConfigLoader = async (
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  installedFilamentConfigs: State<
-    Record<
-      string,
-      Record<
-        string,
-        { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty
-      >
-    >
-  >,
-  instantiatedInstalledFilamentConfigs: State<
-    Record<string, MinFilamentJsonSchema & fileProperty & familyProperty>
-  >,
-  errLoadingInstallationPath: State<string | undefined>
-) =>
+export const installedFilamentConfigLoader = async () =>
   installedConfigLoader(
-    os,
-    orcaInstallationPath,
-    vendorConfigs,
-    installedFilamentConfigs,
-    instantiatedInstalledFilamentConfigs,
-    errLoadingInstallationPath,
     "filament",
     "filament_list",
     "load_all_filament_presets"
   );
 
-export const installedProcessConfigLoader = async (
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  installedProcessConfigs: State<
-    Record<
-      string,
-      Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
-    >
-  >,
-  instantiatedInstalledProcessConfigs: State<
-    Record<string, MinProcessJsonSchema & fileProperty & familyProperty>
-  >,
-  errLoadingInstallationPath: State<string | undefined>
-) =>
-  installedConfigLoader(
-    os,
-    orcaInstallationPath,
-    vendorConfigs,
-    installedProcessConfigs,
-    instantiatedInstalledProcessConfigs,
-    errLoadingInstallationPath,
-    "process",
-    "process_list",
-    "load_all_process_presets"
-  );
+export const installedProcessConfigLoader = async () =>
+  installedConfigLoader("process", "process_list", "load_all_process_presets");
 
 export const get_installed_system_profiles_subdirectory_directory = (
   os: string
@@ -856,26 +734,16 @@ export function editConfigFile(
   fileName: string,
   location: ConfigLocationType,
   navigate: NavigateFunction,
-  family?: string
+  family?: string,
+  replace = false
 ) {
-  const { editWindowState } = globalState;
-
   const encodedFileName = encodeURIComponent(fileName);
 
-  if (!editWindowState[fileName].get({ stealth: true }))
-    editWindowState[fileName].set({
-      fileName: fileName,
-      type: type,
-      name: name,
-      family: family,
-      properties: { res: {}, keyDetails: {}, warnings: [] },
-      changedProps: {},
-      knownKeys: [],
-      unknownKeys: [],
-      location: location,
-    });
+  const url =
+    `/edit?fileName=${encodedFileName}&type=${type}&name=${name}&location=${location}` +
+    (family ? `&family=${family}` : "");
 
-  navigate(`/edit?fileName=${encodedFileName}`);
+  navigate(url, { replace: replace });
 }
 
 export const folderOpener = (path: string) => {
@@ -918,5 +786,123 @@ export function findAvailableConfigs(
     case "installed": {
       return neededConfigs?.installedConfigs[family!].keys;
     }
+  }
+}
+
+export async function updateVendorConfigEntry(
+  family: string,
+  type: ConfigType,
+  oldName: string,
+  newName: string
+) {
+  const vendorConfig = globalState.vendorConfigs[family].get({ stealth: true });
+
+  const vendorConfigKeyName = (() => {
+    switch (type) {
+      case "printer":
+        return "machine_list";
+
+      case "filament":
+        return "filament_list";
+
+      case "process":
+        return "process_list";
+
+      case "printer-model":
+        return "machine_model_list";
+    }
+  })()!;
+
+  const relevantConfigList = vendorConfig[vendorConfigKeyName];
+
+  const updatedConfigs = relevantConfigList!.map((el) => {
+    if (el.name !== oldName) return el;
+    else {
+      const subDirectory = el.sub_path.split("/")[0];
+      return {
+        name: newName,
+        sub_path: subDirectory + "/" + newName + "/json",
+      };
+    }
+  });
+
+  const path = vendorConfig.fileName;
+
+  const readVendorConfig = await invoke<VendorJsonSchema>(
+    "load_all_system_vendor_profiles",
+    { path }
+  );
+
+  readVendorConfig[vendorConfigKeyName] = updatedConfigs;
+
+  await invoke("write_to_file", {
+    path,
+    content: JSON.stringify(readVendorConfig),
+  });
+
+  switch (type) {
+    case "printer":
+      await installedPrinterConfigLoader();
+      break;
+
+    case "filament":
+      await installedFilamentConfigLoader();
+      break;
+
+    case "process":
+      await installedProcessConfigLoader();
+      break;
+
+    case "printer-model":
+      await modelConfigLoader();
+      break;
+  }
+}
+
+//async function updateVendorFile(family: string) {}
+
+export async function renameConfig(
+  oldName: string,
+  newName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const path = findConfig(oldName, type, location, family)!.fileName;
+
+  try {
+    const props = await invoke<{ name: string } & fileProperty>(
+      "load_generic_preset",
+      {
+        path,
+      }
+    );
+
+    props.name = newName;
+
+    await invoke("write_to_file", { path, content: JSON.stringify(props) });
+    const newPath = await invoke<string>("rename_config", { path, newName });
+
+    if (location === "installed") {
+      updateVendorConfigEntry(family!, type, oldName, newName);
+    } else {
+      switch (type) {
+        case "printer":
+          await dataPrinterConfigLoader();
+          break;
+
+        case "filament":
+          await dataFilamentConfigLoader();
+          break;
+
+        case "process":
+          await dataProcessConfigLoader();
+          break;
+      }
+    }
+
+    return newPath;
+  } catch (error: any) {
+    throw error;
   }
 }
