@@ -29,7 +29,7 @@ export const printer_properties: ConfigProperty[] = [
 { id: "version", type: ConfigOptionType.coString, fixed: false, required: false, label: "Version", tooltip: "Version of the preset", default: ""},
 { id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
 { id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Instantiation", tooltip: "Should the preset be instantiated",   enumList: [["true", "true"], ["false", "false"]], default: false},
-{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: true, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "printer"},
+{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "printer"},
 { id: "num_extruders", type: ConfigOptionType.coInt, fixed: false, required: false, label: "Number of extruders", tooltip: "Number of extruders in the printer", default: 1, derived: true},
 { id: "default_filament_profile", type: ConfigOptionType.coStrings, fixed: false, required: false, label: "Default filament profile", tooltip: "Default filament profile when switch to this machine profile", default: [''], search: "filament"},
 { id: "setting_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Setting id", tooltip: "not required and unclear what it does", default: "" },
