@@ -6,6 +6,7 @@ import ValueInput from "./input-components/value-input";
 import { Tooltip } from "radix-ui";
 import Infotip from "../tooltip/infotip";
 import { ConfigType } from "../../lib/commons";
+import ComboInput from "./input-components/combo-input";
 
 export default function InputComponent({
   label,
@@ -26,6 +27,7 @@ export default function InputComponent({
   tooltip,
   arraySize,
   sideText,
+  possibleValues,
 }: {
   label?: string;
   type?: string;
@@ -46,6 +48,7 @@ export default function InputComponent({
   tooltip?: string;
   sideText?: string;
   search?: ConfigType;
+  possibleValues?: string[];
 }) {
   const arr = Array.from(
     { length: arraySize ?? (arrayValue ? arrayValue?.length : 1) },
@@ -114,6 +117,16 @@ export default function InputComponent({
                             ["false", "0"],
                           ]
                         }
+                        idx={idx}
+                      />
+                    ),
+                    combobox: (
+                      <ComboInput
+                        possibleValues={possibleValues!}
+                        value={value}
+                        onChange={onChange}
+                        allowEdit={allowEdit}
+                        err={err}
                         idx={idx}
                       />
                     ),

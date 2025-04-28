@@ -26,7 +26,7 @@ export interface ConfigProperty {
 export const printer_properties: ConfigProperty[] = [
 { id: "name", type: ConfigOptionType.coString, fixed: false, required: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
-{ id: "version", type: ConfigOptionType.coString, fixed: false, required: false, label: "Version", tooltip: "Version of the preset", default: ""},
+{ id: "version", type: ConfigOptionType.coString, fixed: false, required: true, label: "Version", tooltip: "Version of the preset", default: ""},
 { id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
 { id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Instantiation", tooltip: "Should the preset be instantiated",   enumList: [["true", "true"], ["false", "false"]], default: false},
 { id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "printer"},
@@ -107,7 +107,6 @@ export const printer_properties: ConfigProperty[] = [
 { id: "bed_mesh_probe_distance", type: ConfigOptionType.coPoint, fixed: false, required: false, label: "Probe point distance", sidetext: "mm", mode: ConfigOptionMode.comAdvanced, min: 0, default: [ 50, 50 ] },      
 { id: "adaptive_bed_mesh_margin", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Mesh margin", sidetext: "mm", tooltip: "This option determines the additional distance by which the adaptive bed mesh area should be expanded in the XY directions.", mode: ConfigOptionMode.comAdvanced, default: 0 },
 { id: "enable_long_retraction_when_cut", label: "enable_long_retraction_when_cut", type: ConfigOptionType.coInt, fixed: false, required: false, mode: ConfigOptionMode.comDevelop, default: 0 },
-
     //per extruder properties
 
 { id: "z_hop_types", type: ConfigOptionType.coEnums, fixed: false, required: false, label: "Z-hop type", tooltip: "Z hop type", mode: ConfigOptionMode.comAdvanced, default: 2, enumList: [[ 'Auto', 'Auto Lift' ], [ 'Normal', 'Normal Lift' ], [ 'Slope', 'Slope Lift' ], [ 'Spiral', 'Spiral Lift' ]], is_per_extruder: true},
