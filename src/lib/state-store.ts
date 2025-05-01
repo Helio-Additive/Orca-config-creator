@@ -99,6 +99,7 @@ export const globalStateObject = {
         warnings: Warning[];
       };
       changedProps: Record<string, unknown>;
+      deleteKeys: string[];
       knownKeys: string[];
       unknownKeys: string[];
     }
