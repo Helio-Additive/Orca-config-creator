@@ -32,6 +32,7 @@ import {
   printer_properties_map,
 } from "./lib/printer-configuration-options";
 import { globalState, globalStateObject } from "./lib/state-store";
+import NewProperty from "./components/tab-panels/input-components/new-property";
 
 async function saveFile(
   fileName: string,
@@ -169,7 +170,7 @@ function EditConfigButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function AddButton({ onClick }: { onClick: () => void }) {
+export function AddButton({ onClick }: { onClick: () => void }) {
   return (
     <LabelButtonTemplate
       Icon={MdAdd}
@@ -361,16 +362,18 @@ export default function EditConfig() {
         {editWindowState[fileName].knownKeys.map((keyState) => {
           const key = keyState.get();
           const property = editWindowState[fileName].properties.res[key].get();
+          const changedProperty =
+            editWindowState[fileName].changedProps[key].get();
           const keyDetails =
             editWindowState[fileName].properties.keyDetails[key].get();
 
-          const changedProperty =
-            editWindowState[fileName].changedProps[key].get();
+          //const isNewProp = changedProperty !== undefined && property === undefined;
 
           const markedForDeletion = editWindowState[fileName].deleteKeys
             .get()
             .includes(key);
 
+          console.log(key);
           const isBaseProp =
             editWindowState[fileName].properties.keyDetails[key].level.get({
               stealth: true,
@@ -394,13 +397,17 @@ export default function EditConfig() {
             : undefined;
 
           let enumList = knownProp.enumList;
+          let possibleValues: string[] | undefined = undefined;
+
           if (knownProp.search) {
-            enumList = findAvailableConfigs(
-              knownProp.search! as ConfigType,
-              editWindowState[fileName].location.get({ stealth: true }),
-              editWindowState[fileName].family.get({ stealth: true })
-            )?.map((el) => [el, el]);
-            inputType = "dropdown";
+            possibleValues = [
+              ...findAvailableConfigs(
+                knownProp.search! as ConfigType,
+                editWindowState[fileName].location.get({ stealth: true }),
+                editWindowState[fileName].family.get({ stealth: true })
+              )!,
+            ].filter((el) => el !== name);
+            inputType = "combobox";
           }
 
           const labelButtons = (
@@ -481,6 +488,7 @@ export default function EditConfig() {
               enumValues={enumList}
               tooltip={knownProp.tooltip}
               sideText={knownProp.sidetext}
+              possibleValues={possibleValues}
             />
           );
         })}
@@ -570,6 +578,16 @@ export default function EditConfig() {
             />
           );
         })}
+        <NewProperty
+          configProperties={
+            propMaps[
+              editWindowState[fileName].type.get({
+                stealth: true,
+              }) as ConfigType
+            ]
+          }
+          editWindowKey={fileName}
+        />
       </div>
     </div>
   ) : (

@@ -28,6 +28,7 @@ export default function InputComponent({
   arraySize,
   sideText,
   possibleValues,
+  className,
 }: {
   label?: string;
   type?: string;
@@ -49,6 +50,7 @@ export default function InputComponent({
   sideText?: string;
   search?: ConfigType;
   possibleValues?: string[];
+  className?: string;
 }) {
   const arr = Array.from(
     { length: arraySize ?? (arrayValue ? arrayValue?.length : 1) },
@@ -56,7 +58,7 @@ export default function InputComponent({
   );
 
   return (
-    <Field className={"mb-3"}>
+    <Field className={twMerge("mb-3", className)}>
       <div className="flex items-center">
         {label && (
           <Label
@@ -86,7 +88,7 @@ export default function InputComponent({
 
       <Tooltip.Root delayDuration={1500}>
         <Tooltip.Trigger asChild>
-          <div className="flex w-full max-w-[1024px] relative overflow-x-auto ">
+          <div className="flex items-center w-full max-w-[1024px] relative overflow-x-auto ">
             {arr.map((idx) => {
               const inputValue = arrayValue ? arrayValue[idx] : value;
 
@@ -128,6 +130,7 @@ export default function InputComponent({
                         allowEdit={allowEdit}
                         err={err}
                         idx={idx}
+                        placeholder={placeholder}
                       />
                     ),
                   }[type] ?? (

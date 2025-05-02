@@ -26,6 +26,7 @@ export default function ComboInput({
   onChange = () => {},
   possibleValues,
   idx = 0,
+  placeholder,
 }: {
   value?: string;
   err?: string;
@@ -34,6 +35,7 @@ export default function ComboInput({
   onChange?: (value: string, idx?: number) => void;
   possibleValues: string[];
   idx?: number;
+  placeholder?: string;
 }) {
   const [query, setQuery] = useState("");
 
@@ -41,7 +43,7 @@ export default function ComboInput({
     query === ""
       ? possibleValues
       : possibleValues.filter((el) => {
-          return el.toLowerCase().includes(query.toLowerCase());
+          return el.toLowerCase().includes(query.toLowerCase()) && el;
         });
 
   return (
@@ -65,6 +67,7 @@ export default function ComboInput({
         )}
         displayValue={(el) => el as string}
         onChange={(event) => setQuery(event.target.value)}
+        placeholder={placeholder}
       />
       <ComboboxButton className="group absolute inset-y-0 right-0 px-2.5">
         <FaChevronDown className="size-4 fill-white/60 group-data-hover:fill-white" />
