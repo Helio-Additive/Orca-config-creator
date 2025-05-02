@@ -31,7 +31,7 @@ export default function ValueInput({
   return (
     <Input
       placeholder={placeholder}
-      value={value ?? placeholder}
+      value={value}
       className={twMerge(
         "w-full min-w-fit flex-3/4 rounded-lg border-none py-1.5 px-3 text-sm/6",
         "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
