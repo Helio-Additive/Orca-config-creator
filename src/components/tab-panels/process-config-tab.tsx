@@ -55,6 +55,7 @@ export default function ProcessConfigTab() {
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="process"
+                allowEdit
                 configLocation="installed"
               />
             );
@@ -130,6 +131,7 @@ export default function ProcessConfigTab() {
         ]}
         fileName={machineConfig.fileName}
         type="process"
+        allowEdit
         flatExportFunction={export_flattened}
         configLocation="user"
       />

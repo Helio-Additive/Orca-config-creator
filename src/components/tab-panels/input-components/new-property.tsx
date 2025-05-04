@@ -24,11 +24,11 @@ export default function NewProperty({
     undefined
   );
 
-  const onPropertyValueChange = (value: string, idx: number) => {
+  const onPropertyValueChange = (value: string, idx?: number) => {
     if (isArray) {
       setPropValue((el) => {
         const newVal = [...(Array.isArray(el) ? (el as string[]) : [])];
-        newVal.splice(idx, 1, value);
+        newVal.splice(idx!, 1, value);
         return newVal;
       });
     } else {
@@ -92,7 +92,6 @@ export default function NewProperty({
         value={propName}
         onChange={setPropName}
       />
-      (
       <InputComponent
         className="flex-1/2 m-0"
         allowEdit
@@ -101,7 +100,6 @@ export default function NewProperty({
         arrayValue={isArray ? (propValue as string[] | undefined) : undefined}
         onChange={onPropertyValueChange}
       />
-      )
       {isArray && (
         <MdAdd className="text-text-primary h-full self-center text-3xl mr-1 hover:scale-125 active:scale-95 transition duration-200 " />
       )}
@@ -109,7 +107,12 @@ export default function NewProperty({
         text="Add"
         onClick={saveFunc}
         className="flex-1/8 h-fit mr-1"
-        disabled={propValue === undefined || propValue === undefined}
+        disabled={
+          propValue === undefined ||
+          propValue === undefined ||
+          propName?.length === 0 ||
+          propValue.length === 0
+        }
       />
     </div>
   );

@@ -20,6 +20,7 @@ export default function FieldButton({
         "shadow-md shadow-transparent-black-hover hover::outline-none data-[hover]:outline-2 data-[hover]:-outline-offset-2 data-[hover]:outline-text-secondary",
         "data-[hover]:bg-transparent-black-hover",
         "flex-1/4",
+        "disabled:text-text-secondary disabled:bg-transparent",
         className
       )}
       disabled={disabled}
