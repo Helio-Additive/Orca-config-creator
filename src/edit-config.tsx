@@ -33,6 +33,10 @@ import {
 } from "./lib/printer-configuration-options";
 import { globalState, globalStateObject } from "./lib/state-store";
 import NewProperty from "./components/tab-panels/input-components/new-property";
+import {
+  filament_properties_map,
+  process_properties_map,
+} from "./lib/all-configuration-options";
 
 async function saveFile(
   fileName: string,
@@ -218,8 +222,8 @@ export default function EditConfig() {
   const propMaps: Record<ConfigType, Record<string, ConfigProperty>> = {
     printer: printer_properties_map,
     "printer-model": {},
-    filament: {},
-    process: {},
+    filament: filament_properties_map,
+    process: process_properties_map,
     vendor: {},
   };
 
@@ -578,6 +582,9 @@ export default function EditConfig() {
             />
           );
         })}
+      </div>
+
+      <div className="min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
         <NewProperty
           configProperties={
             propMaps[

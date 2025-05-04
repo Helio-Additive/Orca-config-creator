@@ -1,11 +1,17 @@
 import { State } from "@hookstate/core";
 import { homeDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/tauri";
+import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
+import { validate as isUuid, v4 as uuidv4 } from "uuid";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
+import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
+import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
+import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
+import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import {
   directoryDefaults,
@@ -22,12 +28,6 @@ import {
   KeyDetails,
   Warning,
 } from "./state-store";
-import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
-import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
-import { v4 as uuidv4, validate as isUuid } from "uuid";
-import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
-import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
-import { NavigateFunction } from "react-router-dom";
 
 export enum InheritanceStatus {
   OK,
@@ -43,6 +43,24 @@ export type ConfigType =
   | "filament"
   | "process"
   | "vendor";
+
+export const checkKeyInState = (
+  key: string[],
+  state: State<Record<string, any>>
+) => {
+  try {
+    let tempState: any = state;
+    for (let i = 0; i < key.length; i++) {
+      const el = key[i];
+      if (!tempState.keys.includes(el)) return false;
+
+      tempState = tempState[el];
+    }
+    return true;
+  } catch (e: any) {
+    return false;
+  }
+};
 
 export const checkDirectoryExists = async (path: string) => {
   return await invoke("check_directory", { path: path });
@@ -501,48 +519,60 @@ export const findConfig = (
 
     case "installed": {
       if (family)
-        return {
-          ...neededConfigs!.installedConfigs[family][configName].get({
-            stealth: true,
-          }),
-          family: family,
-        };
+        return checkKeyInState(
+          [family, configName],
+          neededConfigs!.installedConfigs
+        )
+          ? {
+              ...neededConfigs!.installedConfigs[family][configName].get({
+                stealth: true,
+              }),
+              family: family,
+            }
+          : undefined;
       else {
         const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
           configName
         ].get({ stealth: true });
 
-        if (instantiatedConfig)
-          return {
-            ...neededConfigs!.installedConfigs[instantiatedConfig.family][
-              configName
-            ].get({ stealth: true }),
-            family: instantiatedConfig.family,
-          };
+        return instantiatedConfig
+          ? {
+              ...neededConfigs!.installedConfigs[instantiatedConfig.family][
+                configName
+              ].get({ stealth: true }),
+              family: instantiatedConfig.family,
+            }
+          : undefined;
         break;
       }
     }
 
     case "loaded_system": {
       if (family)
-        return {
-          ...neededConfigs!.loadedSystemConfigs[family][configName].get({
-            stealth: true,
-          }),
-          family: family,
-        };
+        return checkKeyInState(
+          [family, configName],
+          neededConfigs!.loadedSystemConfigs
+        )
+          ? {
+              ...neededConfigs!.loadedSystemConfigs[family][configName].get({
+                stealth: true,
+              }),
+              family: family,
+            }
+          : undefined;
       else {
         const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
           configName
         ].get({ stealth: true });
 
-        if (instantiatedConfig)
-          return {
-            ...neededConfigs!.loadedSystemConfigs[instantiatedConfig.family][
-              configName
-            ].get({ stealth: true }),
-            family: instantiatedConfig.family,
-          };
+        return instantiatedConfig
+          ? {
+              ...neededConfigs!.loadedSystemConfigs[instantiatedConfig.family][
+                configName
+              ].get({ stealth: true }),
+              family: instantiatedConfig.family,
+            }
+          : undefined;
         break;
       }
     }
@@ -586,10 +616,10 @@ export const deinherit_and_load_all_props: any = async <
         configFile = instantiatedLoadedSystemConfigRes.fileName;
         family = instantiatedLoadedSystemConfigRes.family;
       } else {
-        const instantiatedLoadedUserConfigRes = findConfig(
+        const instantiatedInstalledConfigRes = findConfig(
           configName,
           type,
-          "user",
+          "installed",
           family
         ) as (T & fileProperty & familyProperty) | undefined;
 
@@ -598,9 +628,9 @@ export const deinherit_and_load_all_props: any = async <
           type: "warning",
         });
 
-        if (instantiatedLoadedUserConfigRes) {
-          configFile = instantiatedLoadedUserConfigRes.fileName;
-          family = instantiatedLoadedUserConfigRes.family;
+        if (instantiatedInstalledConfigRes) {
+          configFile = instantiatedInstalledConfigRes.fileName;
+          family = instantiatedInstalledConfigRes.family;
         } else {
           throw "Could not find parent config " + configName;
         }

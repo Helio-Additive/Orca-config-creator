@@ -5,7 +5,6 @@ export interface ConfigProperty {
   label: string;
   id: string;
   default: any;
-  nullable?: boolean;
   derived?: boolean;
   tooltip?: string;
   type: ConfigOptionType;
