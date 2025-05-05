@@ -3,6 +3,8 @@ import { open } from "@tauri-apps/api/dialog";
 import { globalState } from "../../lib/state-store";
 import FieldButton from "./field-button";
 import InputComponent from "./input-component";
+import { getRelevantConfigsFromType } from "../../lib/commons";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export default function FileLoader() {
   const {
@@ -63,6 +65,36 @@ export default function FileLoader() {
         err={errLoadingDataPath.get()}
         allowEdit
       />
+      <button
+        className="text-white"
+        onClick={() => {
+          const neededConfigs = getRelevantConfigsFromType("printer");
+
+          const loadedSystemConfigs =
+            neededConfigs!.installedConfigs.keys.flatMap((familyName) =>
+              neededConfigs!.installedConfigs[familyName].keys.map(
+                (configName) =>
+                  neededConfigs!.installedConfigs[familyName][configName].get({
+                    stealth: true,
+                  }).fileName
+              )
+            );
+          const userConfigs = neededConfigs!.loadedUserConfigs.keys.map((key) =>
+            neededConfigs!.loadedUserConfigs[key].fileName.get({
+              stealth: true,
+            })
+          );
+
+          const allFiles = [...loadedSystemConfigs, ...userConfigs];
+
+          invoke("find_possible_values", {
+            filesToCheck: allFiles,
+            propName: "inherits2",
+          }).then(console.log);
+        }}
+      >
+        Hello
+      </button>
     </>
   );
 }

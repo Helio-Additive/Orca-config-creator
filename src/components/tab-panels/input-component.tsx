@@ -125,7 +125,8 @@ export default function InputComponent({
                     combobox: (
                       <ComboInput
                         possibleValues={possibleValues!}
-                        value={value}
+                        value={inputValue!}
+                        inputClassName={inputClassName}
                         onChange={onChange}
                         allowEdit={allowEdit}
                         err={err}

@@ -46,10 +46,16 @@ export default function ComboInput({
           return el.toLowerCase().includes(query.toLowerCase()) && el;
         });
 
+  const changeFunction = (e: string) => {
+    if (!allowEdit) return;
+
+    onChange(e, idx);
+  };
+
   return (
     <Combobox
       value={value}
-      onChange={onChange}
+      onChange={changeFunction}
       onClose={() => setQuery("")}
       disabled={!allowEdit}
     >
