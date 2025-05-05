@@ -377,7 +377,6 @@ export default function EditConfig() {
             .get()
             .includes(key);
 
-          console.log(key);
           const isBaseProp =
             editWindowState[fileName].properties.keyDetails[key].level.get({
               stealth: true,
@@ -393,10 +392,13 @@ export default function EditConfig() {
           const knownProp = propMap[key];
           let inputType = configOptionTypeToInputTypeString(knownProp.type);
 
-          const value = !Array.isArray(property)
+          const isArray = changedProperty
+            ? Array.isArray(changedProperty)
+            : Array.isArray(property);
+          const value = !isArray
             ? (changedProperty as string) ?? (property as string)
             : undefined;
-          const arrayValue = Array.isArray(property)
+          const arrayValue = isArray
             ? (changedProperty as string[]) ?? (property as string[])
             : undefined;
 
@@ -445,7 +447,7 @@ export default function EditConfig() {
                   }}
                 />
               )}
-              {(changedProperty || markedForDeletion) && (
+              {(changedProperty || markedForDeletion) && property && (
                 <ResetButton
                   onClick={() => {
                     editWindowState[fileName].changedProps[key].set(none);

@@ -1,11 +1,15 @@
 #[cfg(target_os = "linux")]
 use fork::{daemon, Fork};
+use serde_json::Value;
 use std::fs;
+use std::fs::File;
 use std::path;
 use std::path::Path;
 use std::process::Command;
+use std::{collections::HashSet, io::BufReader};
 #[cfg(target_os = "linux")]
 use std::{fs::metadata, path::PathBuf};
+use tauri::async_runtime::spawn_blocking;
 
 use crate::configuration_loader::load_generic_preset; // dep: fork = "0.1"
 
@@ -112,4 +116,32 @@ pub fn rename_config(path: String, new_name: String) -> Result<String, String> {
         Ok(()) => Ok(new_path_string),
         Err(e) => Err(e),
     }
+}
+
+#[tauri::command]
+pub async fn find_possible_values(
+    files_to_check: Vec<String>,
+    prop_name: String,
+) -> Option<Vec<Value>> {
+    let result = spawn_blocking(move || {
+        let mut values = HashSet::new();
+
+        for path in files_to_check {
+            let file = File::open(&path).ok()?;
+            let reader = BufReader::new(file);
+            let json: Value = serde_json::from_reader(reader).ok()?;
+
+            let value_res = json.get(prop_name.clone());
+
+            if value_res.is_some() {
+                values.insert(value_res.unwrap().clone());
+            }
+        }
+
+        Some(values.into_iter().collect::<Vec<_>>())
+    })
+    .await
+    .ok()?; // .ok() here handles if the thread panicked
+
+    result
 }
