@@ -3,8 +3,6 @@ import { open } from "@tauri-apps/api/dialog";
 import { globalState } from "../../lib/state-store";
 import FieldButton from "./field-button";
 import InputComponent from "./input-component";
-import { getRelevantConfigsFromType } from "../../lib/commons";
-import { invoke } from "@tauri-apps/api/tauri";
 
 export default function FileLoader() {
   const {

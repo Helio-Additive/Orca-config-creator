@@ -126,6 +126,7 @@ export default function NewProperty({
       propName: propName,
     }).then((el) => {
       const typedEl = el as (string | string[])[] | null;
+      console.log(typedEl);
 
       if (typedEl === null) setPossibleValues([]);
       else

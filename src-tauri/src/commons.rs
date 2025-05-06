@@ -134,7 +134,14 @@ pub async fn find_possible_values(
             let value_res = json.get(prop_name.clone());
 
             if value_res.is_some() {
-                values.insert(value_res.unwrap().clone());
+                if value_res.unwrap().is_string() {
+                    values.insert(value_res.unwrap().clone());
+                } else if value_res.unwrap().is_array() {
+                    let value_arr = value_res.unwrap().as_array().unwrap();
+                    value_arr.iter().for_each(|el| {
+                        values.insert(el.clone());
+                    });
+                }
             }
         }
 
