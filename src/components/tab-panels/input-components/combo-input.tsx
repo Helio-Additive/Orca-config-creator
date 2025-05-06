@@ -39,12 +39,13 @@ export default function ComboInput({
 }) {
   const [query, setQuery] = useState("");
 
-  const filteredValues =
+  const filteredValues = (
     query === ""
       ? possibleValues
       : possibleValues.filter((el) => {
           return el.toLowerCase().includes(query.toLowerCase()) && el;
-        });
+        })
+  ).slice(0, 100);
 
   const changeFunction = (e: string) => {
     if (!allowEdit) return;
