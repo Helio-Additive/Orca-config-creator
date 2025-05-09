@@ -143,6 +143,7 @@ export default function ProcessConfigTab() {
       installedConfigs={installedConfigs}
       loadedSystemConfigs={loadedSystemConfigs}
       loadedUserConfigs={loadedUserConfigs}
+      type="process"
     />
   );
 }

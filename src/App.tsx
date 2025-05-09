@@ -8,14 +8,15 @@ import Home from "./Home";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import {
   dataPrinterConfigLoader,
-  modelConfigLoader,
+  installedModelConfigLoader as installedModelConfigLoader,
   setOsAndDefaultDirectories as setDefaultDirectories,
   installedPrinterConfigLoader,
-  vendorConfigLoader,
+  installedVendorConfigLoader,
   installedFilamentConfigLoader,
   dataFilamentConfigLoader,
   installedProcessConfigLoader,
   dataProcessConfigLoader,
+  loadedSystemModelConfigLoader,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
 import { ToastContainer } from "react-toastify";
@@ -25,7 +26,7 @@ function App() {
   const {
     orcaInstallationPath,
     orcaDataDirectory,
-    vendorConfigs,
+    installedVendorConfigs: vendorConfigs,
     os,
     errLoadingInstallationPath,
   } = useHookstate(globalState);
@@ -38,15 +39,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    vendorConfigLoader(
-      os,
-      orcaInstallationPath,
-      vendorConfigs,
-      errLoadingInstallationPath
-    );
+    installedVendorConfigLoader();
   }, [orcaInstallationPath]);
 
   useEffect(() => {
+    loadedSystemModelConfigLoader();
+
     dataPrinterConfigLoader();
 
     dataFilamentConfigLoader();
@@ -55,7 +53,7 @@ function App() {
   }, [orcaDataDirectory]);
 
   useEffect(() => {
-    modelConfigLoader();
+    installedModelConfigLoader();
 
     installedPrinterConfigLoader();
 

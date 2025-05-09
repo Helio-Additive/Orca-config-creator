@@ -3,7 +3,7 @@ import ConfigItem from "./config-list/config-item";
 import { globalState } from "../../lib/state-store";
 
 export default function VendorConfigTab() {
-  const { vendorConfigs } = useHookstate(globalState);
+  const { installedVendorConfigs: vendorConfigs } = useHookstate(globalState);
   return (
     <div className="h-full overflow-y-auto">
       {vendorConfigs.keys.map((key) => {

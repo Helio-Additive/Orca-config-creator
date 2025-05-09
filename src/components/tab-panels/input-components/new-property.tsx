@@ -1,21 +1,20 @@
+import { useHookstate } from "@hookstate/core";
+import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
 import {
   ConfigType,
   findAvailableConfigs,
-  getRelevantConfigsFromType,
+  getRelevantConfigsFromTypePFP,
 } from "../../../lib/commons";
-import { ConfigProperty } from "../../../lib/printer-configuration-options";
-import FieldButton from "../field-button";
-import InputComponent from "../input-component";
-import { useEffect, useState } from "react";
-import { useHookstate } from "@hookstate/core";
-import { globalState } from "../../../lib/state-store";
 import {
-  ConfigOptionType,
   configOptionTypeToInputTypeString,
   isVector,
 } from "../../../lib/config-option-types";
-import { invoke } from "@tauri-apps/api/tauri";
+import { ConfigProperty } from "../../../lib/printer-configuration-options";
+import { globalState } from "../../../lib/state-store";
+import FieldButton from "../field-button";
+import InputComponent from "../input-component";
 
 export default function NewProperty({
   configProperties,
@@ -51,20 +50,6 @@ export default function NewProperty({
   };
 
   const saveFunc = () => {
-    const configName = editWindowState[editWindowKey].name.get({
-      stealth: true,
-    });
-    const fileName = editWindowState[editWindowKey].fileName.get({
-      stealth: true,
-    });
-    const family = editWindowState[editWindowKey].family.get({ stealth: true });
-
-    editWindowState[editWindowKey].properties.keyDetails[propName!].set({
-      configName,
-      level: 0,
-      family,
-      file: fileName,
-    });
     editWindowState[editWindowKey].changedProps[propName!].set(propValue!);
 
     if (
@@ -76,8 +61,17 @@ export default function NewProperty({
     }
 
     if (configProperties[propName!])
-      editWindowState[editWindowKey].knownKeys.merge([propName!]);
-    else editWindowState[editWindowKey].unknownKeys.merge([propName!]);
+      editWindowState[editWindowKey].knownKeys.set((p) => {
+        const newSet = new Set(p);
+        newSet.add(propName!);
+        return newSet;
+      });
+    else
+      editWindowState[editWindowKey].unknownKeys.set((p) => {
+        const newSet = new Set(p);
+        newSet.add(propName!);
+        return newSet;
+      });
 
     setPropName(undefined);
     setPropValue(undefined);
@@ -102,7 +96,7 @@ export default function NewProperty({
       }
     }
 
-    const neededConfigs = getRelevantConfigsFromType(configType);
+    const neededConfigs = getRelevantConfigsFromTypePFP(configType);
 
     const loadedSystemConfigs = neededConfigs!.installedConfigs.keys.flatMap(
       (familyName) =>
@@ -121,6 +115,21 @@ export default function NewProperty({
 
     const allFiles = [...loadedSystemConfigs, ...userConfigs];
 
+    if (propName && configProperties[propName].search) {
+      setPossibleValues(
+        [
+          ...findAvailableConfigs(
+            configProperties[propName].search! as ConfigType,
+            editWindowState[editWindowKey].location.get({ stealth: true }),
+            editWindowState[editWindowKey].family.get({ stealth: true })
+          )!,
+        ].filter(
+          (el) =>
+            el !== editWindowState[editWindowKey].name.get({ stealth: true })
+        )
+      );
+    } else {
+    }
     invoke("find_possible_values", {
       filesToCheck: allFiles,
       propName: propName,
@@ -143,10 +152,6 @@ export default function NewProperty({
     if (possibleValues.length > 0 && valueType === "text")
       setValueType("combobox");
   }, [possibleValues]);
-
-  useEffect(() => {
-    console.log(propValue);
-  }, [propValue]);
 
   return (
     <div className="flex max-w-[1024px] items-center">

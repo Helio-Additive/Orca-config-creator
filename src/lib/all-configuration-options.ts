@@ -634,12 +634,12 @@ export const all = all_properties.reduce((acc, el) => {
 
 // prettier-ignore
 const printIdentifiers = ([
-{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, label: "Process name", tooltip: "Name of the printer", default: ""},
+{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Process name", tooltip: "Name of the printer", default: ""},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
-{ id: "version", type: ConfigOptionType.coString, fixed: false, required: true, label: "Version", tooltip: "Version of the preset", default: ""},
-{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
+{ id: "version", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Version", tooltip: "Version of the preset", default: ""},
+{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, notPossibleToInherit: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
 { id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Instantiation", tooltip: "Should the preset be instantiated",   enumList: [["true", "true"], ["false", "false"]], default: false},
-{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "process"},
+{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, notPossibleToInherit: true, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "process"},
 ] as ConfigProperty[]).reduce((acc, el) => {
     acc[el.id] = el;
     return acc;
@@ -943,12 +943,12 @@ export const process_properties_map = {
 
 // prettier-ignore
 const filamentIdentifiers = ([
-{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, label: "Filament name", tooltip: "Name of the printer", default: ""},
+{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Filament name", tooltip: "Name of the printer", default: ""},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
-{ id: "version", type: ConfigOptionType.coString, fixed: false, required: true, label: "Version", tooltip: "Version of the preset", default: ""},
-{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
+{ id: "version", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Version", tooltip: "Version of the preset", default: ""},
+{ id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, notPossibleToInherit: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: 0},
 { id: "instantiation", type: ConfigOptionType.coBool, fixed: false, required: false, label: "Instantiation", tooltip: "Should the preset be instantiated",   enumList: [["true", "true"], ["false", "false"]], default: false},
-{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "filament"},
+{ id: "inherits", type: ConfigOptionType.coString, fixed: false, required: false, notPossibleToInherit: true, label: "Inherits profile", tooltip: "Name of parent profile", default: "", search: "filament"},
 ] as ConfigProperty[]).reduce((acc, el) => {
     acc[el.id] = el;
     return acc;

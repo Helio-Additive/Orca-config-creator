@@ -20,71 +20,48 @@ export type Warning = {
   type: "warning" | "error";
 };
 
+export type SystemConfigStateType<T> = Record<
+  string,
+  Record<string, { Ok?: T; Err?: string } & fileProperty>
+>;
+
+export type InstantiatedConfigStateType<T> = Record<
+  string,
+  T & fileProperty & familyProperty
+>;
+
+export type NamedConfigStateType<T> = Record<string, T & fileProperty>;
+
 export const globalStateObject = {
   orcaInstallationPath: undefined as string | undefined,
   orcaDataDirectory: undefined as string | undefined,
   errLoadingInstallationPath: undefined as string | undefined,
   errLoadingDataPath: undefined as string | undefined,
   os: "none",
-  vendorConfigs: {} as Record<string, VendorJsonSchema & fileProperty>,
-  modelConfigs: {} as Record<
-    string,
-    { Ok?: MinPrinterModelJsonSchema; Err?: string } & fileProperty
-  >,
-  installedPrinterConfigs: {} as Record<
-    string,
-    Record<
-      string,
-      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
-    >
-  >,
-  installedFilamentConfigs: {} as Record<
-    string,
-    Record<string, { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty>
-  >,
-  installedProcessConfigs: {} as Record<
-    string,
-    Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
-  >,
-  instantiatedInstalledPrinterConfigs: {} as Record<
-    string,
-    MinPrinterVariantJsonSchema & fileProperty & familyProperty
-  >,
-  instantiatedInstalledFilamentConfigs: {} as Record<
-    string,
-    MinFilamentJsonSchema & fileProperty & familyProperty
-  >,
-  instantiatedInstalledProcessConfigs: {} as Record<
-    string,
-    MinProcessJsonSchema & fileProperty & familyProperty
-  >,
-  loadedSystemPrinterConfigs: {} as Record<
-    string,
-    Record<
-      string,
-      { Ok?: MinPrinterVariantJsonSchema; Err?: string } & fileProperty
-    >
-  >,
-  loadedSystemFilamentConfigs: {} as Record<
-    string,
-    Record<string, { Ok?: MinFilamentJsonSchema; Err?: string } & fileProperty>
-  >,
-  loadedSystemProcessConfigs: {} as Record<
-    string,
-    Record<string, { Ok?: MinProcessJsonSchema; Err?: string } & fileProperty>
-  >,
-  loadedUserPrinterConfigs: {} as Record<
-    string,
-    MinPrinterVariantJsonSchema & fileProperty
-  >,
-  loadedUserFilamentConfigs: {} as Record<
-    string,
-    MinFilamentJsonSchema & fileProperty
-  >,
-  loadedUserProcessConfigs: {} as Record<
-    string,
-    MinProcessJsonSchema & fileProperty
-  >,
+  installedVendorConfigs: {} as NamedConfigStateType<VendorJsonSchema>,
+  installedModelConfigs: {} as SystemConfigStateType<MinPrinterModelJsonSchema>,
+  installedPrinterConfigs:
+    {} as SystemConfigStateType<MinPrinterVariantJsonSchema>,
+  installedFilamentConfigs: {} as SystemConfigStateType<MinFilamentJsonSchema>,
+  installedProcessConfigs: {} as SystemConfigStateType<MinProcessJsonSchema>,
+  instantiatedInstalledPrinterConfigs:
+    {} as InstantiatedConfigStateType<MinPrinterVariantJsonSchema>,
+  instantiatedInstalledFilamentConfigs:
+    {} as InstantiatedConfigStateType<MinFilamentJsonSchema>,
+  instantiatedInstalledProcessConfigs:
+    {} as InstantiatedConfigStateType<MinProcessJsonSchema>,
+  loadedSystemVendorConfigs: {} as NamedConfigStateType<VendorJsonSchema>,
+  loadedSystemModelConfigs:
+    {} as SystemConfigStateType<MinPrinterModelJsonSchema>,
+  loadedSystemPrinterConfigs:
+    {} as SystemConfigStateType<MinPrinterVariantJsonSchema>,
+  loadedSystemFilamentConfigs:
+    {} as SystemConfigStateType<MinFilamentJsonSchema>,
+  loadedSystemProcessConfigs: {} as SystemConfigStateType<MinProcessJsonSchema>,
+  loadedUserPrinterConfigs:
+    {} as NamedConfigStateType<MinPrinterVariantJsonSchema>,
+  loadedUserFilamentConfigs: {} as NamedConfigStateType<MinFilamentJsonSchema>,
+  loadedUserProcessConfigs: {} as NamedConfigStateType<MinProcessJsonSchema>,
   editWindowState: {} as Record<
     string,
     {
@@ -100,8 +77,8 @@ export const globalStateObject = {
       };
       changedProps: Record<string, unknown>;
       deleteKeys: string[];
-      knownKeys: string[];
-      unknownKeys: string[];
+      knownKeys: Set<string>;
+      unknownKeys: Set<string>;
     }
   >,
   routeStack: [] as string[],
