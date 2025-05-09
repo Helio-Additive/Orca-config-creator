@@ -145,6 +145,7 @@ export default function FilamentConfigTab() {
       installedConfigs={installedConfigs}
       loadedSystemConfigs={loadedSystemConfigs}
       loadedUserConfigs={loadedUserConfigs}
+      type="filament"
     />
   );
 }

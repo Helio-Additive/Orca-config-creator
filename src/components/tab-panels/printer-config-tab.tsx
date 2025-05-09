@@ -144,6 +144,7 @@ export default function PrinterConfigTab() {
       installedConfigs={installedConfigs}
       loadedSystemConfigs={loadedSystemConfigs}
       loadedUserConfigs={loadedUserConfigs}
+      type="printer"
     />
   );
 }

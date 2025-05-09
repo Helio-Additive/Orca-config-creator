@@ -232,6 +232,7 @@ export default function EditConfig() {
   const type: ConfigType = searchParams.get("type")! as ConfigType;
   const name: string = searchParams.get("name")!;
   const family: string | undefined = searchParams.get("family") ?? undefined;
+  const newFile: string | undefined = searchParams.get("newFile") ?? undefined;
   const location: ConfigLocationType = searchParams.get(
     "location"
   )! as ConfigLocationType;
@@ -240,9 +241,12 @@ export default function EditConfig() {
   const { editWindowState } = useHookstate(globalState);
 
   useEffect(() => {
+    const propMap = propMaps[type] ?? {};
+
     if (
       editWindowState[fileName].get({ stealth: true }) &&
-      editWindowState[fileName].changedProps.keys.length === 0
+      editWindowState[fileName].changedProps.keys.length === 0 &&
+      !newFile
     ) {
       deinherit_config_by_type(
         editWindowState[fileName].name.get({ stealth: true }),
@@ -252,18 +256,11 @@ export default function EditConfig() {
         .then((res) => {
           const allKeysInRes = Object.keys(res.res);
 
-          const propMap =
-            propMaps[
-              editWindowState[fileName].type.get({
-                stealth: true,
-              }) as ConfigType
-            ] ?? {};
-
-          const knownKeysTemp = Object.keys(propMap).filter((el) =>
-            allKeysInRes.includes(el)
+          const knownKeysTemp = new Set(
+            Object.keys(propMap).filter((el) => allKeysInRes.includes(el))
           );
-          const unknownKeysTemp = allKeysInRes.filter(
-            (el) => !knownKeysTemp.includes(el)
+          const unknownKeysTemp = new Set(
+            allKeysInRes.filter((el) => !knownKeysTemp.has(el))
           );
 
           editWindowState[fileName].knownKeys.set(knownKeysTemp);
@@ -272,6 +269,25 @@ export default function EditConfig() {
           editWindowState[fileName].properties.set(res);
         })
         .catch((error: any) => toast(error.toString(), { type: "error" }));
+    } else if (
+      editWindowState[fileName].get({ stealth: true }) &&
+      editWindowState[fileName].changedProps.keys.length === 0 &&
+      newFile
+    ) {
+      const knownKeysTemp = Object.keys(propMap).filter(
+        (el) => propMap[el].required
+      );
+
+      const changedPropsTemp = knownKeysTemp.reduce((acc, el) => {
+        acc[el] = propMap[el].default;
+        return acc;
+      }, {} as Record<string, any>);
+
+      changedPropsTemp["type"] = type;
+      editWindowState[fileName].merge({
+        changedProps: changedPropsTemp,
+        knownKeys: new Set(knownKeysTemp),
+      });
     } else {
       if (!editWindowState[fileName].get({ stealth: true }))
         editWindowState[fileName].set({
@@ -282,8 +298,8 @@ export default function EditConfig() {
           properties: { res: {}, keyDetails: {}, warnings: [] },
           changedProps: {},
           deleteKeys: [],
-          knownKeys: [],
-          unknownKeys: [],
+          knownKeys: new Set(),
+          unknownKeys: new Set(),
           location: location,
         });
     }
@@ -296,6 +312,8 @@ export default function EditConfig() {
         editWindowState[fileName].changedProps.keys.length === 0
       )
         editWindowState[fileName].set(none);
+
+      if (newFile) editWindowState[fileName].set(none);
     };
   }, []);
 
@@ -355,21 +373,32 @@ export default function EditConfig() {
           editWindowState[fileName].deleteKeys.length > 0) && (
           <ResetAllButton
             onClick={() => {
-              editWindowState[fileName].changedProps.set({});
-              editWindowState[fileName].deleteKeys.set([]);
+              editWindowState[fileName].merge({
+                changedProps: {},
+                deleteKeys: [],
+                knownKeys: new Set(),
+              });
             }}
           />
         )}
       </div>
 
       <div className="flex-1 min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
-        {editWindowState[fileName].knownKeys.map((keyState) => {
-          const key = keyState.get();
+        {Array.from(editWindowState[fileName].knownKeys.get()).map((key) => {
+          const propMap =
+            propMaps[
+              editWindowState[fileName].type.get({
+                stealth: true,
+              }) as ConfigType
+            ] ?? {};
+          const knownProp = propMap[key];
+
           const property = editWindowState[fileName].properties.res[key].get();
           const changedProperty =
             editWindowState[fileName].changedProps[key].get();
-          const keyDetails =
-            editWindowState[fileName].properties.keyDetails[key].get();
+          const keyDetails = editWindowState[fileName].properties.keyDetails[
+            key
+          ].get() ?? { configName: name, level: 0, family, file: fileName };
 
           //const isNewProp = changedProperty !== undefined && property === undefined;
 
@@ -377,19 +406,8 @@ export default function EditConfig() {
             .get()
             .includes(key);
 
-          const isBaseProp =
-            editWindowState[fileName].properties.keyDetails[key].level.get({
-              stealth: true,
-            }) === 0;
+          const isBaseProp = keyDetails.level === 0;
 
-          const propMap =
-            propMaps[
-              editWindowState[fileName].type.get({
-                stealth: true,
-              }) as ConfigType
-            ] ?? {};
-
-          const knownProp = propMap[key];
           let inputType = configOptionTypeToInputTypeString(knownProp.type);
 
           const isArray = changedProperty
@@ -498,8 +516,7 @@ export default function EditConfig() {
             />
           );
         })}
-        {editWindowState[fileName].unknownKeys.map((keyState) => {
-          const key = keyState.get();
+        {Array.from(editWindowState[fileName].unknownKeys.get()).map((key) => {
           const property = editWindowState[fileName].properties.res[key].get();
           const keyDetails =
             editWindowState[fileName].properties.keyDetails[key].get();

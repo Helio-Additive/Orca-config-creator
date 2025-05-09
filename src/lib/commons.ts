@@ -26,6 +26,8 @@ import {
   fileProperty,
   globalState,
   KeyDetails,
+  NamedConfigStateType,
+  SystemConfigStateType,
   Warning,
 } from "./state-store";
 
@@ -154,12 +156,12 @@ export const setOsAndDefaultDirectories = async (
   }
 };
 
-export const vendorConfigLoader = async (
-  os: State<string>,
-  orcaInstallationPath: State<string | undefined>,
-  vendorConfigs: State<Record<string, VendorJsonSchema & fileProperty>>,
-  errLoadingInstallationPath: State<string | undefined>
-) => {
+export const installedVendorConfigLoader = async () => {
+  const os = globalState.os;
+  const orcaInstallationPath = globalState.orcaInstallationPath;
+  const installedVendorConfigs = globalState.installedVendorConfigs;
+  const errLoadingInstallationPath = globalState.errLoadingInstallationPath;
+
   try {
     if (orcaInstallationPath.get({ stealth: true })) {
       const vendorConfigsPath =
@@ -175,25 +177,138 @@ export const vendorConfigLoader = async (
         value.fileName = vendorConfigsPath + "/" + key + ".json";
       });
 
-      vendorConfigs.set(vendorConfigsRead);
+      installedVendorConfigs.set(vendorConfigsRead);
       errLoadingInstallationPath.set(undefined);
       toast("Loaded system vendor configurations", { type: "success" });
     } else {
-      vendorConfigs.set({});
+      installedVendorConfigs.set({});
       errLoadingInstallationPath.set(undefined);
     }
   } catch (error: any) {
-    vendorConfigs.set({});
+    installedVendorConfigs.set({});
     toast(error, { type: "error" });
     errLoadingInstallationPath.set(error);
   }
 };
 
-export const modelConfigLoader = async () => {
+export const loadedSystemVendorConfigLoader = async () => {
+  const orcaDataDirectory = globalState.orcaDataDirectory;
+  const relevantConfigs = getRelevantConfigsFromTypeVM("vendor");
+  const loadedSystemConfigs = relevantConfigs!.loadedSystemConfigs! as State<
+    NamedConfigStateType<VendorJsonSchema>
+  >;
+  const errLoadingDataPath = globalState.errLoadingDataPath;
+
+  loadedSystemConfigs.set({});
+
+  try {
+    if (
+      orcaDataDirectory.get({ stealth: true }) &&
+      !errLoadingDataPath.get({ stealth: true })
+    ) {
+      const vendorConfigsRead: NamedConfigStateType<VendorJsonSchema> =
+        await invoke("load_all_system_vendor_profiles", {
+          path:
+            orcaDataDirectory.get({ stealth: true }) +
+            LOADED_SYSTEM_PROFILES_SUBDIRECTORY,
+        });
+
+      Object.entries(vendorConfigsRead).forEach(([key, value]) => {
+        value.fileName =
+          orcaDataDirectory.get({ stealth: true }) +
+          LOADED_SYSTEM_PROFILES_SUBDIRECTORY +
+          "/" +
+          key +
+          ".json";
+      });
+
+      loadedSystemConfigs.set(vendorConfigsRead);
+      errLoadingDataPath.set(undefined);
+      toast(`Loaded user printer model profiles`, { type: "success" });
+    } else {
+      loadedSystemConfigs.set({});
+      errLoadingDataPath.set(undefined);
+    }
+  } catch (error: any) {
+    loadedSystemConfigs.set({});
+    errLoadingDataPath.set(error);
+    toast(error, { type: "error" });
+  }
+};
+
+export const loadedSystemModelConfigLoader = async () => {
+  const orcaDataDirectory = globalState.orcaDataDirectory;
+  const relevantConfigs = getRelevantConfigsFromTypeVM("printer-model");
+  const loadedSystemConfigs = relevantConfigs!.loadedSystemConfigs! as State<
+    SystemConfigStateType<MinPrinterModelJsonSchema>
+  >;
+  const errLoadingDataPath = globalState.errLoadingDataPath;
+
+  loadedSystemConfigs.set({});
+
+  try {
+    if (
+      orcaDataDirectory.get({ stealth: true }) &&
+      !errLoadingDataPath.get({ stealth: true })
+    ) {
+      const vendorConfigsRead: Record<string, VendorJsonSchema> = await invoke(
+        "load_all_system_vendor_profiles",
+        {
+          path:
+            orcaDataDirectory.get({ stealth: true }) +
+            LOADED_SYSTEM_PROFILES_SUBDIRECTORY,
+        }
+      );
+
+      Object.keys(vendorConfigsRead).map(async (key) => {
+        const vendorConfig = vendorConfigsRead[key];
+        const configList = vendorConfig[
+          "machine_model_list"
+        ] as ConfigNameAndPath[];
+
+        const modelConfigsParsed: (MinPrinterModelJsonSchema & fileProperty)[] =
+          await invoke("load_all_printer_model_presets", {
+            path:
+              orcaDataDirectory.get({ stealth: true }) +
+              LOADED_SYSTEM_PROFILES_SUBDIRECTORY +
+              "/" +
+              key,
+            configNameAndPaths: configList,
+          });
+
+        for (let i = 0; i < configList.length; i++) {
+          modelConfigsParsed[i].fileName =
+            orcaDataDirectory.get({ stealth: true }) +
+            LOADED_SYSTEM_PROFILES_SUBDIRECTORY +
+            "/" +
+            key +
+            "/" +
+            configList[i].sub_path;
+
+          loadedSystemConfigs[key].merge({
+            [configList[i].name]: modelConfigsParsed[i],
+          });
+        }
+      });
+
+      errLoadingDataPath.set(undefined);
+      toast(`Loaded user printer model profiles`, { type: "success" });
+    } else {
+      loadedSystemConfigs.set({});
+      errLoadingDataPath.set(undefined);
+    }
+  } catch (error: any) {
+    loadedSystemConfigs.set({});
+    errLoadingDataPath.set(error);
+    toast(error, { type: "error" });
+  }
+};
+
+export const installedModelConfigLoader = async () => {
   const os = globalState.os;
   const orcaInstallationPath = globalState.orcaInstallationPath;
-  const vendorConfigs = globalState.vendorConfigs;
-  const modelConfigs = globalState.modelConfigs;
+  const installedVendorConfigs = globalState.installedVendorConfigs;
+  const installedModelConfigs = globalState.installedModelConfigs;
   const errLoadingInstallationPath = globalState.errLoadingInstallationPath;
 
   try {
@@ -201,8 +316,8 @@ export const modelConfigLoader = async () => {
       orcaInstallationPath.get({ stealth: true }) &&
       !errLoadingInstallationPath.get({ stealth: true })
     ) {
-      vendorConfigs.keys.map(async (key) => {
-        const vendorConfig = vendorConfigs[key].get({ stealth: true });
+      installedVendorConfigs.keys.map(async (key) => {
+        const vendorConfig = installedVendorConfigs[key].get({ stealth: true });
         const machine_model_list =
           vendorConfig.machine_model_list as ConfigNameAndPath[];
         const modelConfigsParsed: (MinPrinterModelJsonSchema & {
@@ -224,18 +339,20 @@ export const modelConfigLoader = async () => {
             key +
             "/" +
             machine_model_list[i].sub_path;
-          modelConfigs[machine_model_list[i].name].set(modelConfigsParsed[i]);
+          installedModelConfigs[key].merge({
+            [machine_model_list[i].name]: modelConfigsParsed[i],
+          });
         }
       });
 
       toast("Loaded system model configs", { type: "success" });
     } else {
-      modelConfigs.set({});
+      installedModelConfigs.set({});
     }
   } catch (error: any) {
     toast(error, { type: "error" });
     console.log(error);
-    modelConfigs.set({});
+    installedModelConfigs.set({});
   }
 };
 
@@ -252,7 +369,7 @@ export async function dataConfigLoader<
   loadedUserProfilesConfigSubdirectory: string
 ) {
   const orcaDataDirectory = globalState.orcaDataDirectory;
-  const relevantConfigs = getRelevantConfigsFromType(type);
+  const relevantConfigs = getRelevantConfigsFromTypePFP(type);
   const loadedSystemConfigs = relevantConfigs!.loadedSystemConfigs! as State<
     Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
   >;
@@ -407,8 +524,8 @@ export function installedConfigLoader<
 ) {
   const os = globalState.os;
   const orcaInstallationPath = globalState.orcaInstallationPath;
-  const vendorConfigs = globalState.vendorConfigs;
-  const relevantConfigs = getRelevantConfigsFromType(type);
+  const vendorConfigs = globalState.installedVendorConfigs;
+  const relevantConfigs = getRelevantConfigsFromTypePFP(type);
   const installedConfigs = relevantConfigs!.installedConfigs! as State<
     Record<string, Record<string, { Ok?: T; Err?: string } & fileProperty>>
   >;
@@ -509,11 +626,11 @@ export const findConfig = (
   location: ConfigLocationType,
   family?: string
 ) => {
-  const neededConfigs = getRelevantConfigsFromType(type);
+  const neededConfigs = getRelevantConfigsFromTypePFP(type);
 
   switch (location) {
     case "user":
-      return neededConfigs!.loadedUserConfigs[configName].get({
+      return neededConfigs!.loadedUserConfigs![configName].get({
         stealth: true,
       });
 
@@ -531,7 +648,7 @@ export const findConfig = (
             }
           : undefined;
       else {
-        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
+        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs![
           configName
         ].get({ stealth: true });
 
@@ -561,7 +678,7 @@ export const findConfig = (
             }
           : undefined;
       else {
-        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs[
+        const instantiatedConfig = neededConfigs!.instantiatedInstalledConfigs![
           configName
         ].get({ stealth: true });
 
@@ -707,7 +824,8 @@ export function sanitizeWindowLabel(input: string): string {
   return input.replace(/[^a-zA-Z0-9\-\/:_]/g, "_");
 }
 
-export function getRelevantConfigsFromType(type: ConfigType) {
+//gets relevant configs for printer, filament or process
+export function getRelevantConfigsFromTypePFP(type: ConfigType) {
   const printerConfigs = {
     installedConfigs: globalState.installedPrinterConfigs,
     instantiatedInstalledConfigs:
@@ -748,6 +866,35 @@ export function getRelevantConfigsFromType(type: ConfigType) {
   return neededConfigs;
 }
 
+//gets relevant configs for vendor or printer model
+export function getRelevantConfigsFromTypeVM(type: ConfigType) {
+  const vendorConfigs = {
+    installedConfigs: globalState.installedVendorConfigs,
+    instantiatedInstalledConfigs: undefined,
+    loadedSystemConfigs: globalState.loadedSystemVendorConfigs,
+    loadedUserConfigs: undefined,
+  };
+
+  const modelConfigs = {
+    installedConfigs: globalState.installedModelConfigs,
+    instantiatedInstalledConfigs: undefined,
+    loadedSystemConfigs: globalState.loadedSystemModelConfigs,
+    loadedUserConfigs: undefined,
+  };
+
+  const neededConfigs = (() => {
+    switch (type) {
+      case "printer-model":
+        return modelConfigs;
+
+      case "vendor":
+        return vendorConfigs;
+    }
+  })();
+
+  return neededConfigs;
+}
+
 export async function deinherit_config_by_type(
   configName: string,
   type: ConfigType,
@@ -776,6 +923,18 @@ export function editConfigFile(
   navigate(url, { replace: replace });
 }
 
+export function newFile(
+  type: ConfigType,
+  location: ConfigLocationType,
+  navigate: NavigateFunction,
+  replace = false
+) {
+  const name = "New File";
+  const url = `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=newFile`;
+
+  navigate(url, { replace: replace });
+}
+
 export const folderOpener = (path: string) => {
   invoke("check_file", { path }).then((exists) => {
     if (exists) {
@@ -788,33 +947,83 @@ export const folderOpener = (path: string) => {
 
 export function findAvailableConfigs(
   findType: ConfigType,
-  location: ConfigLocationType,
+  location: ConfigLocationType | "all",
   family?: string
 ) {
-  const neededConfigs = getRelevantConfigsFromType(findType);
+  if (findType === "printer-model" || findType === "vendor") {
+    const neededConfigs = getRelevantConfigsFromTypeVM(findType);
 
-  switch (location) {
-    case "user": {
-      const loadedSystemConfigs =
-        neededConfigs!.loadedSystemConfigs.keys.flatMap((familyName) =>
-          neededConfigs!.loadedSystemConfigs[familyName].keys.filter(
-            (configName) =>
-              neededConfigs!.loadedSystemConfigs[familyName][configName].get({
-                stealth: true,
-              }).Ok?.instantiation === "true"
-          )
+    switch (location) {
+      case "user": {
+        const loadedSystemConfigs =
+          neededConfigs!.loadedSystemConfigs.keys.flatMap(
+            (familyName) => neededConfigs!.loadedSystemConfigs[familyName].keys
+          );
+        return loadedSystemConfigs;
+      }
+
+      case "loaded_system": {
+        return neededConfigs!.loadedSystemConfigs[family!].keys;
+      }
+
+      case "installed": {
+        return neededConfigs!.installedConfigs[family!].keys;
+      }
+
+      case "all": {
+        const installedConfigs = neededConfigs!.installedConfigs.keys.flatMap(
+          (familyName) => neededConfigs!.installedConfigs[familyName].keys
         );
-      const userConfigs = neededConfigs!.loadedUserConfigs.keys;
 
-      return [...loadedSystemConfigs, ...userConfigs];
+        return installedConfigs;
+      }
+
+      default:
+        return [];
     }
+  } else {
+    const neededConfigs = getRelevantConfigsFromTypePFP(findType);
+    switch (location) {
+      case "user": {
+        const loadedSystemConfigs =
+          neededConfigs!.loadedSystemConfigs.keys.flatMap((familyName) =>
+            neededConfigs!.loadedSystemConfigs[familyName].keys.filter(
+              (configName) =>
+                neededConfigs!.loadedSystemConfigs[familyName][configName].get({
+                  stealth: true,
+                }).Ok?.instantiation === "true"
+            )
+          );
+        const userConfigs = neededConfigs!.loadedUserConfigs.keys;
 
-    case "loaded_system": {
-      return neededConfigs?.loadedSystemConfigs[family!].keys;
-    }
+        return [...loadedSystemConfigs, ...userConfigs];
+      }
 
-    case "installed": {
-      return neededConfigs?.installedConfigs[family!].keys;
+      case "loaded_system": {
+        return neededConfigs!.loadedSystemConfigs[family!].keys;
+      }
+
+      case "installed": {
+        return neededConfigs!.installedConfigs[family!].keys;
+      }
+
+      case "all": {
+        const installedConfigs = neededConfigs!.installedConfigs.keys.flatMap(
+          (familyName) =>
+            neededConfigs!.installedConfigs[familyName].keys.filter(
+              (configName) =>
+                neededConfigs!.installedConfigs[familyName][configName].get({
+                  stealth: true,
+                }).Ok?.instantiation === "true"
+            )
+        );
+        const userConfigs = neededConfigs!.loadedUserConfigs.keys;
+
+        return [...installedConfigs, ...userConfigs];
+      }
+
+      default:
+        return [];
     }
   }
 }
@@ -825,7 +1034,9 @@ export async function updateVendorConfigEntry(
   oldName: string,
   newName: string
 ) {
-  const vendorConfig = globalState.vendorConfigs[family].get({ stealth: true });
+  const vendorConfig = globalState.installedVendorConfigs[family].get({
+    stealth: true,
+  });
 
   const vendorConfigKeyName = (() => {
     switch (type) {
@@ -884,7 +1095,7 @@ export async function updateVendorConfigEntry(
       break;
 
     case "printer-model":
-      await modelConfigLoader();
+      await installedModelConfigLoader();
       break;
   }
 }
