@@ -29,9 +29,11 @@ export default function InputComponent({
   sideText,
   possibleValues,
   className,
+  isArray,
 }: {
   label?: string;
   type?: string;
+  isArray?: boolean;
   arraySize?: number;
   value?: string;
   arrayValue?: string[];
@@ -53,7 +55,9 @@ export default function InputComponent({
   className?: string;
 }) {
   const arr = Array.from(
-    { length: arraySize ?? (arrayValue ? arrayValue?.length : 1) },
+    {
+      length: arraySize ?? (isArray ? (arrayValue ? arrayValue.length : 0) : 1),
+    },
     (_, i) => i
   );
 
@@ -90,7 +94,7 @@ export default function InputComponent({
         <Tooltip.Trigger asChild>
           <div className="flex items-center w-full max-w-[1024px] relative overflow-x-auto ">
             {arr.map((idx) => {
-              const inputValue = arrayValue ? arrayValue[idx] : value;
+              const inputValue = isArray ? arrayValue![idx] : value;
 
               return (
                 <div key={idx} className="flex flex-2/3 items-center min-w-fit">
@@ -103,7 +107,7 @@ export default function InputComponent({
                         allowEdit={allowEdit}
                         err={err}
                         enumValues={enumValues!}
-                        idx={idx}
+                        idx={isArray ? idx : undefined}
                       />
                     ),
                     boolean: (
@@ -119,7 +123,7 @@ export default function InputComponent({
                             ["false", "0"],
                           ]
                         }
-                        idx={idx}
+                        idx={isArray ? idx : undefined}
                       />
                     ),
                     combobox: (
@@ -130,7 +134,7 @@ export default function InputComponent({
                         onChange={onChange}
                         allowEdit={allowEdit}
                         err={err}
-                        idx={idx}
+                        idx={isArray ? idx : undefined}
                         placeholder={placeholder}
                       />
                     ),
@@ -144,7 +148,7 @@ export default function InputComponent({
                       type={type}
                       allowEdit={allowEdit}
                       err={err}
-                      idx={idx}
+                      idx={isArray ? idx : undefined}
                     />
                   )}
                   <div className="mr-1 text-text-secondary">{sideText}</div>

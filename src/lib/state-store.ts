@@ -73,7 +73,7 @@ export const globalStateObject = {
       properties: {
         res: Record<string, unknown>;
         keyDetails: Record<string, KeyDetails>;
-        warnings: Warning[];
+        warnings: Record<string, Warning[]>;
       };
       changedProps: Record<string, unknown>;
       deleteKeys: string[];

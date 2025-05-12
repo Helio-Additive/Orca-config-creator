@@ -30,6 +30,14 @@ import {
   SystemConfigStateType,
   Warning,
 } from "./state-store";
+import {
+  ConfigProperty,
+  printer_properties_map,
+} from "./printer-configuration-options";
+import {
+  filament_properties_map,
+  process_properties_map,
+} from "./all-configuration-options";
 
 export enum InheritanceStatus {
   OK,
@@ -696,6 +704,144 @@ export const findConfig = (
   }
 };
 
+export function checkNameCollision(
+  name: string,
+  family: string,
+  type: ConfigType,
+  location: ConfigLocationType
+): boolean {
+  return (
+    findConfig(name, type, location, family) !== undefined ||
+    findConfig(name, type, "loaded_system", family) !== undefined ||
+    findConfig(name, type, "installed", family) !== undefined
+  );
+}
+
+export function checkNameSanity(name: string) {
+  const isValid = (str: string) => /^[^><[\]:\\/|?*]+$/.test(str);
+
+  return isValid(name);
+}
+
+export function analyzeConfiguration(
+  properties: Record<string, unknown>,
+  type: ConfigType
+): Record<string, Warning[]> {
+  const warnings = {} as Record<string, Warning[]>;
+  const addToWarning = (key: string, val: Warning) =>
+    warnings[key] ? warnings[key].push(val) : (warnings[key] = [val]);
+
+  const propMap = getPropMapFromType(type);
+
+  Object.keys(properties).forEach((key) => {
+    if (propMap[key] && propMap[key].regex) {
+      if (Array.isArray(properties[key])) {
+        const isValid = properties[key].reduce((acc, el) => {
+          const isElValid = propMap[key].regex!.test(el as string);
+          return acc || !isElValid;
+        }, false);
+
+        if (!isValid)
+          addToWarning(key, {
+            text: propMap[key].regexWarning!,
+            type: propMap[key].regexWarningType as "error" | "warning",
+          });
+      } else {
+        const isValid = propMap[key].regex.test(properties[key] as string);
+        if (!isValid)
+          addToWarning(key, {
+            text: propMap[key].regexWarning!,
+            type: propMap[key].regexWarningType as "error" | "warning",
+          });
+      }
+    }
+  });
+
+  return warnings;
+}
+
+export const deinherit_and_load_all_props_by_props: any = async <
+  T extends PrinterVariantJsonSchema | FilamentJsonSchema | ProcessJsonSchema
+>(
+  properties: T,
+  type: ConfigType,
+  configFile: string,
+  family?: string,
+  level = 0,
+  checkedConfigs: string[] = []
+) => {
+  const warnings = {} as Record<string, Warning[]>;
+  if (checkedConfigs.includes(properties["name"] as string)) {
+    warnings["inherits"] = [
+      {
+        text: "Circular dependency found, cannot be deinherited",
+        type: "error",
+      },
+    ];
+    return { res: {}, keyDetails: {}, warnings };
+  }
+
+  try {
+    const res: T = properties;
+
+    if (res.inherits) {
+      let printerFamily = family;
+
+      const inherited_props = await deinherit_and_load_all_props(
+        res.inherits,
+        type,
+        printerFamily,
+        level + 1,
+        [properties["name"], ...checkedConfigs]
+      );
+
+      const filteredRes = Object.fromEntries(
+        Object.entries(res).filter(([_, v]) => v != null)
+      );
+
+      const keyDetails = Object.keys(filteredRes).reduce((acc, key) => {
+        acc[key] = {
+          configName: res.name,
+          level: level,
+          family: family,
+          file: configFile,
+        };
+        return acc;
+      }, {} as Record<string, KeyDetails>);
+
+      const returnObject = {
+        res: { ...inherited_props.res, ...filteredRes },
+        keyDetails: { ...inherited_props.keyDetails, ...keyDetails },
+        warnings: { ...inherited_props.warnings, ...warnings },
+      };
+
+      const analysedWarnings = analyzeConfiguration(returnObject.res, type);
+
+      returnObject.warnings = { ...returnObject.warnings, ...analysedWarnings };
+
+      return returnObject;
+    } else {
+      const keyDetails = Object.keys(res).reduce((acc, key) => {
+        acc[key] = {
+          configName: res.name,
+          level: level,
+          family: family,
+          file: configFile,
+        };
+        return acc;
+      }, {} as Record<string, KeyDetails>);
+
+      const analysedWarnings = analyzeConfiguration(res, type);
+
+      const mergedWarnings = { ...warnings, ...analysedWarnings };
+
+      return { res, keyDetails, warnings: mergedWarnings };
+    }
+  } catch (error: any) {
+    throw "Could not complete inheritance hierarchy: " + error;
+  }
+};
+
 export const deinherit_and_load_all_props: any = async <
   T extends PrinterVariantJsonSchema | FilamentJsonSchema | ProcessJsonSchema
 >(
@@ -705,12 +851,19 @@ export const deinherit_and_load_all_props: any = async <
   level = 0,
   checkedConfigs: string[] = []
 ) => {
-  if (checkedConfigs.includes(configName))
-    throw "Circular dependency found, cannot be deinherited";
+  const warnings = {} as Record<string, Warning[]>;
+  if (checkedConfigs.includes(configName)) {
+    warnings["inherits"] = [
+      {
+        text: "Circular dependency found, cannot be deinherited",
+        type: "error",
+      },
+    ];
+    return { res: {}, keyDetails: {}, warnings };
+  }
 
   try {
     let configFile: string | undefined = undefined;
-    const warnings = [] as Warning[];
 
     const loadedUserPrinterConfigRes = findConfig(
       configName,
@@ -740,16 +893,29 @@ export const deinherit_and_load_all_props: any = async <
           family
         ) as (T & fileProperty & familyProperty) | undefined;
 
-        warnings.push({
+        const tempWarning: Warning = {
           text: "could not find ancestor in loaded presets. This means the config might not appear in OrcaSlicer.",
           type: "warning",
-        });
+        };
+
+        warnings["inherits"]
+          ? warnings["inherits"].push(tempWarning)
+          : (warnings["inherits"] = [tempWarning]);
 
         if (instantiatedInstalledConfigRes) {
           configFile = instantiatedInstalledConfigRes.fileName;
           family = instantiatedInstalledConfigRes.family;
         } else {
-          throw "Could not find parent config " + configName;
+          const tempWarning: Warning = {
+            text: "Could not find parent config " + configName,
+            type: "error",
+          };
+
+          warnings["inherits"]
+            ? warnings["inherits"].push(tempWarning)
+            : (warnings["inherits"] = [tempWarning]);
+
+          return { res: {}, keyDetails: {}, warnings };
         }
       }
     }
@@ -786,7 +952,7 @@ export const deinherit_and_load_all_props: any = async <
       return {
         res: { ...inherited_props.res, ...filteredRes },
         keyDetails: { ...inherited_props.keyDetails, ...keyDetails },
-        warnings: [...inherited_props.warnings, ...warnings],
+        warnings: { ...inherited_props.warnings, ...warnings },
       };
     } else {
       const keyDetails = Object.keys(res).reduce((acc, key) => {
@@ -1146,4 +1312,17 @@ export async function renameConfig(
   } catch (error: any) {
     throw error;
   }
+}
+
+export function getPropMapFromType(type: ConfigType) {
+  const propMap: Record<string, ConfigProperty> =
+    {
+      printer: printer_properties_map,
+      "printer-model": {},
+      filament: filament_properties_map,
+      process: process_properties_map,
+      vendor: {},
+    }[type] ?? {};
+
+  return propMap;
 }
