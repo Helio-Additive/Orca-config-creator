@@ -43,12 +43,10 @@ export async function saveFile(
     ...changedProps.get({ stealth: true }),
   };
 
+  let newFileName =
+    getDirectoryFromTypeAndLocation(type, location, family) + newName + ".json";
   await invoke("write_to_file", {
-    path: !newFile
-      ? fileName
-      : getDirectoryFromTypeAndLocation(type, location, family) +
-        newName +
-        ".json",
+    path: !newFile ? fileName : newFileName,
     content: JSON.stringify(newProps, null, 2),
   })
     .then(() => {
@@ -63,7 +61,6 @@ export async function saveFile(
   if (newName) {
     try {
       const name = props["name"].get({ stealth: true }) as string;
-      let newFileName = name;
       if (!newFile) {
         newFileName = await renameConfig(name, newName, type, location, family);
       }
