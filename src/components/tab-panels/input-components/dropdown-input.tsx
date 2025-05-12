@@ -11,7 +11,7 @@ export default function DropdownInput({
   enumValues,
   idx = 0,
 }: {
-  value: string;
+  value: string | null;
   err?: string;
   inputClassName?: string;
   allowEdit?: boolean;

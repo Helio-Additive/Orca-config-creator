@@ -14,7 +14,9 @@ export interface ConfigProperty {
   enumList?: [string, string][];
   min?: number;
   max?: number;
-  regex?: string;
+  regex?: RegExp;
+  regexWarning?: string;
+  regexWarningType?: "error" | "warning";
   sidetext?: string;
   mode?: ConfigOptionMode;
   example?: any;
@@ -24,7 +26,7 @@ export interface ConfigProperty {
 
 // prettier-ignore
 export const printer_properties: ConfigProperty[] = [
-{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Printer name", tooltip: "Name of the printer", default: ""},
+{ id: "name", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Printer name", tooltip: "Name of the printer", default: "", regex:/^[^><[\]:\\/|?*]+$/, regexWarning: "Name cannot contain these characters <>[]/:|?*", regexWarningType: "error"},
 { id: "type", type: ConfigOptionType.coString, fixed: true, required: true, label: "Preset type", tooltip: "Type of the preset", default: ""},
 { id: "version", type: ConfigOptionType.coString, fixed: false, required: true, notPossibleToInherit: true, label: "Version", tooltip: "Version of the preset", default: ""},
 { id: "from", type: ConfigOptionType.coEnum, fixed: false, required: true, notPossibleToInherit: true, label: "From", tooltip: "Is it from User or System?", enumList: [["User", "User"], ["System", "system"]], default: "User"},
@@ -35,7 +37,7 @@ export const printer_properties: ConfigProperty[] = [
 { id: "setting_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Setting id", tooltip: "not required and unclear what it does", default: "" },
 { id: "printer_settings_id",  type: ConfigOptionType.coString, fixed: false, required: false, label: "Printer settings id", tooltip: "not required and unclear what it does", default: "" },
 { id: "printer_technology", type: ConfigOptionType.coEnum, fixed: false, required: true, label: "Printer technology", tooltip: "Printer technology", enumList: [["FFF", "FFF"]], default: "FFF"},
-{ id: "helio_printer_id", type: ConfigOptionType.coString, fixed: false, required: false, label: "Helio Printer ID", tooltip: "UUID of the printer provided by Helio", mode: ConfigOptionMode.comSimple, default: "" },
+{ id: "helio_printer_id", type: ConfigOptionType.coString, fixed: false, required: false, label: "Helio Printer ID", tooltip: "UUID of the printer provided by Helio", mode: ConfigOptionMode.comSimple, default: "" , regex: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i, regexWarning: "Has to be a valid uuid", regexWarningType: "warning"},
 { id: "helio_initial_room_air_temp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial room airtemp", sidetext: "Â°C", tooltip: "Specifies the starting ambient air temperature within the room or environment where the printing process begins. This parameter establishes the baseline thermal conditions for the printing operation.  ", mode: ConfigOptionMode.comSimple, default: 25 },
 { id: "helio_layer_threshold", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Layer Threshold", sidetext: "mm", tooltip: "LFAM print height, denotes the threshold helight at which the ambient temperature stabilizes, ceasing to rise further as the printing process advances. Typically, this marks the point where the immediate vicinity of the print reaches its peak temperature, owing to the consistent emission of heat from the printing object.", mode: ConfigOptionMode.comSimple, default: 40 },
 { id: "helio_object_proximity_airtemp", type: ConfigOptionType.coFloat, fixed: false, required: false, label: "Initial air temperature", sidetext: "Â°C", tooltip: "Refers to the ambient air temperature at a distance of 10 centimeters from the vertical surface of the printed object.", mode: ConfigOptionMode.comSimple, default: 30 },

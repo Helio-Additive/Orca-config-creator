@@ -129,23 +129,23 @@ export default function NewProperty({
         )
       );
     } else {
-    }
-    invoke("find_possible_values", {
-      filesToCheck: allFiles,
-      propName: propName,
-    }).then((el) => {
-      const typedEl = el as (string | string[])[] | null;
-      console.log(typedEl);
+      invoke("find_possible_values", {
+        filesToCheck: allFiles,
+        propName: propName,
+      }).then((el) => {
+        const typedEl = el as (string | string[])[] | null;
+        console.log(typedEl);
 
-      if (typedEl === null) setPossibleValues([]);
-      else
-        setPossibleValues(
-          typedEl.flatMap((x) => {
-            if (Array.isArray(x)) return x;
-            else return [x];
-          })
-        );
-    });
+        if (typedEl === null) setPossibleValues([]);
+        else
+          setPossibleValues(
+            typedEl.flatMap((x) => {
+              if (Array.isArray(x)) return x;
+              else return [x];
+            })
+          );
+      });
+    }
   }, [propName]);
 
   useEffect(() => {
@@ -187,6 +187,7 @@ export default function NewProperty({
         enumValues={enumList}
         possibleValues={possibleValues}
         type={valueType}
+        isArray={isArray}
       />
       {isArray && (
         <MdAdd

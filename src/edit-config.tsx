@@ -4,10 +4,9 @@ import { Tooltip } from "radix-ui";
 import { ReactNode, useEffect } from "react";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaSave } from "react-icons/fa";
-import { IoMdArrowRoundBack } from "react-icons/io";
-import { MdAdd } from "react-icons/md";
-import { RiResetLeftFill } from "react-icons/ri";
-import { RiDeleteBin6Line } from "react-icons/ri";
+import { IoIosWarning, IoMdArrowRoundBack } from "react-icons/io";
+import { MdAdd, MdOutlineError } from "react-icons/md";
+import { RiDeleteBin6Line, RiResetLeftFill } from "react-icons/ri";
 import {
   NavigateFunction,
   useNavigate,
@@ -16,27 +15,24 @@ import {
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import InputComponent from "./components/tab-panels/input-component";
+import NewProperty from "./components/tab-panels/input-components/new-property";
 import Infotip from "./components/tooltip/infotip";
 import {
   ConfigLocationType,
   ConfigType,
+  deinherit_and_load_all_props_by_props,
   deinherit_config_by_type,
   editConfigFile,
   findAvailableConfigs,
   folderOpener,
+  getPropMapFromType,
   renameConfig,
 } from "./lib/commons";
-import { configOptionTypeToInputTypeString } from "./lib/config-option-types";
 import {
-  ConfigProperty,
-  printer_properties_map,
-} from "./lib/printer-configuration-options";
-import { globalState, globalStateObject } from "./lib/state-store";
-import NewProperty from "./components/tab-panels/input-components/new-property";
-import {
-  filament_properties_map,
-  process_properties_map,
-} from "./lib/all-configuration-options";
+  configOptionTypeToInputTypeString,
+  isVector,
+} from "./lib/config-option-types";
+import { globalState, globalStateObject, Warning } from "./lib/state-store";
 
 async function saveFile(
   fileName: string,
@@ -135,10 +131,46 @@ function LabelButtonTemplate({
         </div>
       </Tooltip.Trigger>
       {tooltip && (
-        <Tooltip.Content>
-          <Infotip tooltip={tooltip} />
-        </Tooltip.Content>
+        <Tooltip.Portal>
+          <Tooltip.Content>
+            <Infotip tooltip={tooltip} />
+          </Tooltip.Content>
+        </Tooltip.Portal>
       )}
+    </Tooltip.Root>
+  );
+}
+
+function WarnIconTemplate({
+  warnings,
+  Icon,
+  className,
+  tooltipClassName,
+}: {
+  className?: string;
+  tooltipClassName?: string;
+  Icon: (a: { className?: string }) => ReactNode;
+  warnings: Warning[];
+}) {
+  return (
+    <Tooltip.Root delayDuration={0}>
+      <Tooltip.Trigger asChild>
+        <div className={twMerge("text-text-primary text-2xl", className)}>
+          <Icon className="w-full h-full" />
+        </div>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          className={twMerge(
+            "bg-transparent-warn p-1 px-2 text-text-secondary font-bold z-40 rounded-xl",
+            tooltipClassName
+          )}
+        >
+          {warnings.map((el) => (
+            <div> &middot; {el.text} </div>
+          ))}
+        </Tooltip.Content>
+      </Tooltip.Portal>
     </Tooltip.Root>
   );
 }
@@ -219,14 +251,6 @@ function ResetAllButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function EditConfig() {
-  const propMaps: Record<ConfigType, Record<string, ConfigProperty>> = {
-    printer: printer_properties_map,
-    "printer-model": {},
-    filament: filament_properties_map,
-    process: process_properties_map,
-    vendor: {},
-  };
-
   const [searchParams] = useSearchParams();
   const fileName: string = searchParams.get("fileName")!;
   const type: ConfigType = searchParams.get("type")! as ConfigType;
@@ -240,9 +264,9 @@ export default function EditConfig() {
   const navigate = useNavigate();
   const { editWindowState } = useHookstate(globalState);
 
-  useEffect(() => {
-    const propMap = propMaps[type] ?? {};
+  const propMap = getPropMapFromType(type);
 
+  useEffect(() => {
     if (
       editWindowState[fileName].get({ stealth: true }) &&
       editWindowState[fileName].changedProps.keys.length === 0 &&
@@ -279,7 +303,7 @@ export default function EditConfig() {
       );
 
       const changedPropsTemp = knownKeysTemp.reduce((acc, el) => {
-        acc[el] = propMap[el].default;
+        acc[el] = structuredClone(propMap[el].default);
         return acc;
       }, {} as Record<string, any>);
 
@@ -295,13 +319,51 @@ export default function EditConfig() {
           type: type,
           name: name,
           family: family,
-          properties: { res: {}, keyDetails: {}, warnings: [] },
+          properties: {
+            res: {},
+            keyDetails: {},
+            warnings: {},
+          },
           changedProps: {},
           deleteKeys: [],
           knownKeys: new Set(),
           unknownKeys: new Set(),
           location: location,
         });
+    }
+
+    if (editWindowState[fileName].changedProps.keys.length > 0) {
+      const newProps = {
+        ...Object.fromEntries(
+          Object.entries(
+            editWindowState[fileName].properties.res.get({ stealth: true })
+          ).filter(
+            ([key, _]) =>
+              editWindowState[fileName].properties.keyDetails[key].get({
+                stealth: true,
+              }).level === 0 &&
+              !editWindowState[fileName].deleteKeys
+                .get({ stealth: true })
+                .includes(key)
+          )
+        ),
+        ...editWindowState[fileName].changedProps.get({ stealth: true }),
+      };
+
+      deinherit_and_load_all_props_by_props(
+        newProps,
+        type,
+        fileName,
+        family
+      ).then(
+        ({
+          warnings: analysedWarnings,
+        }: {
+          warnings: Record<string, Warning[]>;
+        }) => {
+          editWindowState[fileName].properties.warnings.set(analysedWarnings);
+        }
+      );
     }
   }, [fileName, editWindowState[fileName].changedProps]);
 
@@ -317,14 +379,15 @@ export default function EditConfig() {
     };
   }, []);
 
-  const handleChange = (value: string, key: string, idx: number) => {
+  const handleChange = (value: string, key: string, idx?: number) => {
     const property = editWindowState[fileName].properties.res[key].get();
     const changedProperty = editWindowState[fileName].changedProps[key];
-    if (Array.isArray(property)) {
+
+    if (idx) {
       if (changedProperty.get({ stealth: true }))
         changedProperty.merge({ [idx]: value });
       else {
-        const arr = [...property];
+        const arr = [...(property as unknown[])];
         arr.splice(idx, 1, value);
 
         changedProperty.set(arr);
@@ -373,11 +436,9 @@ export default function EditConfig() {
           editWindowState[fileName].deleteKeys.length > 0) && (
           <ResetAllButton
             onClick={() => {
-              editWindowState[fileName].merge({
-                changedProps: {},
-                deleteKeys: [],
-                knownKeys: new Set(),
-              });
+              editWindowState[fileName].knownKeys.set(new Set());
+              editWindowState[fileName].changedProps.set({});
+              editWindowState[fileName].deleteKeys.set([]);
             }}
           />
         )}
@@ -385,15 +446,20 @@ export default function EditConfig() {
 
       <div className="flex-1 min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
         {Array.from(editWindowState[fileName].knownKeys.get()).map((key) => {
-          const propMap =
-            propMaps[
-              editWindowState[fileName].type.get({
-                stealth: true,
-              }) as ConfigType
-            ] ?? {};
           const knownProp = propMap[key];
 
           const property = editWindowState[fileName].properties.res[key].get();
+
+          const warningsObj =
+            editWindowState[fileName].properties.warnings[key].get();
+
+          const warnings = warningsObj
+            ? warningsObj.filter((el) => el.type === "warning")
+            : undefined;
+          const errors = warningsObj
+            ? warningsObj.filter((el) => el.type === "error")
+            : undefined;
+
           const changedProperty =
             editWindowState[fileName].changedProps[key].get();
           const keyDetails = editWindowState[fileName].properties.keyDetails[
@@ -412,13 +478,32 @@ export default function EditConfig() {
 
           const isArray = changedProperty
             ? Array.isArray(changedProperty)
-            : Array.isArray(property);
+            : property
+            ? Array.isArray(property)
+            : isVector(knownProp.type);
+
           const value = !isArray
             ? (changedProperty as string) ?? (property as string)
             : undefined;
-          const arrayValue = isArray
+          const arrayValue: string[] | undefined = isArray
             ? (changedProperty as string[]) ?? (property as string[])
             : undefined;
+
+          if (!value && !arrayValue && !knownProp.required) {
+            editWindowState[fileName].knownKeys.set((el) => {
+              const newSet = new Set(Array.from(el).filter((pr) => pr !== key));
+              return newSet;
+            });
+            return <></>;
+          }
+
+          if (
+            knownProp.required &&
+            !editWindowState[fileName].properties.res.keys.includes(key) &&
+            !editWindowState[fileName].changedProps.keys.includes(key)
+          ) {
+            editWindowState[fileName].changedProps[key].set(knownProp.default);
+          }
 
           let enumList = knownProp.enumList;
           let possibleValues: string[] | undefined = undefined;
@@ -450,28 +535,29 @@ export default function EditConfig() {
                   }}
                 />
               )}
-              {arrayValue && (
+              {isArray && (
                 <AddButton
                   onClick={() => {
                     if (changedProperty)
                       editWindowState[fileName].changedProps[key].merge([
-                        arrayValue[arrayValue.length - 1],
+                        arrayValue![arrayValue!.length - 1],
+                      ]);
+                    else if (arrayValue)
+                      editWindowState[fileName].changedProps[key].set([
+                        ...arrayValue!,
+                        arrayValue![arrayValue!.length - 1],
                       ]);
                     else
                       editWindowState[fileName].changedProps[key].set([
-                        ...arrayValue,
-                        arrayValue[arrayValue.length - 1],
+                        undefined,
                       ]);
                   }}
                 />
               )}
-              {(changedProperty || markedForDeletion) && property && (
+              {(changedProperty || markedForDeletion) && (
                 <ResetButton
                   onClick={() => {
                     editWindowState[fileName].changedProps[key].set(none);
-                    editWindowState[fileName].deleteKeys.set((arr) =>
-                      arr.filter((el) => el !== key)
-                    );
                   }}
                 />
               )}
@@ -481,6 +567,21 @@ export default function EditConfig() {
                     editWindowState[fileName].deleteKeys.merge([key]);
                     editWindowState[fileName].changedProps[key].set(none);
                   }}
+                />
+              )}
+              {warnings && warnings.length > 0 && (
+                <WarnIconTemplate
+                  Icon={IoIosWarning}
+                  className="text-transparent-warn ml-1"
+                  warnings={warnings as Warning[]}
+                />
+              )}
+              {errors && errors.length > 0 && (
+                <WarnIconTemplate
+                  Icon={MdOutlineError}
+                  className="text-transparent-error ml-1"
+                  warnings={errors as Warning[]}
+                  tooltipClassName="bg-transparent-error text-text-primary"
                 />
               )}
             </div>
@@ -497,7 +598,7 @@ export default function EditConfig() {
               labelClassName={
                 "text-lg " + (markedForDeletion ? "opacity-50" : "")
               }
-              onChange={(value: string, idx = 0) =>
+              onChange={(value: string, idx = undefined) =>
                 handleChange(value, key, idx)
               }
               allowEdit={!knownProp.fixed && !markedForDeletion}
@@ -513,9 +614,11 @@ export default function EditConfig() {
               tooltip={knownProp.tooltip}
               sideText={knownProp.sidetext}
               possibleValues={possibleValues}
+              isArray={isArray}
             />
           );
         })}
+
         {Array.from(editWindowState[fileName].unknownKeys.get()).map((key) => {
           const property = editWindowState[fileName].properties.res[key].get();
           const keyDetails =
@@ -530,6 +633,14 @@ export default function EditConfig() {
           const arrayValue = Array.isArray(property)
             ? (changedProperty as string[]) ?? (property as string[])
             : undefined;
+
+          if (!value && !arrayValue) {
+            editWindowState[fileName].unknownKeys.set((el) => {
+              const newSet = new Set(Array.from(el).filter((pr) => pr !== key));
+              return newSet;
+            });
+            return <></>;
+          }
 
           const labelButtons = (
             <div className="flex">
@@ -598,22 +709,14 @@ export default function EditConfig() {
                   : ""
               }
               allowEdit={!markedForDeletion}
+              isArray={Array.isArray(property)}
             />
           );
         })}
       </div>
 
       <div className="min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
-        <NewProperty
-          configProperties={
-            propMaps[
-              editWindowState[fileName].type.get({
-                stealth: true,
-              }) as ConfigType
-            ]
-          }
-          editWindowKey={fileName}
-        />
+        <NewProperty configProperties={propMap} editWindowKey={fileName} />
       </div>
     </div>
   ) : (
