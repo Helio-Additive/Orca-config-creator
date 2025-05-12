@@ -1,23 +1,19 @@
-import { none, State, useHookstate } from "@hookstate/core";
-import { invoke } from "@tauri-apps/api/tauri";
+import { none, useHookstate } from "@hookstate/core";
 import { Tooltip } from "radix-ui";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaSave } from "react-icons/fa";
 import { IoIosWarning, IoMdArrowRoundBack } from "react-icons/io";
 import { MdAdd, MdOutlineError } from "react-icons/md";
 import { RiDeleteBin6Line, RiResetLeftFill } from "react-icons/ri";
-import {
-  NavigateFunction,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import InputComponent from "./components/tab-panels/input-component";
 import NewProperty from "./components/tab-panels/input-components/new-property";
 import Infotip from "./components/tooltip/infotip";
 import {
+  checkNameCollision,
   ConfigLocationType,
   ConfigType,
   deinherit_and_load_all_props_by_props,
@@ -26,83 +22,13 @@ import {
   findAvailableConfigs,
   folderOpener,
   getPropMapFromType,
-  renameConfig,
 } from "./lib/commons";
 import {
   configOptionTypeToInputTypeString,
   isVector,
 } from "./lib/config-option-types";
-import { globalState, globalStateObject, Warning } from "./lib/state-store";
-
-async function saveFile(
-  fileName: string,
-  type: ConfigType,
-  location: ConfigLocationType,
-  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
-  navigate: NavigateFunction,
-  family?: string
-) {
-  const props = editWindowState[fileName].properties.res;
-  const keyDetails = editWindowState[fileName].properties.keyDetails;
-  const changedProps = editWindowState[fileName].changedProps;
-
-  let newName: string | undefined = undefined;
-  if (changedProps.keys.includes("name")) {
-    newName = changedProps["name"].get({ stealth: true }) as string;
-    changedProps["name"].set(none);
-  }
-
-  const newProps = {
-    ...Object.fromEntries(
-      Object.entries(props.get({ stealth: true })).filter(
-        ([key, _]) =>
-          keyDetails[key].get({ stealth: true }).level === 0 &&
-          !editWindowState[fileName].deleteKeys
-            .get({ stealth: true })
-            .includes(key)
-      )
-    ),
-    ...changedProps.get({ stealth: true }),
-  };
-
-  await invoke("write_to_file", {
-    path: fileName,
-    content: JSON.stringify(newProps, null, 2),
-  })
-    .then(() => {
-      toast("Wrote new configuration to file", { type: "success" });
-      changedProps.set({});
-      editWindowState[fileName].deleteKeys.set([]);
-    })
-    .catch((error: any) => {
-      toast(error.toString(), { type: "error" });
-    });
-
-  if (newName) {
-    try {
-      const name = props["name"].get({ stealth: true }) as string;
-      const newFileName = await renameConfig(
-        name,
-        newName,
-        type,
-        location,
-        family
-      );
-
-      editConfigFile(
-        newName,
-        editWindowState[fileName].type.get({ stealth: true }),
-        newFileName,
-        editWindowState[fileName].location.get({ stealth: true }),
-        navigate,
-        editWindowState[fileName].family.get({ stealth: true }),
-        true
-      );
-    } catch (error: any) {
-      toast(error.toString(), { type: "error" });
-    }
-  }
-}
+import { saveFile } from "./lib/edit-config-helpers";
+import { globalState, Warning } from "./lib/state-store";
 
 function LabelButtonTemplate({
   Icon,
@@ -166,8 +92,8 @@ function WarnIconTemplate({
             tooltipClassName
           )}
         >
-          {warnings.map((el) => (
-            <div> &middot; {el.text} </div>
+          {warnings.map((el, idx) => (
+            <div key={idx}> &middot; {el.text} </div>
           ))}
         </Tooltip.Content>
       </Tooltip.Portal>
@@ -266,6 +192,8 @@ export default function EditConfig() {
 
   const propMap = getPropMapFromType(type);
 
+  const [criticalErrorsExist, setCriticalErrorsExist] = useState(false);
+
   useEffect(() => {
     if (
       editWindowState[fileName].get({ stealth: true }) &&
@@ -362,10 +290,69 @@ export default function EditConfig() {
           warnings: Record<string, Warning[]>;
         }) => {
           editWindowState[fileName].properties.warnings.set(analysedWarnings);
+
+          const changedName = editWindowState[fileName].changedProps[
+            "name"
+          ].get({ stealth: true });
+          if (
+            changedName !== undefined &&
+            changedName !==
+              editWindowState[fileName].properties.res["name"].get({
+                stealth: true,
+              })
+          ) {
+            if (
+              checkNameCollision(changedName as string, type, location, family)
+            ) {
+              const tempWarningsState =
+                editWindowState[fileName].properties.warnings["name"];
+              const tempWarning: Warning = {
+                text: "Name already exists. This can overwrite some other file",
+                type: "error",
+              };
+              tempWarningsState.get({ stealth: true })
+                ? tempWarningsState.merge([tempWarning])
+                : tempWarningsState.set([tempWarning]);
+            }
+
+            if ((changedName as string).length === 0) {
+              const tempWarningsState =
+                editWindowState[fileName].properties.warnings["name"];
+              const tempWarning: Warning = {
+                text: "Name cannot be empty",
+                type: "critical",
+              };
+              tempWarningsState.get({ stealth: true })
+                ? tempWarningsState.merge([tempWarning])
+                : tempWarningsState.set([tempWarning]);
+            }
+          }
         }
       );
     }
   }, [fileName, editWindowState[fileName].changedProps]);
+
+  useEffect(() => {
+    if (editWindowState[fileName] && editWindowState[fileName].properties) {
+      const tempWarnings = editWindowState[fileName].properties.warnings.get({
+        stealth: true,
+      });
+
+      if (tempWarnings) {
+        const hasCriticalErrors = Object.keys(tempWarnings).reduce(
+          (acc, el) => {
+            return acc ||
+              tempWarnings[el].find((warn) => warn.type === "critical")
+              ? true
+              : false;
+          },
+          false
+        );
+
+        setCriticalErrorsExist(hasCriticalErrors);
+      }
+    }
+  }, [editWindowState[fileName].properties]);
 
   useEffect(() => {
     return () => {
@@ -418,20 +405,22 @@ export default function EditConfig() {
           }}
         />
         {(editWindowState[fileName].changedProps.keys.length > 0 ||
-          editWindowState[fileName].deleteKeys.length > 0) && (
-          <SaveButton
-            onClick={() =>
-              saveFile(
-                fileName,
-                type,
-                location,
-                editWindowState,
-                navigate,
-                family
-              )
-            }
-          />
-        )}
+          editWindowState[fileName].deleteKeys.length > 0) &&
+          !criticalErrorsExist && (
+            <SaveButton
+              onClick={() =>
+                saveFile(
+                  fileName,
+                  type,
+                  location,
+                  editWindowState,
+                  navigate,
+                  family,
+                  newFile !== undefined
+                )
+              }
+            />
+          )}
         {(editWindowState[fileName].changedProps.keys.length > 0 ||
           editWindowState[fileName].deleteKeys.length > 0) && (
           <ResetAllButton
@@ -458,6 +447,9 @@ export default function EditConfig() {
             : undefined;
           const errors = warningsObj
             ? warningsObj.filter((el) => el.type === "error")
+            : undefined;
+          const criticalErrors = warningsObj
+            ? warningsObj.filter((el) => el.type === "critical")
             : undefined;
 
           const changedProperty =
@@ -579,8 +571,16 @@ export default function EditConfig() {
               {errors && errors.length > 0 && (
                 <WarnIconTemplate
                   Icon={MdOutlineError}
-                  className="text-transparent-error ml-1"
+                  className="text-transparent-warn ml-1"
                   warnings={errors as Warning[]}
+                  tooltipClassName="bg-transparent-error text-text-primary"
+                />
+              )}
+              {criticalErrors && criticalErrors.length > 0 && (
+                <WarnIconTemplate
+                  Icon={MdOutlineError}
+                  className="text-transparent-error ml-1"
+                  warnings={criticalErrors as Warning[]}
                   tooltipClassName="bg-transparent-error text-text-primary"
                 />
               )}
