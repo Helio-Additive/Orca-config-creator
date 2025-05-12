@@ -1,26 +1,26 @@
 import { useHookstate } from "@hookstate/core";
-import { Tooltip } from "radix-ui";
 import { platform } from "@tauri-apps/api/os";
+import { Tooltip } from "radix-ui";
 import { useEffect } from "react";
+import { Route, HashRouter as Router, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import "./App.css";
+import BackgroundPlate from "./components/background-plate";
 import EditConfig from "./edit-config";
 import Home from "./Home";
-import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import {
-  dataPrinterConfigLoader,
-  installedModelConfigLoader as installedModelConfigLoader,
-  setOsAndDefaultDirectories as setDefaultDirectories,
-  installedPrinterConfigLoader,
-  installedVendorConfigLoader,
-  installedFilamentConfigLoader,
   dataFilamentConfigLoader,
-  installedProcessConfigLoader,
+  dataPrinterConfigLoader,
   dataProcessConfigLoader,
+  installedFilamentConfigLoader,
+  installedModelConfigLoader,
+  installedPrinterConfigLoader,
+  installedProcessConfigLoader,
+  installedVendorConfigLoader,
   loadedSystemModelConfigLoader,
+  setOsAndDefaultDirectories as setDefaultDirectories,
 } from "./lib/commons";
 import { globalState } from "./lib/state-store";
-import { ToastContainer } from "react-toastify";
-import BackgroundPlate from "./components/background-plate";
 
 function App() {
   const {
@@ -28,7 +28,6 @@ function App() {
     orcaDataDirectory,
     installedVendorConfigs: vendorConfigs,
     os,
-    errLoadingInstallationPath,
   } = useHookstate(globalState);
 
   useEffect(() => {

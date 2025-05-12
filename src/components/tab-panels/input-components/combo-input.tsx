@@ -5,18 +5,9 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from "@headlessui/react";
-import clsx from "clsx";
 import { useState } from "react";
-import { FaCheck, FaChevronDown } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import { twMerge } from "tailwind-merge";
-
-const people = [
-  { id: 1, name: "Tom Cook" },
-  { id: 2, name: "Wade Cooper" },
-  { id: 3, name: "Tanya Fox" },
-  { id: 4, name: "Arlene Mccoy" },
-  { id: 5, name: "Devon Webb" },
-];
 
 export default function ComboInput({
   value,

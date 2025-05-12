@@ -17,7 +17,7 @@ export type KeyDetails = {
 
 export type Warning = {
   text: string;
-  type: "warning" | "error";
+  type: "warning" | "error" | "critical";
 };
 
 export type SystemConfigStateType<T> = Record<

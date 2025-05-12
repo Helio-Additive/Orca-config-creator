@@ -4,7 +4,9 @@ export const INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS =
 export const LOADED_SYSTEM_PROFILES_SUBDIRECTORY = "/system";
 export const LOADED_USER_PROFILES_SUBDIRECTORY = "/user/default";
 export const LOADED_USER_PROFILES_BASE_SUBDIRECTORY = "/base";
-export const LOADED_USER_PROFILES_MACHINE_SUBDIRECTORY = "/machine";
+export const MACHINE_SUBDIRECTORY = "/machine";
+export const FILAMENT_SUBDIRECTORY = "/filament";
+export const PROCESS_SUBDIRECTORY = "/process";
 
 export const directoryDefaults = {
   win32: {

@@ -15,11 +15,14 @@ import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import {
   directoryDefaults,
+  FILAMENT_SUBDIRECTORY,
   INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY,
   INSTALLED_SYSTEM_PROFILES_SUBDIRECTORY_MACOS,
   LOADED_SYSTEM_PROFILES_SUBDIRECTORY,
   LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY,
+  MACHINE_SUBDIRECTORY,
+  PROCESS_SUBDIRECTORY,
 } from "./constants";
 import {
   familyProperty,
@@ -706,9 +709,9 @@ export const findConfig = (
 
 export function checkNameCollision(
   name: string,
-  family: string,
   type: ConfigType,
-  location: ConfigLocationType
+  location: ConfigLocationType,
+  family?: string
 ): boolean {
   return (
     findConfig(name, type, location, family) !== undefined ||
@@ -1325,4 +1328,94 @@ export function getPropMapFromType(type: ConfigType) {
     }[type] ?? {};
 
   return propMap;
+}
+
+export async function refreshConfigs(
+  type: ConfigType,
+  location: ConfigLocationType
+) {
+  if (
+    type === "printer" &&
+    (location === "loaded_system" || location === "user")
+  ) {
+    await dataPrinterConfigLoader();
+  } else if (
+    type === "filament" &&
+    (location === "loaded_system" || location === "user")
+  ) {
+    await dataFilamentConfigLoader();
+  } else if (
+    type === "process" &&
+    (location === "loaded_system" || location === "user")
+  ) {
+    await dataProcessConfigLoader();
+  } else if (
+    type === "vendor" &&
+    (location === "loaded_system" || location === "user")
+  ) {
+    await loadedSystemVendorConfigLoader();
+  } else if (
+    type === "printer-model" &&
+    (location === "loaded_system" || location === "user")
+  ) {
+    await loadedSystemModelConfigLoader();
+  } else if (type === "printer" && location === "installed") {
+    await installedPrinterConfigLoader();
+  } else if (type === "filament" && location === "installed") {
+    await installedFilamentConfigLoader();
+  } else if (type === "process" && location === "installed") {
+    await installedPrinterConfigLoader();
+  } else if (type === "vendor" && location === "installed") {
+    await installedProcessConfigLoader();
+  } else if (type === "process" && location === "installed") {
+    await installedModelConfigLoader();
+  }
+}
+
+export function getDirectoryFromTypeAndLocation(
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const { orcaDataDirectory, orcaInstallationPath } = globalState;
+  let directoryPathList = [];
+
+  switch (location) {
+    case "installed":
+      directoryPathList.push(orcaInstallationPath.get({ stealth: true }));
+      if (type !== "vendor" && family) directoryPathList.push("/" + family);
+      break;
+
+    case "loaded_system":
+      directoryPathList.push(
+        orcaDataDirectory.get({ stealth: true }) +
+          LOADED_SYSTEM_PROFILES_SUBDIRECTORY
+      );
+      if (type !== "vendor" && family) directoryPathList.push("/" + family);
+      break;
+
+    case "user":
+      directoryPathList.push(
+        orcaDataDirectory.get({ stealth: true }) +
+          LOADED_USER_PROFILES_SUBDIRECTORY
+      );
+      break;
+  }
+
+  switch (type) {
+    case "printer":
+      directoryPathList.push(MACHINE_SUBDIRECTORY);
+      break;
+    case "filament":
+      directoryPathList.push(FILAMENT_SUBDIRECTORY);
+      break;
+    case "process":
+      directoryPathList.push(PROCESS_SUBDIRECTORY);
+      break;
+    case "printer-model":
+      directoryPathList.push(MACHINE_SUBDIRECTORY);
+      break;
+  }
+
+  return directoryPathList.join("") + "/";
 }
