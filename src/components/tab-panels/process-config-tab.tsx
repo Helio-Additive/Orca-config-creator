@@ -134,6 +134,7 @@ export default function ProcessConfigTab() {
         allowEdit
         flatExportFunction={export_flattened}
         configLocation="user"
+        allowDelete
       />
     );
   });

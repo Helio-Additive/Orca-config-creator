@@ -10,7 +10,7 @@ export default function ValueInput({
   inputClassName,
   allowEdit,
   onChange = () => {},
-  idx = 0,
+  idx,
 }: {
   type?: string;
   value?: string;

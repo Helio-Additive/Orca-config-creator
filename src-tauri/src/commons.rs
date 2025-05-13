@@ -104,6 +104,15 @@ pub fn rename_file(path: &str, new_path: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn delete_file(path: &str) -> Result<(), String> {
+    let deleted_res = fs::remove_file(path);
+    match deleted_res {
+        Ok(()) => Ok(()),
+        Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
+    }
+}
+
+#[tauri::command]
 pub fn rename_config(path: String, new_name: String) -> Result<String, String> {
     let path_obj = Path::new(&path);
     let parent_path = path_obj.parent().unwrap();
