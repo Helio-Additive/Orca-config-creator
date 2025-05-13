@@ -1419,3 +1419,26 @@ export function getDirectoryFromTypeAndLocation(
 
   return directoryPathList.join("") + "/";
 }
+
+export function deleteUserConfig(name: string, type: ConfigType) {
+  const config = findConfig(name, type, "user");
+
+  if (config) {
+    invoke("delete_file", { path: config.fileName })
+      .then(() => {
+        toast(`Config: ${name} successfully deleted`, { type: "success" });
+      })
+      .catch((error: any) => toast(error.toString(), { type: "error" }));
+  }
+
+  refreshConfigs(type, "user");
+}
+
+export function deleteConfig(
+  name: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  if (location === "user") deleteUserConfig(name, type);
+}

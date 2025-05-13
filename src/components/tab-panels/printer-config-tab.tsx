@@ -135,6 +135,7 @@ export default function PrinterConfigTab() {
         allowEdit
         type="printer"
         configLocation="user"
+        allowDelete
       />
     );
   });

@@ -6,11 +6,13 @@ import { twMerge } from "tailwind-merge";
 import {
   ConfigLocationType,
   ConfigType,
+  deleteConfig,
   editConfigFile,
   folderOpener,
 } from "../../../lib/commons";
 import OptionsMenu from "./config-item-components/options-menu";
 import TopButton from "./config-item-components/top-button";
+import { RiDeleteBin6Line } from "react-icons/ri";
 
 export default function ConfigItem({
   name,
@@ -24,6 +26,7 @@ export default function ConfigItem({
   allowEdit = false,
   flatExportFunction,
   configLocation,
+  allowDelete,
 }: {
   name: string;
   family?: string;
@@ -34,6 +37,7 @@ export default function ConfigItem({
   onClick?: (e: React.MouseEvent) => void;
   fileName?: string;
   allowEdit?: boolean;
+  allowDelete?: boolean;
   flatExportFunction?: (configName: string, family?: string) => void;
   configLocation: ConfigLocationType;
 }) {
@@ -58,6 +62,14 @@ export default function ConfigItem({
       text: "Export flattened",
     });
 
+  allowDelete &&
+    optionsMenuItems.push({
+      icon: RiDeleteBin6Line,
+      onClick: () => {
+        deleteConfig(name, type, configLocation, family);
+      },
+      text: "Delete config",
+    });
   return (
     <div
       className={twMerge(

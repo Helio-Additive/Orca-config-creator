@@ -4,8 +4,8 @@
 mod commons;
 mod configuration_loader;
 use commons::{
-    check_directory, check_file, find_possible_values, rename_config, rename_file, show_in_folder,
-    write_to_file,
+    check_directory, check_file, delete_file, find_possible_values, rename_config, rename_file,
+    show_in_folder, write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
@@ -117,6 +117,7 @@ fn main() {
             write_to_file,
             rename_file,
             rename_config,
+            delete_file,
             find_possible_values
         ])
         .run(tauri::generate_context!())

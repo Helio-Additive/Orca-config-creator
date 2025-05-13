@@ -136,6 +136,7 @@ export default function FilamentConfigTab() {
         allowEdit
         flatExportFunction={export_flattened}
         configLocation="user"
+        allowDelete
       />
     );
   });
