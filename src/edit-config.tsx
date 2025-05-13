@@ -370,7 +370,7 @@ export default function EditConfig() {
     const property = editWindowState[fileName].properties.res[key].get();
     const changedProperty = editWindowState[fileName].changedProps[key];
 
-    if (idx) {
+    if (idx !== undefined) {
       if (changedProperty.get({ stealth: true }))
         changedProperty.merge({ [idx]: value });
       else {
