@@ -41,6 +41,7 @@ import {
   filament_properties_map,
   process_properties_map,
 } from "./all-configuration-options";
+import { GenericJsonSchema } from "./bindings/GenericJsonSchema";
 
 export enum InheritanceStatus {
   OK,
@@ -1213,6 +1214,25 @@ export function findAvailableConfigs(
   }
 }
 
+const getVendorConfigKeyName = (type: ConfigType) => {
+  switch (type) {
+    case "printer":
+      return "machine_list";
+
+    case "filament":
+      return "filament_list";
+
+    case "process":
+      return "process_list";
+
+    case "printer-model":
+      return "machine_model_list";
+
+    default:
+      throw "Could not get vendor config key name";
+  }
+};
+
 export async function updateVendorConfigEntry(
   family: string,
   type: ConfigType,
@@ -1223,21 +1243,7 @@ export async function updateVendorConfigEntry(
     stealth: true,
   });
 
-  const vendorConfigKeyName = (() => {
-    switch (type) {
-      case "printer":
-        return "machine_list";
-
-      case "filament":
-        return "filament_list";
-
-      case "process":
-        return "process_list";
-
-      case "printer-model":
-        return "machine_model_list";
-    }
-  })()!;
+  const vendorConfigKeyName = getVendorConfigKeyName(type);
 
   const relevantConfigList = vendorConfig[vendorConfigKeyName];
 
@@ -1247,15 +1253,15 @@ export async function updateVendorConfigEntry(
       const subDirectory = el.sub_path.split("/")[0];
       return {
         name: newName,
-        sub_path: subDirectory + "/" + newName + "/json",
+        sub_path: subDirectory + "/" + newName + ".json",
       };
     }
   });
 
   const path = vendorConfig.fileName;
 
-  const readVendorConfig = await invoke<VendorJsonSchema>(
-    "load_all_system_vendor_profiles",
+  const readVendorConfig = await invoke<GenericJsonSchema>(
+    "load_generic_preset",
     { path }
   );
 
@@ -1263,26 +1269,8 @@ export async function updateVendorConfigEntry(
 
   await invoke("write_to_file", {
     path,
-    content: JSON.stringify(readVendorConfig),
+    content: JSON.stringify(readVendorConfig, null, 2),
   });
-
-  switch (type) {
-    case "printer":
-      await installedPrinterConfigLoader();
-      break;
-
-    case "filament":
-      await installedFilamentConfigLoader();
-      break;
-
-    case "process":
-      await installedProcessConfigLoader();
-      break;
-
-    case "printer-model":
-      await installedModelConfigLoader();
-      break;
-  }
 }
 
 //async function updateVendorFile(family: string) {}
@@ -1306,10 +1294,13 @@ export async function renameConfig(
 
     props.name = newName;
 
-    await invoke("write_to_file", { path, content: JSON.stringify(props) });
+    await invoke("write_to_file", {
+      path,
+      content: JSON.stringify(props, null, 2),
+    });
     const newPath = await invoke<string>("rename_config", { path, newName });
 
-    if (location === "installed") {
+    /*if (location === "installed") {
       updateVendorConfigEntry(family!, type, oldName, newName);
     } else {
       switch (type) {
@@ -1325,7 +1316,7 @@ export async function renameConfig(
           await dataProcessConfigLoader();
           break;
       }
-    }
+    }*/
 
     return newPath;
   } catch (error: any) {
@@ -1382,7 +1373,7 @@ export async function refreshConfigs(
   } else if (type === "process" && location === "installed") {
     await installedPrinterConfigLoader();
   } else if (type === "vendor" && location === "installed") {
-    await installedProcessConfigLoader();
+    await installedVendorConfigLoader();
   } else if (type === "process" && location === "installed") {
     await installedModelConfigLoader();
   }
