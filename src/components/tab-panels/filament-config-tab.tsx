@@ -1,7 +1,11 @@
 import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
-import { deinherit_and_load_all_props, updateUuid } from "../../lib/commons";
+import {
+  ConfigLocationType,
+  deinherit_and_load_all_props,
+  updateUuid,
+} from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import ConfigTabTemplate from "./config-tab-template";
@@ -13,11 +17,15 @@ export default function FilamentConfigTab() {
     loadedUserFilamentConfigs,
   } = useHookstate(globalState);
 
-  const export_flattened = async (configName: string) => {
+  const export_flattened = async (
+    configName: string,
+    location: ConfigLocationType
+  ) => {
     try {
       const configObject = await deinherit_and_load_all_props(
         configName,
-        "filament"
+        "filament",
+        location
       );
 
       const res = configObject.res;

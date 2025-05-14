@@ -38,7 +38,11 @@ export default function ConfigItem({
   fileName?: string;
   allowEdit?: boolean;
   allowDelete?: boolean;
-  flatExportFunction?: (configName: string, family?: string) => void;
+  flatExportFunction?: (
+    configName: string,
+    location: ConfigLocationType,
+    family?: string
+  ) => void;
   configLocation: ConfigLocationType;
 }) {
   const navigate = useNavigate();
@@ -57,7 +61,7 @@ export default function ConfigItem({
     optionsMenuItems.push({
       icon: FaFileExport,
       onClick: () => {
-        flatExportFunction(name);
+        flatExportFunction(name, configLocation, family);
       },
       text: "Export flattened",
     });

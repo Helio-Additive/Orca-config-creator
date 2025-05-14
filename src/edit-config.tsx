@@ -203,6 +203,7 @@ export default function EditConfig() {
       deinherit_config_by_type(
         editWindowState[fileName].name.get({ stealth: true }),
         editWindowState[fileName].type.get({ stealth: true }),
+        editWindowState[fileName].location.get({ stealth: true }),
         editWindowState[fileName].family.get({ stealth: true })
       )
         .then((res) => {
@@ -281,6 +282,7 @@ export default function EditConfig() {
       deinherit_and_load_all_props_by_props(
         newProps,
         type,
+        location,
         fileName,
         family
       ).then(
