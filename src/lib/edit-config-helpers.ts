@@ -9,10 +9,11 @@ import {
   getDirectoryFromTypeAndLocation,
   refreshConfigs,
   renameConfig,
+  updateVendorConfigEntry,
 } from "./commons";
 import { globalStateObject } from "./state-store";
 
-function RefreshAndReload(
+function refreshAndReload(
   name: string,
   fileName: string,
   type: ConfigType,
@@ -95,19 +96,19 @@ export async function saveFile(
         newName +
         ".json";
       await saveNewFile(fileName, newFileName, location, editWindowState);
-      RefreshAndReload(newName!, newFileName, type, location, navigate, family);
+      refreshAndReload(newName!, newFileName, type, location, navigate, family);
     } else if (newName && !newFile) {
       const name = props["name"].get({ stealth: true }) as string;
-      await saveAndRenameFile(fileName, location, editWindowState);
-      const newFileName = await renameConfig(
+      const newFileName = await saveAndRenameFile(
         name,
         newName,
         type,
+        fileName,
         location,
+        editWindowState,
         family
       );
-
-      RefreshAndReload(newName, newFileName, type, location, navigate, family);
+      refreshAndReload(newName, newFileName, type, location, navigate, family);
     }
   } catch (error: any) {
     toast(error.toString(), { type: "error" });
@@ -137,14 +138,44 @@ async function saveNewFile(
 }
 
 async function saveAndRenameFile(
+  name: string,
+  newName: string,
+  type: ConfigType,
   fileName: string,
   location: ConfigLocationType,
-  editWindowState: State<typeof globalStateObject.editWindowState, {}>
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
+  family?: string
 ) {
   if (location === "user") {
     const newProps = getKeysValuesToSave(fileName, editWindowState);
     await writeToFile(fileName, newProps, fileName, editWindowState);
+    const newFileName = await renameConfig(
+      name,
+      newName,
+      type,
+      location,
+      family
+    );
+
+    return newFileName;
+  } else if (location === "installed") {
+    const newProps = getKeysValuesToSave(fileName, editWindowState);
+    await writeToFile(fileName, newProps, fileName, editWindowState);
+    const newFileName = await renameConfig(
+      name,
+      newName,
+      type,
+      location,
+      family
+    );
+
+    await updateVendorConfigEntry(family!, type, name, newName);
+    await refreshConfigs("vendor", "installed");
+
+    toast("reloaded vendor configs", { type: "success" });
+    return newFileName;
   } else {
     toast("Could not save file", { type: "error" });
+    throw "Could not save file";
   }
 }
