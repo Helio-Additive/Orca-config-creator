@@ -16,7 +16,7 @@ export default function OptionsMenu({
 }) {
   return (
     <Menu>
-      <MenuButton>
+      <MenuButton className="h-fit min-h-0">
         <TopButton
           onClick={console.log}
           Icon={HiDotsHorizontal}
