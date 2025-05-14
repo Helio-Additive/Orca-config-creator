@@ -9,7 +9,7 @@ export default function DropdownInput({
   allowEdit,
   onChange = () => {},
   enumValues,
-  idx = 0,
+  idx,
 }: {
   value: string | null;
   err?: string;

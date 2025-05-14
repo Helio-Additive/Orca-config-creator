@@ -53,7 +53,12 @@ export default function NewProperty({
     editWindowState[editWindowKey].changedProps[propName!].set(propValue!);
 
     if (
-      editWindowState[editWindowKey].properties.res.keys.includes(propName!)
+      editWindowState[editWindowKey].knownKeys
+        .get({ stealth: true })
+        .has(propName!) ||
+      editWindowState[editWindowKey].unknownKeys
+        .get({ stealth: true })
+        .has(propName!)
     ) {
       setPropName(undefined);
       setPropValue(undefined);

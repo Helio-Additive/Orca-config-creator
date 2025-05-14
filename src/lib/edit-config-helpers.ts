@@ -1,4 +1,7 @@
-import { none, State } from "@hookstate/core";
+import { State } from "@hookstate/core";
+import { invoke } from "@tauri-apps/api/tauri";
+import { NavigateFunction } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   ConfigLocationType,
   ConfigType,
@@ -8,27 +11,48 @@ import {
   renameConfig,
 } from "./commons";
 import { globalStateObject } from "./state-store";
-import { NavigateFunction } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/tauri";
-import { toast } from "react-toastify";
 
-export async function saveFile(
+function RefreshAndReload(
+  name: string,
   fileName: string,
   type: ConfigType,
   location: ConfigLocationType,
-  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
   navigate: NavigateFunction,
-  family?: string,
-  newFile?: boolean
+  family?: string
+) {
+  refreshConfigs(type, location).then(() => {
+    editConfigFile(name, type, fileName, location, navigate, family, true);
+  });
+}
+async function writeToFile(
+  path: string,
+  props: Record<string, unknown>,
+  editWindowStateKey: string,
+  editWindowState: State<typeof globalStateObject.editWindowState>
+) {
+  const changedProps = editWindowState[editWindowStateKey].changedProps;
+
+  await invoke("write_to_file", {
+    path,
+    content: JSON.stringify(props, null, 2),
+  })
+    .then(() => {
+      toast("Wrote new configuration to file", { type: "success" });
+      changedProps.set({});
+      editWindowState[editWindowStateKey].deleteKeys.set([]);
+    })
+    .catch((error: any) => {
+      toast(error.toString(), { type: "error" });
+    });
+}
+
+function getKeysValuesToSave(
+  fileName: string,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>
 ) {
   const props = editWindowState[fileName].properties.res;
   const keyDetails = editWindowState[fileName].properties.keyDetails;
   const changedProps = editWindowState[fileName].changedProps;
-
-  let newName: string | undefined = undefined;
-  if (changedProps.keys.includes("name")) {
-    newName = changedProps["name"].get({ stealth: true }) as string;
-  }
 
   const newProps = {
     ...Object.fromEntries(
@@ -43,41 +67,84 @@ export async function saveFile(
     ...changedProps.get({ stealth: true }),
   };
 
-  let newFileName =
-    getDirectoryFromTypeAndLocation(type, location, family) + newName + ".json";
-  await invoke("write_to_file", {
-    path: !newFile ? fileName : newFileName,
-    content: JSON.stringify(newProps, null, 2),
-  })
-    .then(() => {
-      toast("Wrote new configuration to file", { type: "success" });
-      changedProps.set({});
-      editWindowState[fileName].deleteKeys.set([]);
-    })
-    .catch((error: any) => {
-      toast(error.toString(), { type: "error" });
-    });
+  return newProps;
+}
 
-  if (newName) {
-    try {
+export async function saveFile(
+  fileName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
+  navigate: NavigateFunction,
+  family?: string,
+  newFile?: boolean
+) {
+  const props = editWindowState[fileName].properties.res;
+  const changedProps = editWindowState[fileName].changedProps;
+
+  let newName: string | undefined = undefined;
+  if (changedProps.keys.includes("name")) {
+    newName = changedProps["name"].get({ stealth: true }) as string;
+  }
+  try {
+    if (!newName && !newFile)
+      await saveFileWithoutRenameOrCreation(fileName, editWindowState);
+    else if (newFile) {
+      const newFileName =
+        getDirectoryFromTypeAndLocation(type, location, family) +
+        newName +
+        ".json";
+      await saveNewFile(fileName, newFileName, location, editWindowState);
+      RefreshAndReload(newName!, newFileName, type, location, navigate, family);
+    } else if (newName && !newFile) {
       const name = props["name"].get({ stealth: true }) as string;
-      if (!newFile) {
-        newFileName = await renameConfig(name, newName, type, location, family);
-      }
+      await saveAndRenameFile(fileName, location, editWindowState);
+      const newFileName = await renameConfig(
+        name,
+        newName,
+        type,
+        location,
+        family
+      );
 
-      refreshConfigs(type, location).then(() => {
-        editConfigFile(
-          newName,
-          type,
-          newFileName,
-          location,
-          navigate,
-          family,
-          true
-        );
-      });
-    } catch (error: any) {
-      toast(error.toString(), { type: "error" });
+      RefreshAndReload(newName, newFileName, type, location, navigate, family);
     }
+  } catch (error: any) {
+    toast(error.toString(), { type: "error" });
+  }
+}
+
+async function saveFileWithoutRenameOrCreation(
+  fileName: string,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>
+) {
+  const newProps = getKeysValuesToSave(fileName, editWindowState);
+  await writeToFile(fileName, newProps, fileName, editWindowState);
+}
+
+async function saveNewFile(
+  fileName: string,
+  newFileName: string,
+  location: ConfigLocationType,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>
+) {
+  if (location === "user") {
+    const newProps = getKeysValuesToSave(fileName, editWindowState);
+    await writeToFile(newFileName, newProps, fileName, editWindowState);
+  } else {
+    toast("Could not save file", { type: "error" });
+  }
+}
+
+async function saveAndRenameFile(
+  fileName: string,
+  location: ConfigLocationType,
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>
+) {
+  if (location === "user") {
+    const newProps = getKeysValuesToSave(fileName, editWindowState);
+    await writeToFile(fileName, newProps, fileName, editWindowState);
+  } else {
+    toast("Could not save file", { type: "error" });
   }
 }
