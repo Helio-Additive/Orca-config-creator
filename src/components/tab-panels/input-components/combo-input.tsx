@@ -16,7 +16,7 @@ export default function ComboInput({
   allowEdit,
   onChange = () => {},
   possibleValues,
-  idx = 0,
+  idx,
   placeholder,
 }: {
   value?: string;

@@ -768,6 +768,7 @@ export const deinherit_and_load_all_props_by_props: any = async <
 >(
   properties: T,
   type: ConfigType,
+  location: ConfigLocationType,
   configFile: string,
   family?: string,
   level = 0,
@@ -793,6 +794,7 @@ export const deinherit_and_load_all_props_by_props: any = async <
       const inherited_props = await deinherit_and_load_all_props(
         res.inherits,
         type,
+        location,
         printerFamily,
         level + 1,
         [properties["name"], ...checkedConfigs]
@@ -850,6 +852,7 @@ export const deinherit_and_load_all_props: any = async <
 >(
   configName: string,
   type: ConfigType,
+  location: ConfigLocationType,
   family?: string,
   level = 0,
   checkedConfigs: string[] = []
@@ -868,59 +871,65 @@ export const deinherit_and_load_all_props: any = async <
   try {
     let configFile: string | undefined = undefined;
 
-    const loadedUserPrinterConfigRes = findConfig(
+    const firstAttemptAtConfigLocation = findConfig(
       configName,
       type,
-      "user",
+      location,
       family
     );
 
-    if (loadedUserPrinterConfigRes) {
-      configFile = loadedUserPrinterConfigRes.fileName;
+    if (firstAttemptAtConfigLocation) {
+      configFile = firstAttemptAtConfigLocation.fileName;
     } else {
-      const instantiatedLoadedSystemConfigRes = findConfig(
-        configName,
-        type,
-        "loaded_system",
-        family
-      ) as (T & fileProperty & familyProperty) | undefined;
-
-      if (instantiatedLoadedSystemConfigRes) {
-        configFile = instantiatedLoadedSystemConfigRes.fileName;
-        family = instantiatedLoadedSystemConfigRes.family;
-      } else {
-        const instantiatedInstalledConfigRes = findConfig(
+      if (location === "user") {
+        const loadedSystemConfigRes = findConfig(
           configName,
           type,
-          "installed",
+          "loaded_system",
           family
         ) as (T & fileProperty & familyProperty) | undefined;
 
-        const tempWarning: Warning = {
-          text: "could not find ancestor in loaded presets. This means the config might not appear in OrcaSlicer.",
-          type: "warning",
-        };
-
-        warnings["inherits"]
-          ? warnings["inherits"].push(tempWarning)
-          : (warnings["inherits"] = [tempWarning]);
-
-        if (instantiatedInstalledConfigRes) {
-          configFile = instantiatedInstalledConfigRes.fileName;
-          family = instantiatedInstalledConfigRes.family;
+        if (loadedSystemConfigRes) {
+          location = "loaded_system";
+          configFile = loadedSystemConfigRes.fileName;
+          family = loadedSystemConfigRes.family;
         } else {
+          const installedConfigRes = findConfig(
+            configName,
+            type,
+            "installed",
+            family
+          ) as (T & fileProperty & familyProperty) | undefined;
+
           const tempWarning: Warning = {
-            text: "Could not find parent config " + configName,
-            type: "error",
+            text: "could not find ancestor in loaded presets. This means the config might not appear in OrcaSlicer.",
+            type: "warning",
           };
 
           warnings["inherits"]
             ? warnings["inherits"].push(tempWarning)
             : (warnings["inherits"] = [tempWarning]);
 
-          return { res: {}, keyDetails: {}, warnings };
+          if (installedConfigRes) {
+            location = "installed";
+            configFile = installedConfigRes.fileName;
+            family = installedConfigRes.family;
+          }
         }
       }
+    }
+
+    if (!configFile) {
+      const tempWarning: Warning = {
+        text: "Could not find parent config " + configName,
+        type: "error",
+      };
+
+      warnings["inherits"]
+        ? warnings["inherits"].push(tempWarning)
+        : (warnings["inherits"] = [tempWarning]);
+
+      return { res: {}, keyDetails: {}, warnings };
     }
 
     const res: T = await invoke("load_generic_preset", {
@@ -933,6 +942,7 @@ export const deinherit_and_load_all_props: any = async <
       const inherited_props = await deinherit_and_load_all_props(
         res.inherits,
         type,
+        location,
         printerFamily,
         level + 1,
         [configName, ...checkedConfigs]
@@ -1067,9 +1077,15 @@ export function getRelevantConfigsFromTypeVM(type: ConfigType) {
 export async function deinherit_config_by_type(
   configName: string,
   type: ConfigType,
+  location: ConfigLocationType,
   family?: string
 ) {
-  const res = await deinherit_and_load_all_props(configName, type, family);
+  const res = await deinherit_and_load_all_props(
+    configName,
+    type,
+    location,
+    family
+  );
 
   return res;
 }
