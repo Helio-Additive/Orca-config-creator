@@ -35,6 +35,7 @@ export default function VendorConfigTab() {
             fileName={config.fileName}
             type="vendor"
             configLocation="installed"
+            allowEdit
           />
         );
       })}

@@ -7,6 +7,8 @@ import { Tooltip } from "radix-ui";
 import Infotip from "../tooltip/infotip";
 import { ConfigType } from "../../lib/commons";
 import ComboInput from "./input-components/combo-input";
+import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
+import NameAndPathInput from "./input-components/name-and-path-input";
 
 export default function InputComponent({
   label,
@@ -36,7 +38,7 @@ export default function InputComponent({
   isArray?: boolean;
   arraySize?: number;
   value?: string;
-  arrayValue?: string[];
+  arrayValue?: string[] | ConfigNameAndPath[];
   placeholder?: string;
   onClick?: () => void;
   rightChild?: ReactNode;
@@ -46,7 +48,7 @@ export default function InputComponent({
   extraLabel?: string;
   labelClassName?: string;
   allowEdit?: boolean;
-  onChange?: (value: string, idx?: number) => void;
+  onChange?: (value: string | ConfigNameAndPath, idx?: number) => void;
   enumValues?: [string, string][];
   tooltip?: string;
   sideText?: string;
@@ -60,6 +62,8 @@ export default function InputComponent({
     },
     (_, i) => i
   );
+
+  const directionClassName = isArray ? "flex-col max-h-40" : "";
 
   return (
     <Field className={twMerge("mb-3", className)}>
@@ -92,16 +96,21 @@ export default function InputComponent({
 
       <Tooltip.Root delayDuration={1500}>
         <Tooltip.Trigger asChild>
-          <div className="flex items-center w-full max-w-[1024px] relative overflow-x-auto ">
+          <div
+            className={twMerge(
+              "flex items-center w-full max-w-[1024px] relative overflow-x-auto ",
+              directionClassName
+            )}
+          >
             {arr.map((idx) => {
               const inputValue = isArray ? arrayValue![idx] : value;
 
               return (
-                <div key={idx} className="flex flex-2/3 items-center min-w-fit">
+                <div key={idx} className="flex w-full items-center min-w-fit">
                   {{
                     dropdown: (
                       <DropdownInput
-                        value={inputValue!}
+                        value={inputValue! as string}
                         inputClassName={inputClassName}
                         onChange={onChange}
                         allowEdit={allowEdit}
@@ -112,7 +121,7 @@ export default function InputComponent({
                     ),
                     boolean: (
                       <DropdownInput
-                        value={inputValue!}
+                        value={inputValue! as string}
                         inputClassName={inputClassName}
                         onChange={onChange}
                         allowEdit={allowEdit}
@@ -129,7 +138,7 @@ export default function InputComponent({
                     combobox: (
                       <ComboInput
                         possibleValues={possibleValues!}
-                        value={inputValue!}
+                        value={inputValue! as string}
                         inputClassName={inputClassName}
                         onChange={onChange}
                         allowEdit={allowEdit}
@@ -138,10 +147,23 @@ export default function InputComponent({
                         placeholder={placeholder}
                       />
                     ),
+                    nameAndPath: (
+                      <NameAndPathInput
+                        placeholder={placeholder}
+                        value={inputValue! as ConfigNameAndPath}
+                        inputClassName={inputClassName}
+                        onClick={onClick}
+                        onChange={onChange}
+                        type={type}
+                        allowEdit={allowEdit}
+                        err={err}
+                        idx={isArray ? idx : undefined}
+                      />
+                    ),
                   }[type] ?? (
                     <ValueInput
                       placeholder={placeholder}
-                      value={inputValue}
+                      value={inputValue as string}
                       inputClassName={inputClassName}
                       onClick={onClick}
                       onChange={onChange}

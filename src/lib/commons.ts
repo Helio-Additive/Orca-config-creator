@@ -43,6 +43,7 @@ import {
   SystemConfigStateType,
   Warning,
 } from "./state-store";
+import { vendor_model_properties_map } from "./vendor-configuration-options";
 
 export enum InheritanceStatus {
   OK,
@@ -1478,7 +1479,7 @@ export function getPropMapFromType(type: ConfigType) {
       "printer-model": printer_model_properties_map,
       filament: filament_properties_map,
       process: process_properties_map,
-      vendor: {},
+      vendor: vendor_model_properties_map,
     }[type] ?? {};
 
   return propMap;

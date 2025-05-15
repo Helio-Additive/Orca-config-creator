@@ -32,7 +32,7 @@ import {
 } from "./lib/config-option-types";
 import { processValueAndGetArray, saveFile } from "./lib/edit-config-helpers";
 import { globalState, Warning } from "./lib/state-store";
-import { delimiter } from "@tauri-apps/api/path";
+import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
 
 function LabelButtonTemplate({
   Icon,
@@ -364,7 +364,11 @@ export default function EditConfig() {
     };
   }, []);
 
-  const handleChange = (value: string, key: string, idx?: number) => {
+  const handleChange = (
+    value: string | ConfigNameAndPath,
+    key: string,
+    idx?: number
+  ) => {
     const property = editWindowState[fileName].properties.res[key].get();
     const changedProperty = editWindowState[fileName].changedProps[key];
 
@@ -386,7 +390,7 @@ export default function EditConfig() {
           changedPropertyValue as string,
           delimiter
         );
-        splitArray.splice(idx, 1, value);
+        splitArray.splice(idx, 1, value as string);
 
         changedProperty.set(getDelimitedStringFromArray(splitArray, delimiter));
       } else {
@@ -394,7 +398,7 @@ export default function EditConfig() {
           property as string,
           delimiter
         );
-        splitArray.splice(idx, 1, value);
+        splitArray.splice(idx, 1, value as string);
 
         changedProperty.set(getDelimitedStringFromArray(splitArray, delimiter));
       }
@@ -500,7 +504,11 @@ export default function EditConfig() {
             ? (changedProperty as string) ?? (property as string)
             : undefined;
           const arrayValue: string[] | undefined = isArray
-            ? processValueAndGetArray(property, changedProperty, delimiter)
+            ? processValueAndGetArray(
+                property,
+                changedProperty,
+                knownProp.delimiter
+              )
             : undefined;
 
           if (!value && !arrayValue && !isRequired) {
