@@ -4,8 +4,13 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validate as isUuid, v4 as uuidv4 } from "uuid";
+import {
+  filament_properties_map,
+  process_properties_map,
+} from "./all-configuration-options";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
 import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
+import { GenericJsonSchema } from "./bindings/GenericJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
@@ -24,6 +29,11 @@ import {
   MACHINE_SUBDIRECTORY,
   PROCESS_SUBDIRECTORY,
 } from "./constants";
+import { printer_model_properties_map } from "./model-configuration-options";
+import {
+  ConfigProperty,
+  printer_properties_map,
+} from "./printer-configuration-options";
 import {
   familyProperty,
   fileProperty,
@@ -33,15 +43,6 @@ import {
   SystemConfigStateType,
   Warning,
 } from "./state-store";
-import {
-  ConfigProperty,
-  printer_properties_map,
-} from "./printer-configuration-options";
-import {
-  filament_properties_map,
-  process_properties_map,
-} from "./all-configuration-options";
-import { GenericJsonSchema } from "./bindings/GenericJsonSchema";
 
 export enum InheritanceStatus {
   OK,
@@ -57,6 +58,14 @@ export type ConfigType =
   | "filament"
   | "process"
   | "vendor";
+
+export const checkIsRequired = (
+  location: ConfigLocationType,
+  prop: ConfigProperty
+) =>
+  (location === "user" && prop.requiredInUser) ||
+  (location === "installed" && prop.requiredInInstalled) ||
+  (location === "loaded_system" && prop.requiredInInstalled);
 
 export const checkKeyInState = (
   key: string[],
@@ -547,6 +556,7 @@ export function installedConfigLoader<
   >;
   const errLoading = globalState.errLoadingInstallationPath;
 
+  installedConfigs.set({});
   try {
     if (
       orcaInstallationPath.get({ stealth: true }) &&
@@ -638,6 +648,17 @@ export const findConfig = (
   location: ConfigLocationType,
   family?: string
 ) => {
+  if (type === "filament" || type === "printer" || type === "process")
+    return findConfigPFP(configName, type, location, family);
+  else return findConfigVM(configName, type, location, family);
+};
+
+export const findConfigPFP = (
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) => {
   const neededConfigs = getRelevantConfigsFromTypePFP(type);
 
   switch (location) {
@@ -708,6 +729,57 @@ export const findConfig = (
   }
 };
 
+export const findConfigVM = (
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) => {
+  if (type === "vendor") {
+    switch (location) {
+      case "installed":
+        return globalState.installedVendorConfigs[configName].get({
+          stealth: true,
+        });
+
+      case "loaded_system":
+        return globalState.loadedSystemVendorConfigs[configName].get({
+          stealth: true,
+        });
+    }
+  } else if (type === "printer-model") {
+    if (!family) return undefined;
+
+    switch (location) {
+      case "installed":
+        return checkKeyInState(
+          [family, configName],
+          globalState.installedModelConfigs
+        )
+          ? {
+              ...globalState.installedModelConfigs[family][configName].get({
+                stealth: true,
+              }),
+              family: family,
+            }
+          : undefined;
+
+      case "loaded_system":
+        return checkKeyInState(
+          [family, configName],
+          globalState.loadedSystemModelConfigs
+        )
+          ? {
+              ...globalState.loadedSystemModelConfigs[family][configName].get({
+                stealth: true,
+              }),
+              family: family,
+            }
+          : undefined;
+    }
+  }
+};
+
 export function checkNameCollision(
   name: string,
   type: ConfigType,
@@ -729,7 +801,8 @@ export function checkNameSanity(name: string) {
 
 export function analyzeConfiguration(
   properties: Record<string, unknown>,
-  type: ConfigType
+  type: ConfigType,
+  location: ConfigLocationType
 ): Record<string, Warning[]> {
   const warnings = {} as Record<string, Warning[]>;
   const addToWarning = (key: string, val: Warning) =>
@@ -759,8 +832,19 @@ export function analyzeConfiguration(
           });
       }
     }
-  });
 
+    if (
+      propMap[key] &&
+      (propMap[key].requiredInUser ||
+        (location === "installed" && propMap[key].requiredInInstalled)) &&
+      !properties[key]
+    ) {
+      addToWarning(key, {
+        text: "required field cannot be empty",
+        type: "critical",
+      });
+    }
+  });
   return warnings;
 }
 
@@ -821,7 +905,11 @@ export const deinherit_and_load_all_props_by_props: any = async <
         warnings: { ...inherited_props.warnings, ...warnings },
       };
 
-      const analysedWarnings = analyzeConfiguration(returnObject.res, type);
+      const analysedWarnings = analyzeConfiguration(
+        returnObject.res,
+        type,
+        location
+      );
 
       returnObject.warnings = { ...returnObject.warnings, ...analysedWarnings };
 
@@ -837,7 +925,7 @@ export const deinherit_and_load_all_props_by_props: any = async <
         return acc;
       }, {} as Record<string, KeyDetails>);
 
-      const analysedWarnings = analyzeConfiguration(res, type);
+      const analysedWarnings = analyzeConfiguration(res, type, location);
 
       const mergedWarnings = { ...warnings, ...analysedWarnings };
 
@@ -1113,10 +1201,13 @@ export function newFile(
   type: ConfigType,
   location: ConfigLocationType,
   navigate: NavigateFunction,
+  family?: string,
   replace = false
 ) {
   const name = "New File";
-  const url = `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=newFile`;
+  const url =
+    `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=newFile` +
+    (family ? `&family=${family}` : "");
 
   navigate(url, { replace: replace });
 }
@@ -1132,7 +1223,7 @@ export const folderOpener = (path: string) => {
 };
 
 export function findAvailableConfigs(
-  findType: ConfigType,
+  findType: ConfigType | "stl" | "svg",
   location: ConfigLocationType | "all",
   family?: string
 ) {
@@ -1167,7 +1258,11 @@ export function findAvailableConfigs(
       default:
         return [];
     }
-  } else {
+  } else if (
+    findType === "filament" ||
+    findType === "printer" ||
+    findType === "process"
+  ) {
     const neededConfigs = getRelevantConfigsFromTypePFP(findType);
     switch (location) {
       case "user": {
@@ -1211,6 +1306,8 @@ export function findAvailableConfigs(
       default:
         return [];
     }
+  } else {
+    return [];
   }
 }
 
@@ -1233,7 +1330,26 @@ const getVendorConfigKeyName = (type: ConfigType) => {
   }
 };
 
-export async function updateVendorConfigEntry(
+const getVendorConfigSubDirName = (type: ConfigType) => {
+  switch (type) {
+    case "printer":
+      return "machine";
+
+    case "filament":
+      return "filament";
+
+    case "process":
+      return "process";
+
+    case "printer-model":
+      return "machine";
+
+    default:
+      throw "Could not get vendor config key name";
+  }
+};
+
+export async function renameVendorConfigEntry(
   family: string,
   type: ConfigType,
   oldName: string,
@@ -1273,7 +1389,38 @@ export async function updateVendorConfigEntry(
   });
 }
 
-//async function updateVendorFile(family: string) {}
+export async function createVendorConfigEntry(
+  family: string,
+  type: ConfigType,
+  name: string
+) {
+  const vendorConfig = globalState.installedVendorConfigs[family].get({
+    stealth: true,
+  });
+
+  const vendorConfigKeyName = getVendorConfigKeyName(type);
+  const configSubDir = getVendorConfigSubDirName(type);
+
+  const relevantConfigList = vendorConfig[vendorConfigKeyName];
+  const newConfigList = [
+    ...relevantConfigList!,
+    { name: name, sub_path: configSubDir + "/" + name + ".json" },
+  ];
+
+  const path = vendorConfig.fileName;
+
+  const readVendorConfig = await invoke<GenericJsonSchema>(
+    "load_generic_preset",
+    { path }
+  );
+
+  readVendorConfig[vendorConfigKeyName] = newConfigList;
+
+  await invoke("write_to_file", {
+    path,
+    content: JSON.stringify(readVendorConfig, null, 2),
+  });
+}
 
 export async function renameConfig(
   oldName: string,
@@ -1328,7 +1475,7 @@ export function getPropMapFromType(type: ConfigType) {
   const propMap: Record<string, ConfigProperty> =
     {
       printer: printer_properties_map,
-      "printer-model": {},
+      "printer-model": printer_model_properties_map,
       filament: filament_properties_map,
       process: process_properties_map,
       vendor: {},
@@ -1384,12 +1531,15 @@ export function getDirectoryFromTypeAndLocation(
   location: ConfigLocationType,
   family?: string
 ) {
-  const { orcaDataDirectory, orcaInstallationPath } = globalState;
+  const { orcaDataDirectory, orcaInstallationPath, os } = globalState;
   let directoryPathList = [];
 
   switch (location) {
     case "installed":
-      directoryPathList.push(orcaInstallationPath.get({ stealth: true }));
+      directoryPathList.push(
+        orcaInstallationPath.get({ stealth: true }) +
+          get_installed_system_profiles_subdirectory_directory(os.get())
+      );
       if (type !== "vendor" && family) directoryPathList.push("/" + family);
       break;
 
@@ -1448,4 +1598,15 @@ export function deleteConfig(
   family?: string
 ) {
   if (location === "user") deleteUserConfig(name, type);
+}
+
+export function getArrayFromDelimitedString(value: string, delimiter: string) {
+  return value.split(delimiter);
+}
+
+export function getDelimitedStringFromArray(
+  array: string[],
+  delimiter: string
+) {
+  return array.join(delimiter);
 }

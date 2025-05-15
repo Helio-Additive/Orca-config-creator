@@ -13,6 +13,7 @@ import InputComponent from "./components/tab-panels/input-component";
 import NewProperty from "./components/tab-panels/input-components/new-property";
 import Infotip from "./components/tooltip/infotip";
 import {
+  checkIsRequired,
   checkNameCollision,
   ConfigLocationType,
   ConfigType,
@@ -21,14 +22,17 @@ import {
   editConfigFile,
   findAvailableConfigs,
   folderOpener,
+  getArrayFromDelimitedString,
+  getDelimitedStringFromArray,
   getPropMapFromType,
 } from "./lib/commons";
 import {
   configOptionTypeToInputTypeString,
   isVector,
 } from "./lib/config-option-types";
-import { saveFile } from "./lib/edit-config-helpers";
+import { processValueAndGetArray, saveFile } from "./lib/edit-config-helpers";
 import { globalState, Warning } from "./lib/state-store";
+import { delimiter } from "@tauri-apps/api/path";
 
 function LabelButtonTemplate({
   Icon,
@@ -216,6 +220,10 @@ export default function EditConfig() {
             allKeysInRes.filter((el) => !knownKeysTemp.has(el))
           );
 
+          Object.keys(propMap)
+            .filter((el) => checkIsRequired(location, propMap[el]))
+            .forEach((el) => knownKeysTemp.add(el));
+
           editWindowState[fileName].knownKeys.set(knownKeysTemp);
           editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
 
@@ -227,8 +235,8 @@ export default function EditConfig() {
       editWindowState[fileName].changedProps.keys.length === 0 &&
       newFile
     ) {
-      const knownKeysTemp = Object.keys(propMap).filter(
-        (el) => propMap[el].required
+      const knownKeysTemp = Object.keys(propMap).filter((el) =>
+        checkIsRequired(location, propMap[el])
       );
 
       const changedPropsTemp = knownKeysTemp.reduce((acc, el) => {
@@ -316,18 +324,6 @@ export default function EditConfig() {
                 ? tempWarningsState.merge([tempWarning])
                 : tempWarningsState.set([tempWarning]);
             }
-
-            if ((changedName as string).length === 0) {
-              const tempWarningsState =
-                editWindowState[fileName].properties.warnings["name"];
-              const tempWarning: Warning = {
-                text: "Name cannot be empty",
-                type: "critical",
-              };
-              tempWarningsState.get({ stealth: true })
-                ? tempWarningsState.merge([tempWarning])
-                : tempWarningsState.set([tempWarning]);
-            }
           }
         }
       );
@@ -372,7 +368,9 @@ export default function EditConfig() {
     const property = editWindowState[fileName].properties.res[key].get();
     const changedProperty = editWindowState[fileName].changedProps[key];
 
-    if (idx !== undefined) {
+    const delimiter = propMap[key] ? propMap[key].delimiter : undefined;
+
+    if (idx !== undefined && !delimiter) {
       if (changedProperty.get({ stealth: true }))
         changedProperty.merge({ [idx]: value });
       else {
@@ -380,6 +378,25 @@ export default function EditConfig() {
         arr.splice(idx, 1, value);
 
         changedProperty.set(arr);
+      }
+    } else if (idx !== undefined && delimiter) {
+      const changedPropertyValue = changedProperty.get({ stealth: true });
+      if (changedPropertyValue) {
+        const splitArray = getArrayFromDelimitedString(
+          changedPropertyValue as string,
+          delimiter
+        );
+        splitArray.splice(idx, 1, value);
+
+        changedProperty.set(getDelimitedStringFromArray(splitArray, delimiter));
+      } else {
+        const splitArray = getArrayFromDelimitedString(
+          property as string,
+          delimiter
+        );
+        splitArray.splice(idx, 1, value);
+
+        changedProperty.set(getDelimitedStringFromArray(splitArray, delimiter));
       }
     } else changedProperty.set(value);
   };
@@ -438,6 +455,7 @@ export default function EditConfig() {
       <div className="flex-1 min-h-0 mt-1 rounded-xl bg-transparent-base p-3 backdrop-blur-lg overflow-y-auto">
         {Array.from(editWindowState[fileName].knownKeys.get()).map((key) => {
           const knownProp = propMap[key];
+          const isRequired = checkIsRequired(location, propMap[key]);
 
           const property = editWindowState[fileName].properties.res[key].get();
 
@@ -470,7 +488,9 @@ export default function EditConfig() {
 
           let inputType = configOptionTypeToInputTypeString(knownProp.type);
 
-          const isArray = changedProperty
+          const isArray = knownProp.delimiter
+            ? true
+            : changedProperty
             ? Array.isArray(changedProperty)
             : property
             ? Array.isArray(property)
@@ -480,10 +500,10 @@ export default function EditConfig() {
             ? (changedProperty as string) ?? (property as string)
             : undefined;
           const arrayValue: string[] | undefined = isArray
-            ? (changedProperty as string[]) ?? (property as string[])
+            ? processValueAndGetArray(property, changedProperty, delimiter)
             : undefined;
 
-          if (!value && !arrayValue && !knownProp.required) {
+          if (!value && !arrayValue && !isRequired) {
             editWindowState[fileName].knownKeys.set((el) => {
               const newSet = new Set(Array.from(el).filter((pr) => pr !== key));
               return newSet;
@@ -492,7 +512,7 @@ export default function EditConfig() {
           }
 
           if (
-            knownProp.required &&
+            isRequired &&
             !editWindowState[fileName].properties.res.keys.includes(key) &&
             !editWindowState[fileName].changedProps.keys.includes(key)
           ) {
@@ -555,7 +575,7 @@ export default function EditConfig() {
                   }}
                 />
               )}
-              {!knownProp.required && !markedForDeletion && isBaseProp && (
+              {!isRequired && !markedForDeletion && isBaseProp && (
                 <DeleteButton
                   onClick={() => {
                     editWindowState[fileName].deleteKeys.merge([key]);

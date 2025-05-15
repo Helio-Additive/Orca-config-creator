@@ -4,11 +4,15 @@ import { toast } from "react-toastify";
 import {
   ConfigLocationType,
   deinherit_and_load_all_props,
+  newFile,
   updateUuid,
 } from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import ConfigTabTemplate from "./config-tab-template";
+import TopButton from "./config-list/config-item-components/top-button";
+import { VscNewFile } from "react-icons/vsc";
+import { useNavigate } from "react-router-dom";
 
 export default function PrinterConfigTab() {
   const {
@@ -16,6 +20,8 @@ export default function PrinterConfigTab() {
     loadedSystemPrinterConfigs,
     loadedUserPrinterConfigs,
   } = useHookstate(globalState);
+
+  const navigate = useNavigate();
 
   const export_flattened = async (
     configName: string,
@@ -48,9 +54,16 @@ export default function PrinterConfigTab() {
 
     return (
       <div key={key}>
-        <span className="font-semibold text-text-primary text-xl mb-1 pl-3 mt-3">
-          {key}
-        </span>
+        <div className="flex min-h-0 h-fit mt-3 mb-1 pl-3 items-center">
+          <span className="font-semibold text-text-primary text-xl">{key}</span>
+
+          <TopButton
+            onClick={() => newFile("printer", "installed", navigate, key)}
+            Icon={VscNewFile}
+            tooltip="Add new Config"
+            className="text-text-primary ml-2"
+          />
+        </div>
         {vendorConfig.keys.map((printerName) => {
           const config = vendorConfig.nested(printerName).get();
 

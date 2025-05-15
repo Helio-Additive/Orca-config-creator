@@ -28,6 +28,8 @@ export default function ModelConfigTab() {
                     fileName={config.fileName}
                     type="printer-model"
                     configLocation="installed"
+                    family={vendor}
+                    allowEdit
                   />
                 );
               } else {
@@ -39,6 +41,7 @@ export default function ModelConfigTab() {
                     className="bg-transparent-error"
                     fileName={config.fileName}
                     type="printer-model"
+                    family={vendor}
                     configLocation="installed"
                   />
                 );

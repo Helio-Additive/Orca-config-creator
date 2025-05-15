@@ -5,13 +5,15 @@ import { toast } from "react-toastify";
 import {
   ConfigLocationType,
   ConfigType,
+  createVendorConfigEntry,
   editConfigFile,
   getDirectoryFromTypeAndLocation,
+  getRelevantConfigsFromTypePFP,
   refreshConfigs,
   renameConfig,
-  updateVendorConfigEntry,
+  renameVendorConfigEntry,
 } from "./commons";
-import { globalStateObject } from "./state-store";
+import { globalState, globalStateObject } from "./state-store";
 
 function refreshAndReload(
   name: string,
@@ -95,7 +97,15 @@ export async function saveFile(
         getDirectoryFromTypeAndLocation(type, location, family) +
         newName +
         ".json";
-      await saveNewFile(fileName, newFileName, location, editWindowState);
+      await saveNewFile(
+        newName!,
+        type,
+        fileName,
+        newFileName,
+        location,
+        editWindowState,
+        family
+      );
       refreshAndReload(newName!, newFileName, type, location, navigate, family);
     } else if (newName && !newFile) {
       const name = props["name"].get({ stealth: true }) as string;
@@ -124,14 +134,21 @@ async function saveFileWithoutRenameOrCreation(
 }
 
 async function saveNewFile(
+  name: string,
+  type: ConfigType,
   fileName: string,
   newFileName: string,
   location: ConfigLocationType,
-  editWindowState: State<typeof globalStateObject.editWindowState, {}>
+  editWindowState: State<typeof globalStateObject.editWindowState, {}>,
+  family?: string
 ) {
   if (location === "user") {
     const newProps = getKeysValuesToSave(fileName, editWindowState);
     await writeToFile(newFileName, newProps, fileName, editWindowState);
+  } else if (location === "installed") {
+    const newProps = getKeysValuesToSave(fileName, editWindowState);
+    await writeToFile(newFileName, newProps, fileName, editWindowState);
+    createVendorConfigEntry(family!, type, name);
   } else {
     toast("Could not save file", { type: "error" });
   }
@@ -169,7 +186,7 @@ async function saveAndRenameFile(
       family
     );
 
-    await updateVendorConfigEntry(family!, type, name, newName);
+    await renameVendorConfigEntry(family!, type, name, newName);
     await refreshConfigs("vendor", "installed");
 
     toast("reloaded vendor configs", { type: "success" });
@@ -177,5 +194,61 @@ async function saveAndRenameFile(
   } else {
     toast("Could not save file", { type: "error" });
     throw "Could not save file";
+  }
+}
+
+export function getFilesToSearch(type: ConfigType) {
+  if (type === "printer" || type === "filament" || type === "process") {
+    const neededConfigs = getRelevantConfigsFromTypePFP(type);
+
+    const installedConfigs = neededConfigs!.installedConfigs.keys.flatMap(
+      (familyName) =>
+        neededConfigs!.installedConfigs[familyName].keys.map(
+          (configName) =>
+            neededConfigs!.installedConfigs[familyName][configName].get({
+              stealth: true,
+            }).fileName
+        )
+    );
+
+    const userConfigs = neededConfigs!.loadedUserConfigs.keys.map((key) =>
+      neededConfigs!.loadedUserConfigs[key].fileName.get({
+        stealth: true,
+      })
+    );
+
+    return [...installedConfigs, ...userConfigs];
+  } else if (type === "vendor") {
+    const installedConfigs = globalState.installedVendorConfigs.keys.map(
+      (vendor) =>
+        globalState.installedVendorConfigs[vendor].get({ stealth: true })
+          .fileName
+    );
+
+    return installedConfigs;
+  } else if (type === "printer-model") {
+    const installedConfigs = globalState.installedModelConfigs.keys.flatMap(
+      (familyName) =>
+        globalState.installedModelConfigs[familyName].keys.map(
+          (configName) =>
+            globalState.installedModelConfigs[familyName][configName].get({
+              stealth: true,
+            }).fileName
+        )
+    );
+
+    return installedConfigs;
+  }
+}
+
+export function processValueAndGetArray(
+  value: unknown,
+  changedValue: unknown,
+  delimiter?: string
+) {
+  if (delimiter) {
+    return ((changedValue as string) ?? (value as string)).split(delimiter);
+  } else {
+    return (changedValue as string[]) ?? (value as string[]);
   }
 }
