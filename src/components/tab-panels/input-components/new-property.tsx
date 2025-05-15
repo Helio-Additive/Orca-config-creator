@@ -33,8 +33,12 @@ export default function NewProperty({
     string | (string | undefined)[] | undefined
   >(undefined);
   const [valueType, setValueType] = useState("text");
-  const [enumList, setEnumList] = useState([] as [string, string][]);
-  const [possibleValues, setPossibleValues] = useState([] as string[]);
+  const [enumList, setEnumList] = useState(
+    undefined as [string, string][] | undefined
+  );
+  const [possibleValues, setPossibleValues] = useState(
+    undefined as string[] | undefined
+  );
 
   const configType = editWindowState[editWindowKey].type.get({ stealth: true });
 
@@ -85,8 +89,8 @@ export default function NewProperty({
 
   useEffect(() => {
     setValueType("text");
-    setEnumList([]);
-    setPossibleValues([]);
+    setEnumList(undefined);
+    setPossibleValues(undefined);
     setPropValue(undefined);
 
     if (propName && configProperties[propName]) {
@@ -104,7 +108,11 @@ export default function NewProperty({
 
     const allFiles = getFilesToSearch(configType);
 
-    if (propName && configProperties[propName].search) {
+    if (
+      propName &&
+      configProperties[propName] &&
+      configProperties[propName].search
+    ) {
       setPossibleValues(
         [
           ...findAvailableConfigs(
@@ -138,7 +146,7 @@ export default function NewProperty({
   }, [propName]);
 
   useEffect(() => {
-    if (possibleValues.length > 0 && valueType === "text")
+    if (possibleValues && possibleValues.length > 0 && valueType === "text")
       setValueType("combobox");
   }, [possibleValues]);
 

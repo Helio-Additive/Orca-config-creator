@@ -35,6 +35,10 @@ export enum ConfigOptionType {
   coEnum = 9,
   // BBS: vector of enums
   coEnums = coEnum + coVectorType,
+  //For names and subpaths
+  coNameAndSubpath = 10,
+  //Vector of name and subpaths
+  coNameAndSubpaths = coNameAndSubpath + coVectorType,
 }
 
 export function isVector(a: ConfigOptionType) {
@@ -61,6 +65,8 @@ export const configOptionTypeToInputTypeString = (a: ConfigOptionType) => {
     case ConfigOptionType.coInt:
     case ConfigOptionType.coFloat:
       return "number";
+    case ConfigOptionType.coNameAndSubpath:
+      return "nameAndPath";
     default:
       return "text";
   }
