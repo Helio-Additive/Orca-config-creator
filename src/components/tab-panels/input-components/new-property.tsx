@@ -15,6 +15,7 @@ import { ConfigProperty } from "../../../lib/printer-configuration-options";
 import { globalState } from "../../../lib/state-store";
 import FieldButton from "../field-button";
 import InputComponent from "../input-component";
+import { getFilesToSearch } from "../../../lib/edit-config-helpers";
 
 export default function NewProperty({
   configProperties,
@@ -101,24 +102,7 @@ export default function NewProperty({
       }
     }
 
-    const neededConfigs = getRelevantConfigsFromTypePFP(configType);
-
-    const loadedSystemConfigs = neededConfigs!.installedConfigs.keys.flatMap(
-      (familyName) =>
-        neededConfigs!.installedConfigs[familyName].keys.map(
-          (configName) =>
-            neededConfigs!.installedConfigs[familyName][configName].get({
-              stealth: true,
-            }).fileName
-        )
-    );
-    const userConfigs = neededConfigs!.loadedUserConfigs.keys.map((key) =>
-      neededConfigs!.loadedUserConfigs[key].fileName.get({
-        stealth: true,
-      })
-    );
-
-    const allFiles = [...loadedSystemConfigs, ...userConfigs];
+    const allFiles = getFilesToSearch(configType);
 
     if (propName && configProperties[propName].search) {
       setPossibleValues(
