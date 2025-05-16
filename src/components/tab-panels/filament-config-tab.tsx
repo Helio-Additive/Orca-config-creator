@@ -1,11 +1,5 @@
 import { useHookstate } from "@hookstate/core";
-import { invoke } from "@tauri-apps/api/tauri";
-import { toast } from "react-toastify";
-import {
-  ConfigLocationType,
-  deinherit_and_load_all_props,
-  updateUuid,
-} from "../../lib/commons";
+import { ConfigLocationType, exportFlattened } from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import ConfigTabTemplate from "./config-tab-template";
@@ -19,30 +13,9 @@ export default function FilamentConfigTab() {
 
   const export_flattened = async (
     configName: string,
-    location: ConfigLocationType
-  ) => {
-    try {
-      const configObject = await deinherit_and_load_all_props(
-        configName,
-        "filament",
-        location
-      );
-
-      const res = configObject.res;
-      res.name = updateUuid(res.name);
-      res["compatible_printers"] = [];
-      delete res["inherits"];
-
-      await invoke("save_and_zip_json", {
-        data: res,
-        fileName: `Filament presets_${res.name}.zip`,
-      });
-
-      toast(`Saved 'Filament presets_${res.name}.zip'`, { type: "success" });
-    } catch (error: any) {
-      toast(error.toString(), { type: "error" });
-    }
-  };
+    location: ConfigLocationType,
+    family?: string
+  ) => exportFlattened(configName, "filament", location, family);
 
   const installedConfigs = installedFilamentConfigs.keys.map((key) => {
     const vendorConfig = installedFilamentConfigs[key];
@@ -66,6 +39,7 @@ export default function FilamentConfigTab() {
                 family={key}
                 allowEdit
                 configLocation="installed"
+                flatExportFunction={export_flattened}
               />
             );
           } else {
@@ -107,6 +81,7 @@ export default function FilamentConfigTab() {
                 type="filament"
                 family={key}
                 configLocation="loaded_system"
+                flatExportFunction={export_flattened}
               />
             );
           } else {
