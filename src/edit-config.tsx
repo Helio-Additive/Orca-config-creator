@@ -30,10 +30,13 @@ import {
   configOptionTypeToInputTypeString,
   isVector,
 } from "./lib/config-option-types";
-import { processValueAndGetArray, saveFile } from "./lib/edit-config-helpers";
+import {
+  addNewArrayValue,
+  processValueAndGetArray,
+  saveFile,
+} from "./lib/edit-config-helpers";
 import { globalState, Warning } from "./lib/state-store";
 import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
-import { delimiter } from "@tauri-apps/api/path";
 
 function LabelButtonTemplate({
   Icon,
@@ -504,7 +507,7 @@ export default function EditConfig() {
           const value = !isArray
             ? (changedProperty as string) ?? (property as string)
             : undefined;
-          const arrayValue: string[] | undefined = isArray
+          const arrayValue: string[] | ConfigNameAndPath[] | undefined = isArray
             ? processValueAndGetArray(
                 property,
                 changedProperty,
@@ -560,34 +563,14 @@ export default function EditConfig() {
               )}
               {isArray && (
                 <AddButton
-                  onClick={() => {
-                    if (!delimiter) {
-                      if (changedProperty)
-                        editWindowState[fileName].changedProps[key].merge([
-                          arrayValue![arrayValue!.length - 1],
-                        ]);
-                      else if (arrayValue)
-                        editWindowState[fileName].changedProps[key].set([
-                          ...arrayValue!,
-                          arrayValue![arrayValue!.length - 1],
-                        ]);
-                      else
-                        editWindowState[fileName].changedProps[key].set([
-                          undefined,
-                        ]);
-                    } else {
-                      if (changedProperty)
-                        editWindowState[fileName].changedProps[key].set(
-                          (v: string) => v + ";"
-                        );
-                      else
-                        editWindowState[fileName].changedProps[key].set(
-                          editWindowState[fileName].properties.res[key].get({
-                            stealth: true,
-                          }) + ";"
-                        );
-                    }
-                  }}
+                  onClick={() =>
+                    addNewArrayValue(
+                      fileName,
+                      key,
+                      arrayValue,
+                      knownProp.delimiter
+                    )
+                  }
                 />
               )}
               {(changedProperty || markedForDeletion) && (
