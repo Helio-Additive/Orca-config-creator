@@ -1,4 +1,4 @@
-import { Field, Label } from "@headlessui/react";
+import { Button, Field, Label } from "@headlessui/react";
 import { ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import DropdownInput from "./input-components/dropdown-input";
@@ -9,6 +9,7 @@ import { ConfigType } from "../../lib/commons";
 import ComboInput from "./input-components/combo-input";
 import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
 import NameAndPathInput from "./input-components/name-and-path-input";
+import { FaMinus } from "react-icons/fa";
 
 export default function InputComponent({
   label,
@@ -32,6 +33,7 @@ export default function InputComponent({
   possibleValues,
   className,
   isArray,
+  arrayElementRemoveFunction,
 }: {
   label?: string;
   type?: string;
@@ -55,6 +57,7 @@ export default function InputComponent({
   search?: ConfigType;
   possibleValues?: string[];
   className?: string;
+  arrayElementRemoveFunction?: (idx: number) => void;
 }) {
   const arr = Array.from(
     {
@@ -110,6 +113,14 @@ export default function InputComponent({
                   key={idx}
                   className="flex w-full items-center min-w-fit relative"
                 >
+                  {arrayElementRemoveFunction && (
+                    <Button
+                      className="mr-1 group"
+                      onClick={() => arrayElementRemoveFunction(idx)}
+                    >
+                      <FaMinus className="size-4 fill-white/60 group-data-hover:fill-white" />
+                    </Button>
+                  )}
                   {{
                     dropdown: (
                       <DropdownInput

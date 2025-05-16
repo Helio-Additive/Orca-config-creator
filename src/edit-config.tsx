@@ -12,6 +12,7 @@ import { twMerge } from "tailwind-merge";
 import InputComponent from "./components/tab-panels/input-component";
 import NewProperty from "./components/tab-panels/input-components/new-property";
 import Infotip from "./components/tooltip/infotip";
+import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
 import {
   checkIsRequired,
   checkNameCollision,
@@ -33,10 +34,10 @@ import {
 import {
   addNewArrayValue,
   processValueAndGetArray,
+  removeArrayValue,
   saveFile,
 } from "./lib/edit-config-helpers";
 import { globalState, Warning } from "./lib/state-store";
-import { ConfigNameAndPath } from "./lib/bindings/ConfigNameAndPath";
 
 function LabelButtonTemplate({
   Icon,
@@ -515,6 +516,11 @@ export default function EditConfig() {
               )
             : undefined;
 
+          const removeArrayElementFunction = isArray
+            ? (idx: number) =>
+                removeArrayValue(fileName, key, idx, knownProp.delimiter)
+            : undefined;
+
           if (!value && !arrayValue && !isRequired) {
             editWindowState[fileName].knownKeys.set((el) => {
               const newSet = new Set(Array.from(el).filter((pr) => pr !== key));
@@ -642,6 +648,7 @@ export default function EditConfig() {
               sideText={knownProp.sidetext}
               possibleValues={possibleValues}
               isArray={isArray}
+              arrayElementRemoveFunction={removeArrayElementFunction}
             />
           );
         })}
