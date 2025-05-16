@@ -1,11 +1,5 @@
 import { useHookstate } from "@hookstate/core";
-import { invoke } from "@tauri-apps/api/tauri";
-import { toast } from "react-toastify";
-import {
-  ConfigLocationType,
-  deinherit_and_load_all_props,
-  updateUuid,
-} from "../../lib/commons";
+import { ConfigLocationType, exportFlattened } from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import ConfigTabTemplate from "./config-tab-template";
@@ -19,30 +13,9 @@ export default function ProcessConfigTab() {
 
   const export_flattened = async (
     configName: string,
-    location: ConfigLocationType
-  ) => {
-    try {
-      const configObject = await deinherit_and_load_all_props(
-        configName,
-        "process",
-        location
-      );
-
-      const res = configObject.res;
-      res.name = updateUuid(res.name);
-      res["compatible_printers"] = [];
-      delete res["inherits"];
-
-      await invoke("save_and_zip_json", {
-        data: res,
-        fileName: `Process presets_${res.name}.zip`,
-      });
-
-      toast(`Saved 'Process presets_${res.name}.zip'`, { type: "success" });
-    } catch (error: any) {
-      toast(error.toString(), { type: "error" });
-    }
-  };
+    location: ConfigLocationType,
+    family?: string
+  ) => exportFlattened(configName, "process", location, family);
 
   const installedConfigs = installedProcessConfigs.keys.map((key) => {
     const vendorConfig = installedProcessConfigs[key];
@@ -105,6 +78,7 @@ export default function ProcessConfigTab() {
                 fileName={config.fileName}
                 type="process"
                 configLocation="loaded_system"
+                flatExportFunction={export_flattened}
               />
             );
           } else {
