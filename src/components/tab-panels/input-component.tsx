@@ -106,7 +106,10 @@ export default function InputComponent({
               const inputValue = isArray ? arrayValue![idx] : value;
 
               return (
-                <div key={idx} className="flex w-full items-center min-w-fit">
+                <div
+                  key={idx}
+                  className="flex w-full items-center min-w-fit relative"
+                >
                   {{
                     dropdown: (
                       <DropdownInput

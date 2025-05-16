@@ -2,20 +2,17 @@ import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 import { MdAdd } from "react-icons/md";
-import {
-  ConfigType,
-  findAvailableConfigs,
-  getRelevantConfigsFromTypePFP,
-} from "../../../lib/commons";
+import { ConfigType, findAvailableConfigs } from "../../../lib/commons";
 import {
   configOptionTypeToInputTypeString,
   isVector,
 } from "../../../lib/config-option-types";
+import { getFilesToSearch } from "../../../lib/edit-config-helpers";
 import { ConfigProperty } from "../../../lib/printer-configuration-options";
 import { globalState } from "../../../lib/state-store";
 import FieldButton from "../field-button";
 import InputComponent from "../input-component";
-import { getFilesToSearch } from "../../../lib/edit-config-helpers";
+import { ConfigNameAndPath } from "../../../lib/bindings/ConfigNameAndPath";
 
 export default function NewProperty({
   configProperties,
@@ -30,7 +27,10 @@ export default function NewProperty({
 
   const [propName, setPropName] = useState<string | undefined>(undefined);
   const [propValue, setPropValue] = useState<
-    string | (string | undefined)[] | undefined
+    | string
+    | (string | undefined)[]
+    | (ConfigNameAndPath | undefined)[]
+    | undefined
   >(undefined);
   const [valueType, setValueType] = useState("text");
   const [enumList, setEnumList] = useState(
@@ -42,15 +42,20 @@ export default function NewProperty({
 
   const configType = editWindowState[editWindowKey].type.get({ stealth: true });
 
-  const onPropertyValueChange = (value: string, idx?: number) => {
+  const onPropertyValueChange = (
+    value: string | ConfigNameAndPath,
+    idx?: number
+  ) => {
     if (isArray) {
       setPropValue((el) => {
-        const newVal = [...(Array.isArray(el) ? (el as string[]) : [])];
+        const newVal = [
+          ...(Array.isArray(el) ? (el as string[] | ConfigNameAndPath[]) : []),
+        ];
         newVal.splice(idx!, 1, value);
-        return newVal;
+        return newVal as string[] | ConfigNameAndPath[];
       });
     } else {
-      setPropValue(value);
+      setPropValue(value as string);
     }
   };
 
@@ -172,7 +177,9 @@ export default function NewProperty({
         possibleValues={Object.keys(configProperties)}
         type="combobox"
         value={propName}
-        onChange={setPropName}
+        onChange={(val: string | ConfigNameAndPath) =>
+          setPropName(val as string)
+        }
       />
       <InputComponent
         className="flex-1/2 m-0"
@@ -190,7 +197,10 @@ export default function NewProperty({
         <MdAdd
           className="text-text-primary h-full self-center text-3xl mr-1 hover:scale-125 active:scale-95 transition duration-200 "
           onClick={() =>
-            setPropValue((curValue) => [...(curValue as string[]), undefined])
+            setPropValue((curValue) => [
+              ...((curValue as any[]) ?? []),
+              undefined,
+            ])
           }
         />
       )}
