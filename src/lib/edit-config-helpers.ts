@@ -14,6 +14,7 @@ import {
   renameVendorConfigEntry,
 } from "./commons";
 import { globalState, globalStateObject } from "./state-store";
+import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
 
 function refreshAndReload(
   name: string,
@@ -250,5 +251,41 @@ export function processValueAndGetArray(
     return ((changedValue as string) ?? (value as string)).split(delimiter);
   } else {
     return (changedValue as string[]) ?? (value as string[]);
+  }
+}
+
+export function addNewArrayValue(
+  fileName: string,
+  key: string,
+  arrayValue: string[] | ConfigNameAndPath[] | undefined,
+  delimiter?: string
+) {
+  {
+    const { editWindowState } = globalState;
+    const changedProperty = editWindowState[fileName].changedProps[key].get({
+      stealth: true,
+    });
+
+    if (!delimiter) {
+      if (changedProperty)
+        editWindowState[fileName].changedProps[key].merge([
+          arrayValue![arrayValue!.length - 1],
+        ]);
+      else if (arrayValue)
+        editWindowState[fileName].changedProps[key].set([
+          ...arrayValue!,
+          arrayValue![arrayValue!.length - 1],
+        ]);
+      else editWindowState[fileName].changedProps[key].set([undefined]);
+    } else {
+      if (changedProperty)
+        editWindowState[fileName].changedProps[key].set((v: string) => v + ";");
+      else
+        editWindowState[fileName].changedProps[key].set(
+          editWindowState[fileName].properties.res[key].get({
+            stealth: true,
+          }) + ";"
+        );
+    }
   }
 }
