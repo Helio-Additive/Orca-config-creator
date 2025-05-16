@@ -1,4 +1,4 @@
-import { State } from "@hookstate/core";
+import { none, State } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -7,6 +7,8 @@ import {
   ConfigType,
   createVendorConfigEntry,
   editConfigFile,
+  getArrayFromDelimitedString,
+  getDelimitedStringFromArray,
   getDirectoryFromTypeAndLocation,
   getRelevantConfigsFromTypePFP,
   refreshConfigs,
@@ -286,6 +288,54 @@ export function addNewArrayValue(
             stealth: true,
           }) + ";"
         );
+    }
+  }
+}
+
+export function removeArrayValue(
+  fileName: string,
+  key: string,
+  idx: number,
+  delimiter?: string
+) {
+  const { editWindowState } = globalState;
+  const changedProperty = editWindowState[fileName].changedProps[key].get({
+    stealth: true,
+  });
+
+  if (!delimiter) {
+    if (changedProperty) {
+      editWindowState[fileName].changedProps[key].merge({ [idx]: none });
+    } else {
+      const arr = [
+        ...(editWindowState[fileName].properties.res[key].get({
+          stealth: true,
+        }) as unknown[]),
+      ];
+      arr.splice(idx, 1);
+      editWindowState[fileName].changedProps[key].set(arr);
+    }
+  } else {
+    if (changedProperty) {
+      const arr = getArrayFromDelimitedString(
+        changedProperty as string,
+        delimiter
+      );
+      arr.splice(idx, 1);
+      editWindowState[fileName].changedProps[key].set(
+        getDelimitedStringFromArray(arr, delimiter)
+      );
+    } else {
+      const arr = getArrayFromDelimitedString(
+        editWindowState[fileName].properties.res[key].get({
+          stealth: true,
+        }) as string,
+        delimiter
+      );
+      arr.splice(idx, 1);
+      editWindowState[fileName].changedProps[key].set(
+        getDelimitedStringFromArray(arr, delimiter)
+      );
     }
   }
 }
