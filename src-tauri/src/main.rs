@@ -80,6 +80,68 @@ async fn save_and_zip_json(data: serde_json::Value, file_name: String) -> Result
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))
 }
 
+#[tauri::command]
+async fn save_and_zip_json_bundle(
+    data: Vec<serde_json::Value>,
+    file_names: Vec<String>,
+    folder: String,
+    zip_name: String,
+) -> Result<bool, String> {
+    if data.len() != file_names.len() {
+        return Err("Data and file_names must be of the same length.".to_string());
+    }
+
+    let base_path = PathBuf::from(folder);
+    let zip_path = base_path.join(zip_name);
+
+    spawn_blocking(move || {
+        let file = File::create(&zip_path).map_err(|e| e.to_string())?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = SimpleFileOptions::default();
+
+        for (entry, file_name) in data.into_iter().zip(file_names.into_iter()) {
+            let json_str = serde_json::to_string_pretty(&entry)
+                .map_err(|e| format!("Serialization error: {e}"))?;
+
+            let file_name = if file_name.ends_with(".json") {
+                file_name
+            } else {
+                format!("{file_name}.json")
+            };
+
+            zip.start_file(file_name, options)
+                .map_err(|e| format!("Zip start_file error: {e}"))?;
+
+            zip.write_all(json_str.as_bytes())
+                .map_err(|e| format!("Zip write error: {e}"))?;
+        }
+
+        zip.finish().map_err(|e| format!("Zip finish error: {e}"))?;
+
+        Ok(true)
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
+}
+
+#[tauri::command]
+async fn pick_folder() -> Result<PathBuf, String> {
+    // Run the blocking folder picker in a separate thread
+    let save_path: Option<PathBuf> = spawn_blocking(move || {
+        FileDialogBuilder::new()
+            .set_title("Choose where to save the ZIP file")
+            .pick_folder()
+    })
+    .await
+    .unwrap_or(None);
+
+    let Some(base_path) = save_path else {
+        return Err("No path selected".into());
+    };
+
+    Ok(base_path)
+}
+
 fn main() {
     #[cfg(dev)]
     {
@@ -118,7 +180,9 @@ fn main() {
             rename_file,
             rename_config,
             delete_file,
-            find_possible_values
+            find_possible_values,
+            pick_folder,
+            save_and_zip_json_bundle
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

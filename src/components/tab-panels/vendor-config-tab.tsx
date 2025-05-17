@@ -1,9 +1,27 @@
 import { useHookstate } from "@hookstate/core";
 import ConfigItem from "./config-list/config-item";
 import { globalState } from "../../lib/state-store";
+import { invoke } from "@tauri-apps/api/tauri";
+import { validate as isUuid, v4 as uuidv4 } from "uuid";
 
 export default function VendorConfigTab() {
-  const { installedVendorConfigs: vendorConfigs } = useHookstate(globalState);
+  const {
+    installedVendorConfigs: vendorConfigs,
+    installedPrinterConfigs,
+    installedProcessConfigs,
+    installedFilamentConfigs,
+  } = useHookstate(globalState);
+
+  const flatExportFunction = (vendorName: string) => {
+    invoke("pick_folder", {}).then((el) => console.log(el));
+
+    const uuid = uuidv4();
+
+    const printerConfigs = installedPrinterConfigs[vendorName].keys.map((el) =>
+      installedPrinterConfigs[vendorName].get({ stealth: true })
+    );
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       {vendorConfigs.keys.map((key) => {
@@ -36,6 +54,7 @@ export default function VendorConfigTab() {
             type="vendor"
             configLocation="installed"
             allowEdit
+            flatExportFunction={flatExportFunction}
           />
         );
       })}

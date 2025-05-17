@@ -1616,7 +1616,8 @@ export async function exportFlattened(
   configName: string,
   type: ConfigType,
   location: ConfigLocationType,
-  family?: string
+  family?: string,
+  invokeSave = true
 ) {
   try {
     const configObject = await deinherit_and_load_all_props(
@@ -1648,12 +1649,16 @@ export async function exportFlattened(
         break;
     }
 
-    await invoke("save_and_zip_json", {
-      data: res,
-      fileName,
-    });
+    if (invokeSave) {
+      await invoke("save_and_zip_json", {
+        data: res,
+        fileName,
+      });
 
-    toast(`Saved '${fileName}'`, { type: "success" });
+      toast(`Saved '${fileName}'`, { type: "success" });
+    } else {
+      return { data: res, fileName };
+    }
   } catch (error: any) {
     toast(error.toString(), { type: "error" });
   }
