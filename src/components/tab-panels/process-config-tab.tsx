@@ -38,6 +38,7 @@ export default function ProcessConfigTab() {
                 type="process"
                 allowEdit
                 configLocation="installed"
+                flatExportFunction={export_flattened}
               />
             );
           } else {

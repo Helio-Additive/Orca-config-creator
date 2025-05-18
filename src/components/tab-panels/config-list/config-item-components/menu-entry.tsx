@@ -15,7 +15,7 @@ export default function MenuEntry({
   return (
     <button
       className={twMerge(
-        "hover:text-text-secondary hover:scale-95 w-6 h-6 active:scale-85 min-w-fit",
+        "hover:text-text-secondary hover:scale-95 h-6 active:scale-85 min-w-fit",
         className
       )}
       onClick={onClick}
