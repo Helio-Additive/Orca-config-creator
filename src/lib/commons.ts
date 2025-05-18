@@ -1612,53 +1612,66 @@ export function getDelimitedStringFromArray(
   return array.join(delimiter);
 }
 
+export async function flattenConfig(
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const configObject = await deinherit_and_load_all_props(
+    configName,
+    type,
+    location,
+    family
+  );
+
+  const res = configObject.res;
+  res.name = updateUuid(res.name);
+  if (!res["version"]) res["version"] = "1.2.3";
+  delete res["inherits"];
+
+  if (type === "filament" || type === "process")
+    res["compatible_printers"] = [];
+
+  if (type === "filament") res["filament_settings_id"] = [res.name];
+  if (type === "process") res["print_settings_id"] = [res.name];
+
+  res["from"] = "User";
+  let fileName = "";
+
+  switch (type) {
+    case "filament":
+      fileName = `Filament presets_${res.name}.zip`;
+      break;
+    case "printer":
+      fileName = `Printer presets_${res.name}.zip`;
+      break;
+    case "process":
+      fileName = `Process presets_${res.name}.zip`;
+      break;
+  }
+  return { data: res, fileName };
+}
+
 export async function exportFlattened(
   configName: string,
   type: ConfigType,
   location: ConfigLocationType,
-  family?: string,
-  invokeSave = true
+  family?: string
 ) {
   try {
-    const configObject = await deinherit_and_load_all_props(
+    const { data, fileName } = await flattenConfig(
       configName,
       type,
       location,
       family
     );
+    await invoke("save_and_zip_json", {
+      data,
+      fileName,
+    });
 
-    const res = configObject.res;
-    res.name = updateUuid(res.name);
-    if (!res["version"]) res["version"] = "1.2.3";
-    delete res["inherits"];
-
-    if (type === "filament" || type === "process")
-      res["compatible_printers"] = [];
-
-    let fileName = "";
-
-    switch (type) {
-      case "filament":
-        fileName = `Filament presets_${res.name}.zip`;
-        break;
-      case "printer":
-        fileName = `Printer presets_${res.name}.zip`;
-        break;
-      case "process":
-        fileName = `Process presets_${res.name}.zip`;
-        break;
-    }
-
-    if (invokeSave) {
-      await invoke("save_and_zip_json", {
-        data: res,
-        fileName,
-      });
-
-      toast(`Saved '${fileName}'`, { type: "success" });
-    } else {
-      return { data: res, fileName };
-    }
+    toast(`Saved '${fileName}'`, { type: "success" });
   } catch (error: any) {
     toast(error.toString(), { type: "error" });
   }

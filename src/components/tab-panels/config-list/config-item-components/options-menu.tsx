@@ -27,7 +27,7 @@ export default function OptionsMenu({
         transition
         anchor="bottom end"
         className={twMerge(
-          "flex flex-col justify-center bg-transparent-white-input rounded-xl p-2 pl-2 pr-4 text-text-primary",
+          "flex flex-col justify-center  bg-transparent-white-input rounded-xl p-2 pl-3 pr-4 text-text-primary",
           "shadow-md shadow-transparent-black-hover",
           "outline-2 -outline-offset-2 outline-text-secondary/20"
         )}
