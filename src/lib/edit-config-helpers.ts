@@ -7,6 +7,7 @@ import {
   ConfigType,
   createVendorConfigEntry,
   editConfigFile,
+  findConfig,
   getArrayFromDelimitedString,
   getDelimitedStringFromArray,
   getDirectoryFromTypeAndLocation,
@@ -17,6 +18,7 @@ import {
 } from "./commons";
 import { globalState, globalStateObject } from "./state-store";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
+import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 
 function refreshAndReload(
   name: string,
@@ -151,7 +153,14 @@ async function saveNewFile(
   } else if (location === "installed") {
     const newProps = getKeysValuesToSave(fileName, editWindowState);
     await writeToFile(newFileName, newProps, fileName, editWindowState);
-    createVendorConfigEntry(family!, type, name);
+    await createVendorConfigEntry(family!, type, name);
+    if (type === "printer") {
+      await addNewVariantToModel(
+        family!,
+        newProps["printer_model"] as string,
+        newProps["printer_variant"] as string
+      );
+    }
   } else {
     toast("Could not save file", { type: "error" });
   }
@@ -281,12 +290,14 @@ export function addNewArrayValue(
       else editWindowState[fileName].changedProps[key].set([undefined]);
     } else {
       if (changedProperty)
-        editWindowState[fileName].changedProps[key].set((v: string) => v + ";");
+        editWindowState[fileName].changedProps[key].set(
+          (v: string) => v + delimiter
+        );
       else
         editWindowState[fileName].changedProps[key].set(
           editWindowState[fileName].properties.res[key].get({
             stealth: true,
-          }) + ";"
+          }) + delimiter
         );
     }
   }
@@ -337,5 +348,72 @@ export function removeArrayValue(
         getDelimitedStringFromArray(arr, delimiter)
       );
     }
+  }
+}
+
+export async function addNewVariantToModel(
+  family: string,
+  modelName: string,
+  variant: string
+) {
+  const modelConfig = findConfig(
+    modelName,
+    "printer-model",
+    "installed",
+    family
+  );
+
+  if (modelConfig) {
+    const res: MinPrinterModelJsonSchema = await invoke("load_generic_preset", {
+      path: modelConfig.fileName,
+    });
+
+    const variantArray = res.nozzle_diameter
+      .split(";")
+      .filter((el) => el && el.length > 0);
+    variantArray.push(variant);
+
+    const newVariantString = variantArray.join(";");
+
+    res.nozzle_diameter = newVariantString;
+
+    await invoke("write_to_file", {
+      path: modelConfig.fileName,
+      content: JSON.stringify(res, null, 2),
+    });
+  }
+}
+
+export async function removeVariantFromModel(
+  family: string,
+  modelName: string,
+  variant: string
+) {
+  const modelConfig = findConfig(
+    modelName,
+    "printer-model",
+    "installed",
+    family
+  );
+
+  if (modelConfig) {
+    const res: MinPrinterModelJsonSchema = await invoke("load_generic_preset", {
+      path: modelConfig.fileName,
+    });
+
+    const variantArray = res.nozzle_diameter
+      .split(";")
+      .filter((el) => el && el.length > 0 && el !== variant);
+
+    const newVariantString = variantArray.join(";");
+
+    res.nozzle_diameter = newVariantString;
+
+    await invoke("write_to_file", {
+      path: modelConfig.fileName,
+      content: JSON.stringify(res, null, 2),
+    });
+
+    await refreshConfigs("printer-model", "installed");
   }
 }

@@ -56,6 +56,7 @@ export default function PrinterConfigTab() {
                 allowEdit
                 configLocation="installed"
                 flatExportFunction={export_flattened}
+                allowDelete
               />
             );
           } else {

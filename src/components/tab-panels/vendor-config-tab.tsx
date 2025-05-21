@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { flattenConfig } from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
+import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
 
 export default function VendorConfigTab() {
   const {
@@ -103,6 +104,14 @@ export default function VendorConfigTab() {
     }
   };
 
+  const duplicationMenuItem = {
+    icon: HiOutlineDocumentDuplicate,
+    onClick: () => {
+      console.log("hello");
+    },
+    text: "Duplicate vendor config",
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       {vendorConfigs.keys.map((key) => {
@@ -136,6 +145,7 @@ export default function VendorConfigTab() {
             configLocation="installed"
             allowEdit
             flatExportFunction={flatExportFunction}
+            extraOptionsMenuItems={[duplicationMenuItem]}
           />
         );
       })}

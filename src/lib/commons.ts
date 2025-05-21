@@ -44,6 +44,7 @@ import {
   Warning,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
+import { removeVariantFromModel } from "./edit-config-helpers";
 
 export enum InheritanceStatus {
   OK,
@@ -1423,6 +1424,37 @@ export async function createVendorConfigEntry(
   });
 }
 
+export async function deleteVendorConfigEntry(
+  family: string,
+  type: ConfigType,
+  name: string
+) {
+  const vendorConfig = globalState.installedVendorConfigs[family].get({
+    stealth: true,
+  });
+
+  const vendorConfigKeyName = getVendorConfigKeyName(type);
+
+  const relevantConfigList = vendorConfig[vendorConfigKeyName];
+  const newConfigList = relevantConfigList!.filter((el) => el.name !== name);
+
+  const path = vendorConfig.fileName;
+
+  const readVendorConfig = await invoke<GenericJsonSchema>(
+    "load_generic_preset",
+    { path }
+  );
+
+  readVendorConfig[vendorConfigKeyName] = newConfigList;
+
+  await invoke("write_to_file", {
+    path,
+    content: JSON.stringify(readVendorConfig, null, 2),
+  });
+
+  await refreshConfigs("vendor", "installed");
+}
+
 export async function renameConfig(
   oldName: string,
   newName: string,
@@ -1447,24 +1479,6 @@ export async function renameConfig(
       content: JSON.stringify(props, null, 2),
     });
     const newPath = await invoke<string>("rename_config", { path, newName });
-
-    /*if (location === "installed") {
-      updateVendorConfigEntry(family!, type, oldName, newName);
-    } else {
-      switch (type) {
-        case "printer":
-          await dataPrinterConfigLoader();
-          break;
-
-        case "filament":
-          await dataFilamentConfigLoader();
-          break;
-
-        case "process":
-          await dataProcessConfigLoader();
-          break;
-      }
-    }*/
 
     return newPath;
   } catch (error: any) {
@@ -1516,6 +1530,8 @@ export async function refreshConfigs(
     await loadedSystemModelConfigLoader();
   } else if (type === "printer" && location === "installed") {
     await installedPrinterConfigLoader();
+  } else if (type === "printer-model" && location === "installed") {
+    await installedModelConfigLoader();
   } else if (type === "filament" && location === "installed") {
     await installedFilamentConfigLoader();
   } else if (type === "process" && location === "installed") {
@@ -1578,27 +1594,69 @@ export function getDirectoryFromTypeAndLocation(
   return directoryPathList.join("") + "/";
 }
 
-export function deleteUserConfig(name: string, type: ConfigType) {
+export async function deleteUserConfig(name: string, type: ConfigType) {
   const config = findConfig(name, type, "user");
 
   if (config) {
     invoke("delete_file", { path: config.fileName })
       .then(() => {
         toast(`Config: ${name} successfully deleted`, { type: "success" });
+        refreshConfigs(type, "user");
       })
       .catch((error: any) => toast(error.toString(), { type: "error" }));
   }
-
-  refreshConfigs(type, "user");
 }
 
-export function deleteConfig(
+export async function deleteInstalledConfig(
+  name: string,
+  type: ConfigType,
+  family: string
+) {
+  const config = findConfig(name, type, "installed", family);
+  if (config) {
+    invoke("delete_file", { path: config.fileName })
+      .then(() => {
+        deleteVendorConfigEntry(family, type, name).then(() => {
+          toast(`Config: ${name} successfully deleted`, { type: "success" });
+          refreshConfigs(type, "installed");
+        });
+      })
+      .catch((error: any) => toast(error.toString(), { type: "error" }));
+  }
+}
+
+export async function deleteConfig(
   name: string,
   type: ConfigType,
   location: ConfigLocationType,
   family?: string
 ) {
-  if (location === "user") deleteUserConfig(name, type);
+  if (location === "user") await deleteUserConfig(name, type);
+  else if (location === "installed") {
+    if (type === "printer") {
+      const printerConfig = findConfigPFP(name, type, "installed", family);
+      if (printerConfig) {
+        const res: any = await invoke("load_generic_preset", {
+          path: printerConfig.fileName,
+        });
+
+        await removeVariantFromModel(
+          family!,
+          res["printer_model"] as string,
+          res["printer_variant"] as string
+        );
+        toast(`Config: ${name} successfully removed from printer model`, {
+          type: "success",
+        });
+      }
+
+      await deleteVendorConfigEntry(family!, type, name);
+    } else {
+      toast(`Error deleting config: ${name}`, { type: "error" });
+    }
+
+    await deleteInstalledConfig(name, type, family!);
+  }
 }
 
 export function getArrayFromDelimitedString(value: string, delimiter: string) {
