@@ -14,6 +14,12 @@ import OptionsMenu from "./config-item-components/options-menu";
 import TopButton from "./config-item-components/top-button";
 import { RiDeleteBin6Line } from "react-icons/ri";
 
+type OptionMenuItem = {
+  icon: (a: { className?: string }) => ReactNode;
+  text: string;
+  onClick: () => void;
+};
+
 export default function ConfigItem({
   name,
   family,
@@ -27,6 +33,7 @@ export default function ConfigItem({
   flatExportFunction,
   configLocation,
   allowDelete,
+  extraOptionsMenuItems = [],
 }: {
   name: string;
   family?: string;
@@ -44,6 +51,7 @@ export default function ConfigItem({
     family?: string
   ) => void;
   configLocation: ConfigLocationType;
+  extraOptionsMenuItems?: OptionMenuItem[];
 }) {
   const navigate = useNavigate();
 
@@ -51,11 +59,7 @@ export default function ConfigItem({
     editConfigFile(name, type, fileName!, configLocation, navigate, family);
   };
 
-  const optionsMenuItems: {
-    icon: (a: { className?: string }) => ReactNode;
-    text: string;
-    onClick: () => void;
-  }[] = [];
+  const optionsMenuItems: OptionMenuItem[] = [];
 
   flatExportFunction &&
     optionsMenuItems.push({
@@ -74,6 +78,9 @@ export default function ConfigItem({
       },
       text: "Delete config",
     });
+
+  extraOptionsMenuItems.forEach((el) => optionsMenuItems.push(el));
+
   return (
     <div
       className={twMerge(
