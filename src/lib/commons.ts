@@ -1631,31 +1631,35 @@ export async function deleteConfig(
   location: ConfigLocationType,
   family?: string
 ) {
-  if (location === "user") await deleteUserConfig(name, type);
-  else if (location === "installed") {
-    if (type === "printer") {
-      const printerConfig = findConfigPFP(name, type, "installed", family);
-      if (printerConfig) {
-        const res: any = await invoke("load_generic_preset", {
-          path: printerConfig.fileName,
-        });
+  try {
+    if (location === "user") await deleteUserConfig(name, type);
+    else if (location === "installed") {
+      if (type === "printer") {
+        const printerConfig = findConfigPFP(name, type, "installed", family);
+        if (printerConfig) {
+          const res: any = await invoke("load_generic_preset", {
+            path: printerConfig.fileName,
+          });
 
-        await removeVariantFromModel(
-          family!,
-          res["printer_model"] as string,
-          res["printer_variant"] as string
-        );
-        toast(`Config: ${name} successfully removed from printer model`, {
-          type: "success",
-        });
+          await removeVariantFromModel(
+            family!,
+            res["printer_model"] as string,
+            res["printer_variant"] as string
+          );
+          toast(`Config: ${name} successfully removed from printer model`, {
+            type: "success",
+          });
+        }
+
+        await deleteVendorConfigEntry(family!, type, name);
+      } else {
+        toast(`Error deleting config: ${name}`, { type: "error" });
       }
 
-      await deleteVendorConfigEntry(family!, type, name);
-    } else {
-      toast(`Error deleting config: ${name}`, { type: "error" });
+      await deleteInstalledConfig(name, type, family!);
     }
-
-    await deleteInstalledConfig(name, type, family!);
+  } catch (error: any) {
+    toast(error.toString(), { type: "error" });
   }
 }
 
@@ -1734,3 +1738,5 @@ export async function exportFlattened(
     toast(error.toString(), { type: "error" });
   }
 }
+
+export async function duplicateVendor(vendorName: string) {}
