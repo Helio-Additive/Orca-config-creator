@@ -36,16 +36,16 @@ impl TS for Extra {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ProcessJsonSchema {
-    name: String,
+    pub name: String,
 
     #[serde(rename = "type")]
-    preset_type: Option<String>,
-    inherits: Option<String>,
-    instantiation: Option<String>,
+    pub preset_type: Option<String>,
+    pub inherits: Option<String>,
+    pub instantiation: Option<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -62,41 +62,42 @@ pub struct MinProcessJsonSchema {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PrinterModelJsonSchema {
-    name: String,
+    pub name: String,
 
     #[serde(rename = "type")]
-    preset_type: String,
-    nozzle_diameter: String,
-    family: String,
+    pub preset_type: String,
+    pub nozzle_diameter: String,
+    pub family: String,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct MinPrinterModelJsonSchema {
-    name: String,
-    nozzle_diameter: String,
-    family: String,
+    pub name: String,
+    pub nozzle_diameter: String,
+    pub family: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PrinterVariantJsonSchema {
-    name: String,
+    pub name: String,
 
     #[serde(rename = "type")]
-    preset_type: Option<String>,
-    nozzle_diameter: Option<Vec<String>>,
-    inherits: Option<String>,
-    instantiation: Option<String>,
-    printer_model: Option<String>,
+    pub preset_type: Option<String>,
+    pub nozzle_diameter: Option<Vec<String>>,
+    pub inherits: Option<String>,
+    pub instantiation: Option<String>,
+    pub printer_model: Option<String>,
+    pub printer_variant: Option<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -114,31 +115,31 @@ pub struct MinPrinterVariantJsonSchema {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct VendorJsonSchema {
-    name: String,
-    version: String,
-    machine_model_list: Option<Vec<ConfigNameAndPath>>,
-    process_list: Option<Vec<ConfigNameAndPath>>,
-    filament_list: Option<Vec<ConfigNameAndPath>>,
-    machine_list: Option<Vec<ConfigNameAndPath>>,
+    pub name: String,
+    pub version: String,
+    pub machine_model_list: Option<Vec<ConfigNameAndPath>>,
+    pub process_list: Option<Vec<ConfigNameAndPath>>,
+    pub filament_list: Option<Vec<ConfigNameAndPath>>,
+    pub machine_list: Option<Vec<ConfigNameAndPath>>,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct FilamentJsonSchema {
-    name: String,
+    pub name: String,
 
     #[serde(rename = "type")]
-    preset_type: Option<String>,
-    inherits: Option<String>,
-    instantiation: Option<String>,
+    pub preset_type: Option<String>,
+    pub inherits: Option<String>,
+    pub instantiation: Option<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -155,8 +156,8 @@ pub struct MinFilamentJsonSchema {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ConfigNameAndPath {
-    name: String,
-    sub_path: String,
+    pub name: String,
+    pub sub_path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
