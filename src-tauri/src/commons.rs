@@ -549,6 +549,40 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
             });
     }
 
+    match fs::read_dir(new_directory_path) {
+        Ok(entries) => entries
+            .filter_map(|entry_red| match entry_red {
+                Ok(entry) => {
+                    let path = entry.path();
+
+                    if entry.path().is_file()
+                        && path.extension().and_then(|ext| ext.to_str()) == Some("png")
+                    {
+                        Some(entry)
+                    } else {
+                        None
+                    }
+                }
+                Err(_) => None,
+            })
+            .for_each(|entry| {
+                let img_path = entry.path();
+                let old_name = img_path.file_stem().unwrap();
+                let new_name = replace_name(old_name.to_str().unwrap(), old_dir_name, new_dir_name);
+
+                let new_img_path = img_path.parent().unwrap().join(new_name + ".png");
+                let file_move_options = file::CopyOptions {
+                    overwrite: false,
+                    skip_exist: false,
+                    buffer_size: 64_000,
+                    ..Default::default()
+                };
+
+                file::move_file(img_path, new_img_path, &file_move_options).ok();
+            }),
+        Err(_err) => (),
+    }
+
     let pretty_json = serde_json::to_string_pretty(&parsed_vendor_config).unwrap();
 
     write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
