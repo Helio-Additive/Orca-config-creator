@@ -207,10 +207,17 @@ pub fn duplicate_vendor_files(
     }
 }
 
-pub fn replace_name(name: &str, old_dir_name: &str, new_dir_name: &str) -> String {
-    let mut ret_name: String;
+pub fn replace_name(
+    name: &str,
+    old_dir_name: &str,
+    new_dir_name: &str,
+    orca_filament_library_filaments: &HashSet<String>,
+) -> String {
+    let ret_name: String;
 
-    if name.contains(old_dir_name) {
+    if orca_filament_library_filaments.contains(name) {
+        ret_name = name.to_string();
+    } else if name.contains(old_dir_name) {
         ret_name = name.replace(old_dir_name, new_dir_name);
     } else if name.contains(&old_dir_name.to_lowercase()) {
         ret_name = name.replace(&old_dir_name.to_lowercase(), &new_dir_name.to_lowercase());
@@ -221,8 +228,32 @@ pub fn replace_name(name: &str, old_dir_name: &str, new_dir_name: &str) -> Strin
     ret_name.replace("/", " ")
 }
 
+pub fn remove_nulls(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            map.retain(|_, v| {
+                remove_nulls(v);
+                !v.is_null()
+            });
+        }
+        Value::Array(arr) => {
+            arr.iter_mut().for_each(remove_nulls);
+            arr.retain(|v| !v.is_null());
+        }
+        _ => {}
+    }
+}
+
 #[tauri::command]
-pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
+pub fn duplicate_vendor(
+    path: &str,
+    new_dir_name: &str,
+    orca_filament_library_filaments: Vec<String>,
+) -> Result<(), String> {
+    dbg!(&orca_filament_library_filaments);
+    let orca_filament_library_filaments: HashSet<String> =
+        orca_filament_library_filaments.into_iter().collect();
+
     let path = path::Path::new(path);
     let parent_directory = path.parent().unwrap();
 
@@ -265,7 +296,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                 let sub_path_path = Path::new(&el.sub_path);
                 let sub_path_parent = sub_path_path.parent().unwrap();
 
-                let new_name = replace_name(&el.name, old_dir_name, new_dir_name);
+                let new_name = replace_name(
+                    &el.name,
+                    old_dir_name,
+                    new_dir_name,
+                    &orca_filament_library_filaments,
+                );
                 el.name = new_name.clone();
 
                 let new_sub_path =
@@ -292,14 +328,23 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
 
                 match parsed_config_file.inherits {
                     Some(inh) => {
-                        parsed_config_file.inherits =
-                            Some(replace_name(&inh, old_dir_name, new_dir_name));
+                        parsed_config_file.inherits = Some(replace_name(
+                            &inh,
+                            old_dir_name,
+                            new_dir_name,
+                            &orca_filament_library_filaments,
+                        ));
                     }
                     None => (),
                 }
 
                 if let Some(pm) = parsed_config_file.printer_model {
-                    let replaced = replace_name(&pm, old_dir_name, new_dir_name);
+                    let replaced = replace_name(
+                        &pm,
+                        old_dir_name,
+                        new_dir_name,
+                        &orca_filament_library_filaments,
+                    );
                     parsed_config_file.printer_model = Some(replaced);
                 }
 
@@ -312,6 +357,7 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                             default_print_profile.as_str().unwrap(),
                             old_dir_name,
                             new_dir_name,
+                            &orca_filament_library_filaments,
                         );
 
                         parsed_config_file.extra.0.insert(
@@ -338,6 +384,7 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                                     material_name_str,
                                     old_dir_name,
                                     new_dir_name,
+                                    &orca_filament_library_filaments,
                                 ))
                             })
                             .collect();
@@ -350,7 +397,11 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                     None => (),
                 }
 
-                let pretty_json = serde_json::to_string_pretty(&parsed_config_file).unwrap();
+                let mut parsed_config_file_value =
+                    serde_json::to_value(&parsed_config_file).unwrap();
+                remove_nulls(&mut parsed_config_file_value);
+
+                let pretty_json = serde_json::to_string_pretty(&parsed_config_file_value).unwrap();
 
                 write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
             });
@@ -367,7 +418,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                 let sub_path_path = Path::new(&el.sub_path);
                 let sub_path_parent = sub_path_path.parent().unwrap();
 
-                let new_name = replace_name(&el.name, old_dir_name, new_dir_name);
+                let new_name = replace_name(
+                    &el.name,
+                    old_dir_name,
+                    new_dir_name,
+                    &orca_filament_library_filaments,
+                );
                 el.name = new_name.clone();
 
                 let new_sub_path =
@@ -404,7 +460,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                             .map(|material_name| {
                                 let material_name_str = material_name;
 
-                                replace_name(material_name_str, old_dir_name, new_dir_name)
+                                replace_name(
+                                    material_name_str,
+                                    old_dir_name,
+                                    new_dir_name,
+                                    &orca_filament_library_filaments,
+                                )
                             })
                             .collect();
 
@@ -416,7 +477,11 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                     None => (),
                 }
 
-                let pretty_json = serde_json::to_string_pretty(&parsed_config_file).unwrap();
+                let mut parsed_config_file_value =
+                    serde_json::to_value(&parsed_config_file).unwrap();
+                remove_nulls(&mut parsed_config_file_value);
+
+                let pretty_json = serde_json::to_string_pretty(&parsed_config_file_value).unwrap();
 
                 write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
             });
@@ -433,7 +498,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                 let sub_path_path = Path::new(&el.sub_path);
                 let sub_path_parent = sub_path_path.parent().unwrap();
 
-                let new_name = replace_name(&el.name, old_dir_name, new_dir_name);
+                let new_name = replace_name(
+                    &el.name,
+                    old_dir_name,
+                    new_dir_name,
+                    &orca_filament_library_filaments,
+                );
                 el.name = new_name.clone();
 
                 let new_sub_path =
@@ -460,8 +530,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
 
                 match parsed_config_file.inherits {
                     Some(inh) => {
-                        parsed_config_file.inherits =
-                            Some(replace_name(&inh, old_dir_name, new_dir_name));
+                        parsed_config_file.inherits = Some(replace_name(
+                            &inh,
+                            old_dir_name,
+                            new_dir_name,
+                            &orca_filament_library_filaments,
+                        ));
                     }
                     None => (),
                 }
@@ -481,6 +555,7 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                                     material_name_str,
                                     old_dir_name,
                                     new_dir_name,
+                                    &orca_filament_library_filaments,
                                 ))
                             })
                             .collect();
@@ -493,7 +568,11 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                     None => (),
                 }
 
-                let pretty_json = serde_json::to_string_pretty(&parsed_config_file).unwrap();
+                let mut parsed_config_file_value =
+                    serde_json::to_value(&parsed_config_file).unwrap();
+                remove_nulls(&mut parsed_config_file_value);
+
+                let pretty_json = serde_json::to_string_pretty(&parsed_config_file_value).unwrap();
 
                 write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
             });
@@ -510,7 +589,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
                 let sub_path_path = Path::new(&el.sub_path);
                 let sub_path_parent = sub_path_path.parent().unwrap();
 
-                let new_name = replace_name(&el.name, old_dir_name, new_dir_name);
+                let new_name = replace_name(
+                    &el.name,
+                    old_dir_name,
+                    new_dir_name,
+                    &orca_filament_library_filaments,
+                );
                 el.name = new_name.clone();
 
                 let new_sub_path =
@@ -537,13 +621,21 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
 
                 match parsed_config_file.inherits {
                     Some(inh) => {
-                        parsed_config_file.inherits =
-                            Some(replace_name(&inh, old_dir_name, new_dir_name));
+                        parsed_config_file.inherits = Some(replace_name(
+                            &inh,
+                            old_dir_name,
+                            new_dir_name,
+                            &orca_filament_library_filaments,
+                        ));
                     }
                     None => (),
                 }
 
-                let pretty_json = serde_json::to_string_pretty(&parsed_config_file).unwrap();
+                let mut parsed_config_file_value =
+                    serde_json::to_value(&parsed_config_file).unwrap();
+                remove_nulls(&mut parsed_config_file_value);
+
+                let pretty_json = serde_json::to_string_pretty(&parsed_config_file_value).unwrap();
 
                 write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
             });
@@ -568,7 +660,12 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
             .for_each(|entry| {
                 let img_path = entry.path();
                 let old_name = img_path.file_stem().unwrap();
-                let new_name = replace_name(old_name.to_str().unwrap(), old_dir_name, new_dir_name);
+                let new_name = replace_name(
+                    old_name.to_str().unwrap(),
+                    old_dir_name,
+                    new_dir_name,
+                    &orca_filament_library_filaments,
+                );
 
                 let new_img_path = img_path.parent().unwrap().join(new_name + ".png");
                 let file_move_options = file::CopyOptions {
@@ -583,7 +680,10 @@ pub fn duplicate_vendor(path: &str, new_dir_name: &str) -> Result<(), String> {
         Err(_err) => (),
     }
 
-    let pretty_json = serde_json::to_string_pretty(&parsed_vendor_config).unwrap();
+    let mut parsed_config_file_value = serde_json::to_value(&parsed_vendor_config).unwrap();
+    remove_nulls(&mut parsed_config_file_value);
+
+    let pretty_json = serde_json::to_string_pretty(&parsed_config_file_value).unwrap();
 
     write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
 
