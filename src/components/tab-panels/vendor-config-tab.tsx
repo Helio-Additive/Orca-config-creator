@@ -2,7 +2,11 @@ import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
-import { flattenConfig } from "../../lib/commons";
+import {
+  flattenConfig,
+  getFilamentLibraryFilaments,
+  refreshConfigs,
+} from "../../lib/commons";
 import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
@@ -119,7 +123,7 @@ export default function VendorConfigTab() {
           <Dialog.Content
             className={twMerge(
               "fixed top-1/2 left-1/2 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-transparent-white-input rounded-xl p-2 pl-3 pr-4 text-text-primary",
-              "shadow-md shadow-transparent-black-hover",
+              "shadow-md shadow-transparent-black-hover backdrop-blur-lg",
               "outline-2 -outline-offset-2 outline-text-secondary/20"
             )}
           >
@@ -149,16 +153,19 @@ export default function VendorConfigTab() {
               <button
                 className="px-4 py-2 rounded bg-accent text-white hover:bg-transparent-black-hover"
                 onClick={async () => {
+                  setPopOverVisible(false);
                   try {
                     await invoke("duplicate_vendor", {
                       path: originalVendorFileName,
                       newDirName: newVendorName,
+                      orcaFilamentLibraryFilaments:
+                        getFilamentLibraryFilaments(),
                     });
                     toast("Vendor successfully copied", { type: "success" });
+                    refreshConfigs("vendor", "installed");
                   } catch (err: any) {
                     toast(err.toString(), { type: "error" });
                   }
-                  setPopOverVisible(false);
                 }}
               >
                 Submit

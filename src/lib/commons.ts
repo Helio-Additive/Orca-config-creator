@@ -1739,4 +1739,8 @@ export async function exportFlattened(
   }
 }
 
-export async function duplicateVendor(vendorName: string) {}
+export function getFilamentLibraryFilaments() {
+  const { installedFilamentConfigs } = globalState;
+
+  return installedFilamentConfigs["OrcaFilamentLibrary"].keys;
+}
