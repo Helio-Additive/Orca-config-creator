@@ -33,6 +33,7 @@ export default function ProcessConfigTab() {
               <ConfigItem
                 key={key + printerName}
                 name={config.Ok.name}
+                text1={key}
                 text2={[config.Ok.inherits ?? "base"]}
                 fileName={config.fileName}
                 type="process"

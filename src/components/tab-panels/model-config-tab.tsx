@@ -24,6 +24,7 @@ export default function ModelConfigTab() {
                   <ConfigItem
                     key={vendor}
                     name={config.Ok.name}
+                    text1={vendor}
                     text2={config.Ok.nozzle_diameter.split(";")}
                     fileName={config.fileName}
                     type="printer-model"
