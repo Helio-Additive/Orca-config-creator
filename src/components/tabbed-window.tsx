@@ -1,6 +1,6 @@
 import { TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useHookstate } from "@hookstate/core";
-import { globalState } from "../lib/state-store";
+import { appState, globalState } from "../lib/state-store";
 import FileLoader from "./tab-panels/file-loader";
 import TabTemplate from "./tab-template";
 import VendorConfigTab from "./tab-panels/vendor-config-tab";
@@ -8,10 +8,15 @@ import ModelConfigTab from "./tab-panels/model-config-tab";
 import PrinterConfigTab from "./tab-panels/printer-config-tab";
 import FilamentConfigTab from "./tab-panels/filament-config-tab";
 import ProcessConfigTab from "./tab-panels/process-config-tab";
+import InputComponent from "./tab-panels/input-component";
+import { useEffect } from "react";
+import { matchesQuery } from "../lib/commons";
 
 export default function TabbedWindow() {
   const { orcaInstallationPath, orcaDataDirectory, selectedTab } =
     useHookstate(globalState);
+
+  const { searchQuery } = useHookstate(appState);
 
   const categories = [
     {
@@ -71,15 +76,27 @@ export default function TabbedWindow() {
       selectedIndex={selectedTab.get()}
       onChange={selectedTab.set}
     >
-      <TabList className="rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit">
-        {categories
-          .filter(({ loadCondition }) => {
-            return loadCondition();
-          })
-          .map(({ name }) => {
-            return <TabTemplate name={name} key={name} />;
-          })}
-      </TabList>
+      <div className="flex w-full">
+        <TabList className="rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit">
+          {categories
+            .filter(({ loadCondition }) => {
+              return loadCondition();
+            })
+            .map(({ name }) => {
+              return <TabTemplate name={name} key={name} />;
+            })}
+        </TabList>
+        <div className="h-full flex rounded-xl bg-transparent-base backdrop-blur-lg max-w-fit ml-1 items-center pl-2 pr-1">
+          <InputComponent
+            type="text"
+            placeholder="Search"
+            className="mb-0"
+            value={searchQuery.get()}
+            onChange={(a) => searchQuery.set(a as string)}
+            allowEdit
+          />
+        </div>
+      </div>
       <TabPanels className="w-full mt-1 min-h-0">
         {categories
           .filter(({ loadCondition }) => loadCondition())

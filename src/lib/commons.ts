@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validate as isUuid, v4 as uuidv4 } from "uuid";
+import fuzzysort from "fuzzysort";
 import {
   filament_properties_map,
   process_properties_map,
@@ -1743,4 +1744,20 @@ export function getFilamentLibraryFilaments() {
   const { installedFilamentConfigs } = globalState;
 
   return installedFilamentConfigs["OrcaFilamentLibrary"].keys;
+}
+
+export function matchesQuery(query: string, checkStrings: string[]) {
+  if (query.length === 0) return true;
+
+  const threshold = 0.5;
+
+  const checkResult = checkStrings.reduce((acc, el) => {
+    if (acc) return true;
+
+    const result = fuzzysort.single(query, el);
+
+    return result ? acc || result.score > threshold : acc || false;
+  }, false);
+
+  return checkResult;
 }

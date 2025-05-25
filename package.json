@@ -15,6 +15,7 @@
     "@hookstate/core": "^4.0.2",
     "@tailwindcss/vite": "^4.0.17",
     "@tauri-apps/api": "^1",
+    "fuzzysort": "^3.1.0",
     "radix-ui": "^1.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

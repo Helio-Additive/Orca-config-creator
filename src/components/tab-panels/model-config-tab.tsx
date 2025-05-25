@@ -2,12 +2,14 @@ import { useHookstate } from "@hookstate/core";
 import { appState, appStateObject, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { useEffect, useRef } from "react";
+import { matchesQuery } from "../../lib/commons";
 
 export default function ModelConfigTab() {
   const { installedModelConfigs: modelConfigs } = useHookstate(globalState);
 
   const {
     itemVisibilityState: { model: itemVisibility },
+    searchQuery,
   } = useHookstate(appState);
 
   const currentIndexes = useRef({ installed: 0, loadedSystem: 0, user: 0 });
@@ -42,16 +44,17 @@ export default function ModelConfigTab() {
 
               if (
                 currentIndexes.current.installed >
-                itemVisibility.installed.get()
+                  itemVisibility.installed.get() ||
+                !matchesQuery(searchQuery.get(), [modelName, vendor])
               )
-                return <></>;
+                return <div key={vendor + modelName}></div>;
 
               currentIndexes.current.installed += 1;
 
               if (config.Ok) {
                 return (
                   <ConfigItem
-                    key={vendor}
+                    key={vendor + modelName}
                     name={config.Ok.name}
                     text1={vendor}
                     text2={config.Ok.nozzle_diameter.split(";")}
@@ -67,8 +70,8 @@ export default function ModelConfigTab() {
               } else {
                 return (
                   <ConfigItem
-                    key={vendor}
-                    name={vendor}
+                    key={vendor + modelName}
+                    name={modelName}
                     text2={[config.Err!]}
                     className="bg-transparent-error"
                     fileName={config.fileName}

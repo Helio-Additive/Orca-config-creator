@@ -70,7 +70,6 @@ export default function ConfigItem({
       index &&
       index > itemVisibilityNumberState.get({ stealth: true }) - 5
     ) {
-      console.log(itemVisibilityNumberState.get({ stealth: true }) + 15);
       itemVisibilityNumberState.set((v) => v + 15);
     }
   }, [isIntersecting]);
