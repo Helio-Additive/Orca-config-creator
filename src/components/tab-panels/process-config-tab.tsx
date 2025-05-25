@@ -2,6 +2,7 @@ import { useHookstate } from "@hookstate/core";
 import {
   ConfigLocationType,
   exportFlattened,
+  matchesQuery,
   newFile,
 } from "../../lib/commons";
 import { appState, appStateObject, globalState } from "../../lib/state-store";
@@ -21,6 +22,7 @@ export default function ProcessConfigTab() {
 
   const {
     itemVisibilityState: { process: itemVisibility },
+    searchQuery,
   } = useHookstate(appState);
 
   const currentIndexes = useRef({ installed: 0, loadedSystem: 0, user: 0 });
@@ -69,9 +71,11 @@ export default function ProcessConfigTab() {
             const config = vendorConfig.nested(printerName).get();
 
             if (
-              currentIndexes.current.installed > itemVisibility.installed.get()
+              currentIndexes.current.installed >
+                itemVisibility.installed.get() ||
+              !matchesQuery(searchQuery.get(), [key, printerName])
             )
-              return <></>;
+              return <div key={key + printerName}></div>;
 
             currentIndexes.current.installed += 1;
 
@@ -128,9 +132,10 @@ export default function ProcessConfigTab() {
 
             if (
               currentIndexes.current.loadedSystem >
-              itemVisibility.loadedSystem.get()
+                itemVisibility.loadedSystem.get() ||
+              !matchesQuery(searchQuery.get(), [key, printerName])
             )
-              return <></>;
+              return <div key={key + printerName}></div>;
 
             currentIndexes.current.loadedSystem += 1;
 
@@ -170,7 +175,17 @@ export default function ProcessConfigTab() {
   );
 
   const loadedUserConfigs = loadedUserProcessConfigs.keys.map((key, index) => {
+    if (index === 0) currentIndexes.current.user = 0;
+
     const machineConfig = loadedUserProcessConfigs.nested(key).get();
+
+    if (
+      currentIndexes.current.user > itemVisibility.user.get() ||
+      !matchesQuery(searchQuery.get(), [machineConfig.name])
+    )
+      return <div key={machineConfig.name}></div>;
+
+    currentIndexes.current.user += 1;
 
     return (
       <ConfigItem
@@ -187,7 +202,7 @@ export default function ProcessConfigTab() {
         flatExportFunction={export_flattened}
         configLocation="user"
         allowDelete
-        index={index}
+        index={currentIndexes.current.user}
         itemVisibilityNumberState={itemVisibility.user}
       />
     );

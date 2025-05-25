@@ -5,9 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 import {
   flattenConfig,
   getFilamentLibraryFilaments,
+  matchesQuery,
   refreshConfigs,
 } from "../../lib/commons";
-import { globalState } from "../../lib/state-store";
+import { appState, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
 import { useState } from "react";
@@ -21,6 +22,8 @@ export default function VendorConfigTab() {
     installedProcessConfigs,
     installedFilamentConfigs,
   } = useHookstate(globalState);
+
+  const { searchQuery } = useHookstate(appState);
 
   const [popoverVisible, setPopOverVisible] = useState(false);
   const [originalVendorFileName, setOriginalVendorFileName] = useState("");
@@ -200,6 +203,9 @@ export default function VendorConfigTab() {
           onClick: onClick,
           text: "Duplicate vendor config",
         };
+
+        if (!matchesQuery(searchQuery.get(), [config.name]))
+          return <div key={config.name}></div>;
 
         return (
           <ConfigItem

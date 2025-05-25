@@ -95,6 +95,7 @@ export const appStateObject = {
     model: { installed: 30, loadedSystem: 30, user: 30 },
     vendor: { installed: 30, loadedSystem: 30, user: 30 },
   },
+  searchQuery: "",
 };
 
 export const appState = hookstate(structuredClone(appStateObject));
