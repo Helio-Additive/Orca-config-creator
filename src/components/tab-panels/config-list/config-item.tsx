@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaFileExport } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +13,8 @@ import {
 import OptionsMenu from "./config-item-components/options-menu";
 import TopButton from "./config-item-components/top-button";
 import { RiDeleteBin6Line } from "react-icons/ri";
+import { useIntersectionObserver } from "usehooks-ts";
+import { State } from "@hookstate/core";
 
 type OptionMenuItem = {
   icon: (a: { className?: string }) => ReactNode;
@@ -34,6 +36,8 @@ export default function ConfigItem({
   configLocation,
   allowDelete,
   extraOptionsMenuItems = [],
+  index,
+  itemVisibilityNumberState,
 }: {
   name: string;
   family?: string;
@@ -52,7 +56,25 @@ export default function ConfigItem({
   ) => void;
   configLocation: ConfigLocationType;
   extraOptionsMenuItems?: OptionMenuItem[];
+  index?: number;
+  itemVisibilityNumberState?: State<number, {}>;
 }) {
+  const { isIntersecting, ref } = useIntersectionObserver({
+    threshold: 0.5,
+  });
+
+  useEffect(() => {
+    if (
+      isIntersecting &&
+      itemVisibilityNumberState &&
+      index &&
+      index > itemVisibilityNumberState.get({ stealth: true }) - 5
+    ) {
+      console.log(itemVisibilityNumberState.get({ stealth: true }) + 15);
+      itemVisibilityNumberState.set((v) => v + 15);
+    }
+  }, [isIntersecting]);
+
   const navigate = useNavigate();
 
   const editConfig = () => {
@@ -90,6 +112,7 @@ export default function ConfigItem({
         className
       )}
       onClick={onClick}
+      ref={ref}
     >
       <div className="flex mb-2 relative justify-between">
         <div>

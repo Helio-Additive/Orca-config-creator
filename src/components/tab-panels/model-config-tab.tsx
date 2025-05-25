@@ -1,13 +1,34 @@
 import { useHookstate } from "@hookstate/core";
-import { globalState } from "../../lib/state-store";
+import { appState, appStateObject, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
+import { useEffect, useRef } from "react";
 
 export default function ModelConfigTab() {
   const { installedModelConfigs: modelConfigs } = useHookstate(globalState);
 
+  const {
+    itemVisibilityState: { model: itemVisibility },
+  } = useHookstate(appState);
+
+  const currentIndexes = useRef({ installed: 0, loadedSystem: 0, user: 0 });
+
+  useEffect(() => {
+    return () => {
+      itemVisibility.installed.set(
+        appStateObject.itemVisibilityState.printer.installed
+      );
+      itemVisibility.loadedSystem.set(
+        appStateObject.itemVisibilityState.printer.loadedSystem
+      );
+      itemVisibility.user.set(appStateObject.itemVisibilityState.printer.user);
+    };
+  }, []);
+
   return (
     <div className="h-full overflow-y-auto">
-      {modelConfigs.keys.map((vendor) => {
+      {modelConfigs.keys.map((vendor, familyIndex) => {
+        if (familyIndex === 0) currentIndexes.current.installed = 0;
+
         const vendorConfig = modelConfigs[vendor];
 
         return (
@@ -18,6 +39,14 @@ export default function ModelConfigTab() {
 
             {vendorConfig.keys.map((modelName) => {
               const config = vendorConfig.nested(modelName).get();
+
+              if (
+                currentIndexes.current.installed >
+                itemVisibility.installed.get()
+              )
+                return <></>;
+
+              currentIndexes.current.installed += 1;
 
               if (config.Ok) {
                 return (
@@ -31,6 +60,8 @@ export default function ModelConfigTab() {
                     configLocation="installed"
                     family={vendor}
                     allowEdit
+                    index={currentIndexes.current.installed}
+                    itemVisibilityNumberState={itemVisibility.installed}
                   />
                 );
               } else {
@@ -44,6 +75,8 @@ export default function ModelConfigTab() {
                     type="printer-model"
                     family={vendor}
                     configLocation="installed"
+                    index={currentIndexes.current.installed}
+                    itemVisibilityNumberState={itemVisibility.installed}
                   />
                 );
               }

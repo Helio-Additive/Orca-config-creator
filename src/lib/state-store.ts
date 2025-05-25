@@ -86,3 +86,15 @@ export const globalStateObject = {
 };
 
 export const globalState = hookstate(globalStateObject);
+
+export const appStateObject = {
+  itemVisibilityState: {
+    printer: { installed: 30, loadedSystem: 30, user: 30 },
+    filament: { installed: 30, loadedSystem: 30, user: 30 },
+    process: { installed: 30, loadedSystem: 30, user: 30 },
+    model: { installed: 30, loadedSystem: 30, user: 30 },
+    vendor: { installed: 30, loadedSystem: 30, user: 30 },
+  },
+};
+
+export const appState = hookstate(structuredClone(appStateObject));
