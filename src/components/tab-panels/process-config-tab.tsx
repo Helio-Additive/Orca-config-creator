@@ -1,9 +1,16 @@
 import { useHookstate } from "@hookstate/core";
-import { ConfigLocationType, exportFlattened } from "../../lib/commons";
+import {
+  ConfigLocationType,
+  exportFlattened,
+  newFile,
+} from "../../lib/commons";
 import { appState, appStateObject, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import ConfigTabTemplate from "./config-tab-template";
 import { useEffect, useRef } from "react";
+import TopButton from "./config-list/config-item-components/top-button";
+import { VscNewFile } from "react-icons/vsc";
+import { useNavigate } from "react-router-dom";
 
 export default function ProcessConfigTab() {
   const {
@@ -30,6 +37,8 @@ export default function ProcessConfigTab() {
     };
   }, []);
 
+  const navigate = useNavigate();
+
   const export_flattened = async (
     configName: string,
     location: ConfigLocationType,
@@ -44,9 +53,18 @@ export default function ProcessConfigTab() {
 
       return (
         <div key={key}>
-          <span className="font-semibold text-text-primary text-xl mb-1 pl-3 mt-3">
-            {key}
-          </span>
+          <div className="flex min-h-0 h-fit mt-3 mb-1 pl-3 items-center">
+            <span className="font-semibold text-text-primary text-xl">
+              {key}
+            </span>
+
+            <TopButton
+              onClick={() => newFile("process", "installed", navigate, key)}
+              Icon={VscNewFile}
+              tooltip="Add new Config"
+              className="text-text-primary ml-2"
+            />
+          </div>
           {vendorConfig.keys.map((printerName) => {
             const config = vendorConfig.nested(printerName).get();
 
