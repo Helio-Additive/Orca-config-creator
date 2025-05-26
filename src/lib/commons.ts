@@ -1006,6 +1006,19 @@ export const deinherit_and_load_all_props: any = async <
             location = "installed";
             configFile = installedConfigRes.fileName;
             family = installedConfigRes.family;
+          } else if (type === "filament") {
+            const orcaFilamentLibraryConfigRes = findConfig(
+              configName,
+              type,
+              "loaded_system",
+              "OrcaFilamentLibrary"
+            ) as (T & fileProperty & familyProperty) | undefined;
+
+            if (orcaFilamentLibraryConfigRes) {
+              location = "loaded_system";
+              configFile = orcaFilamentLibraryConfigRes.fileName;
+              family = orcaFilamentLibraryConfigRes.family;
+            }
           }
         }
       }
@@ -1267,6 +1280,21 @@ export function findAvailableConfigs(
     findType === "process"
   ) {
     const neededConfigs = getRelevantConfigsFromTypePFP(findType);
+    let extraConfigs: string[] = [];
+
+    if (findType === "filament") {
+      extraConfigs = neededConfigs!.installedConfigs[
+        "OrcaFilamentLibrary"
+      ].keys.filter(
+        (configName) =>
+          neededConfigs!.loadedSystemConfigs["OrcaFilamentLibrary"][
+            configName
+          ].get({
+            stealth: true,
+          }).Ok?.instantiation === "true"
+      );
+    }
+
     switch (location) {
       case "user": {
         const loadedSystemConfigs =
@@ -1280,15 +1308,21 @@ export function findAvailableConfigs(
           );
         const userConfigs = neededConfigs!.loadedUserConfigs.keys;
 
-        return [...loadedSystemConfigs, ...userConfigs];
+        return [...loadedSystemConfigs, ...userConfigs, ...extraConfigs];
       }
 
       case "loaded_system": {
-        return neededConfigs!.loadedSystemConfigs[family!].keys;
+        return [
+          ...neededConfigs!.loadedSystemConfigs[family!].keys,
+          ...extraConfigs,
+        ];
       }
 
       case "installed": {
-        return neededConfigs!.installedConfigs[family!].keys;
+        return [
+          ...neededConfigs!.installedConfigs[family!].keys,
+          ...extraConfigs,
+        ];
       }
 
       case "all": {
@@ -1303,7 +1337,7 @@ export function findAvailableConfigs(
         );
         const userConfigs = neededConfigs!.loadedUserConfigs.keys;
 
-        return [...installedConfigs, ...userConfigs];
+        return [...installedConfigs, ...userConfigs, ...extraConfigs];
       }
 
       default:
