@@ -631,6 +631,34 @@ pub fn duplicate_vendor(
                     None => (),
                 }
 
+                let compatible_printers_res = parsed_config_file.extra.0.get("compatible_printers");
+
+                match compatible_printers_res {
+                    Some(compatible_printers) => {
+                        let new_material_names: Vec<_> = compatible_printers
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|material_name| {
+                                let material_name_str = material_name.as_str().unwrap();
+
+                                Value::String(replace_name(
+                                    material_name_str,
+                                    old_dir_name,
+                                    new_dir_name,
+                                    &orca_filament_library_filaments,
+                                ))
+                            })
+                            .collect();
+
+                        parsed_config_file.extra.0.insert(
+                            "compatible_printers".to_string(),
+                            Value::Array(new_material_names),
+                        );
+                    }
+                    None => (),
+                }
+
                 let mut parsed_config_file_value =
                     serde_json::to_value(&parsed_config_file).unwrap();
                 remove_nulls(&mut parsed_config_file_value);
