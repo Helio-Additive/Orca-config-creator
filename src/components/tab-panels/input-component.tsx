@@ -106,7 +106,8 @@ export default function InputComponent({
             )}
           >
             {arr.map((idx) => {
-              const inputValue = isArray ? arrayValue![idx] : value;
+              let inputValue = isArray ? arrayValue![idx] : value;
+              inputValue = inputValue ?? "";
 
               return (
                 <div

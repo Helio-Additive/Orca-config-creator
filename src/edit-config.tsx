@@ -526,7 +526,7 @@ export default function EditConfig() {
               const newSet = new Set(Array.from(el).filter((pr) => pr !== key));
               return newSet;
             });
-            return <></>;
+            return <div key={key}></div>;
           }
 
           if (

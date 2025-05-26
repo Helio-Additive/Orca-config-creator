@@ -40,7 +40,8 @@
         "title": "orca-config-manager",
         "width": 1024,
         "height": 1024,
-        "url": "/#/home"
+        "url": "/#/home",
+        "maximized": true
       }
     ],
     "security": {
