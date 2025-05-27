@@ -89,6 +89,7 @@ export default function ProcessConfigTab() {
                   fileName={config.fileName}
                   type="process"
                   allowEdit
+                  family={key}
                   configLocation="installed"
                   flatExportFunction={export_flattened}
                   index={currentIndexes.current.installed}
@@ -104,6 +105,7 @@ export default function ProcessConfigTab() {
                   className="bg-transparent-error"
                   fileName={config.fileName}
                   type="process"
+                  family={key}
                   configLocation="installed"
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
@@ -147,6 +149,7 @@ export default function ProcessConfigTab() {
                   text2={[config.Ok.inherits ?? "base"]}
                   fileName={config.fileName}
                   type="process"
+                  family={key}
                   configLocation="loaded_system"
                   flatExportFunction={export_flattened}
                   index={currentIndexes.current.loadedSystem}
@@ -162,6 +165,7 @@ export default function ProcessConfigTab() {
                   className="bg-transparent-error"
                   fileName={config.fileName}
                   type="process"
+                  family={key}
                   configLocation="loaded_system"
                   index={currentIndexes.current.loadedSystem}
                   itemVisibilityNumberState={itemVisibility.loadedSystem}

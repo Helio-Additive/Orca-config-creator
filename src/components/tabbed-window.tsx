@@ -1,16 +1,14 @@
 import { TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useHookstate } from "@hookstate/core";
 import { appState, globalState } from "../lib/state-store";
+import FilamentConfigTab from "./tab-panels/filament-config-tab";
 import FileLoader from "./tab-panels/file-loader";
-import TabTemplate from "./tab-template";
-import VendorConfigTab from "./tab-panels/vendor-config-tab";
+import InputComponent from "./tab-panels/input-component";
 import ModelConfigTab from "./tab-panels/model-config-tab";
 import PrinterConfigTab from "./tab-panels/printer-config-tab";
-import FilamentConfigTab from "./tab-panels/filament-config-tab";
 import ProcessConfigTab from "./tab-panels/process-config-tab";
-import InputComponent from "./tab-panels/input-component";
-import { useEffect } from "react";
-import { matchesQuery } from "../lib/commons";
+import VendorConfigTab from "./tab-panels/vendor-config-tab";
+import TabTemplate from "./tab-template";
 
 export default function TabbedWindow() {
   const { orcaInstallationPath, orcaDataDirectory, selectedTab } =
