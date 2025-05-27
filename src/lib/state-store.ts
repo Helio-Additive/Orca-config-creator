@@ -1,12 +1,11 @@
 import { hookstate } from "@hookstate/core";
+import { AnalysisMessageDetails } from "./bindings/AnalysisMessageDetails";
+import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
-import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
-import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
+import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import { ConfigLocationType, ConfigType } from "./commons";
-import { ConfigAnalysisMessage } from "./bindings/ConfigAnalysisMessage";
-import { AnalysisMessageDetails } from "./bindings/AnalysisMessageDetails";
 
 export type fileProperty = { fileName: string };
 export type familyProperty = { family: string };

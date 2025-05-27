@@ -1,14 +1,15 @@
 import { State } from "@hookstate/core";
 import { homeDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/tauri";
+import fuzzysort from "fuzzysort";
 import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validate as isUuid, v4 as uuidv4 } from "uuid";
-import fuzzysort from "fuzzysort";
 import {
   filament_properties_map,
   process_properties_map,
 } from "./all-configuration-options";
+import { AnalysisMessageDetails } from "./bindings/AnalysisMessageDetails";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
 import { FilamentJsonSchema } from "./bindings/FilamentJsonSchema";
 import { GenericJsonSchema } from "./bindings/GenericJsonSchema";
@@ -30,6 +31,7 @@ import {
   MACHINE_SUBDIRECTORY,
   PROCESS_SUBDIRECTORY,
 } from "./constants";
+import { removeVariantFromModel } from "./edit-config-helpers";
 import { printer_model_properties_map } from "./model-configuration-options";
 import {
   ConfigProperty,
@@ -45,8 +47,6 @@ import {
   Warning,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
-import { removeVariantFromModel } from "./edit-config-helpers";
-import { ConfigAnalysisMessage } from "./bindings/ConfigAnalysisMessage";
 
 export enum InheritanceStatus {
   OK,
@@ -1810,8 +1810,6 @@ export function analyseVendorConfigs() {
 
   analysisResults.set([]);
 
-  const totalVendors = vendorConfigs.keys.length;
-
   Promise.all(
     vendorConfigs.keys.map((vendorName) => {
       const vendorConfig = vendorConfigs[vendorName].get();
@@ -1820,7 +1818,7 @@ export function analyseVendorConfigs() {
         configLocation: "installed",
         name: vendorName,
       }).then((analysisMessages) => {
-        analysisResults.merge(analysisMessages as ConfigAnalysisMessage[]);
+        analysisResults.merge(analysisMessages as AnalysisMessageDetails[]);
       });
     })
   ).then(() => {
