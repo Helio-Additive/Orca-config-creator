@@ -211,7 +211,7 @@ export default function VendorConfigTab() {
           <ConfigItem
             key={config.name}
             name={config.name}
-            text1={config.version}
+            text1={config.version!}
             text2={[
               `models: ${model_num}`,
               `machines: ${machine_num}`,
