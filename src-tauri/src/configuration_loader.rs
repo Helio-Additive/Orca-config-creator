@@ -35,6 +35,70 @@ impl TS for Extra {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+pub struct ConfigDetails {
+    name: String,
+    file: String,
+    family: Option<String>,
+    location: String,
+    config_type: String,
+}
+
+impl ConfigDetails {
+    pub fn new(
+        name: String,
+        file: String,
+        family: Option<String>,
+        location: String,
+        config_type: String,
+    ) -> Self {
+        Self {
+            name,
+            file,
+            family,
+            location,
+            config_type,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AnalysisMessageDetails {
+    pub message_type: ConfigAnalysisMessage,
+    pub config_details: ConfigDetails,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum ConfigErrorMessage {
+    VersionNotFound,
+    InvalidInheritance,
+    PrinterModelNotFound,
+    PrinterVariantNotFound,
+    FilamentNotFound,
+    ProcessNotFound,
+    GenericError,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum ConfigWarningMessage {
+    ConfigAndFileNameMismatch,
+    MachineModelListDoesNotExist,
+    VendorNameAndConfigNameMismatch,
+    GenericWarning,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum ConfigAnalysisMessage {
+    Error(ConfigErrorMessage),
+    Warning(ConfigWarningMessage),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ProcessJsonSchema {
     pub name: String,
 
@@ -116,7 +180,7 @@ pub struct MinPrinterVariantJsonSchema {
 #[ts(export)]
 pub struct VendorJsonSchema {
     pub name: String,
-    pub version: String,
+    pub version: Option<String>,
     pub machine_model_list: Option<Vec<ConfigNameAndPath>>,
     pub process_list: Option<Vec<ConfigNameAndPath>>,
     pub filament_list: Option<Vec<ConfigNameAndPath>>,
@@ -163,15 +227,15 @@ pub struct ConfigNameAndPath {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct GenericJsonSchema {
-    name: String,
-    inherits: Option<String>,
+    pub name: String,
+    pub inherits: Option<String>,
 
     #[serde(rename = "type")]
-    preset_type: Option<String>,
+    pub preset_type: Option<String>,
 
     #[serde(flatten)]
     #[ts(flatten)]
-    extra: Extra,
+    pub extra: Extra,
 }
 
 fn get_all_json_files(path: &str) -> Result<Vec<String>, String> {
@@ -353,6 +417,11 @@ pub fn load_printer_model_preset(path: &str) -> Result<PrinterModelJsonSchema, S
 
 #[tauri::command]
 pub fn load_printer_variant_preset(path: &str) -> Result<PrinterVariantJsonSchema, String> {
+    load_preset(path)
+}
+
+#[tauri::command]
+pub fn load_vendor_preset(path: &str) -> Result<VendorJsonSchema, String> {
     load_preset(path)
 }
 

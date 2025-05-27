@@ -4,6 +4,7 @@ use fs_extra::dir;
 use fs_extra::file;
 use serde_json::Value;
 use std::ffi::OsString;
+use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
@@ -15,6 +16,14 @@ use std::{fs::metadata, path::PathBuf};
 use tauri::async_runtime::spawn_blocking;
 use tauri::utils::config;
 
+use crate::configuration_loader::load_generic_preset;
+use crate::configuration_loader::load_vendor_preset;
+use crate::configuration_loader::AnalysisMessageDetails;
+use crate::configuration_loader::ConfigAnalysisMessage;
+use crate::configuration_loader::ConfigDetails;
+use crate::configuration_loader::ConfigErrorMessage;
+use crate::configuration_loader::ConfigNameAndPath;
+use crate::configuration_loader::ConfigWarningMessage;
 use crate::configuration_loader::FilamentJsonSchema;
 use crate::configuration_loader::PrinterModelJsonSchema;
 use crate::configuration_loader::PrinterVariantJsonSchema;
@@ -90,6 +99,15 @@ pub fn show_in_folder(path: String) {
     #[cfg(target_os = "macos")]
     {
         Command::new("open").args(["-R", &path]).spawn().unwrap();
+    }
+}
+
+#[tauri::command]
+pub fn check_file_exists(path: String) -> Result<bool, String> {
+    let write_res = fs::exists(path);
+    match write_res {
+        Ok(a) => Ok(a),
+        Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
     }
 }
 
@@ -716,4 +734,156 @@ pub fn duplicate_vendor(
     write_to_file(new_file_path.to_str().unwrap().to_string(), pretty_json).ok();
 
     Ok(())
+}
+
+fn get_error_enum_from_list_type(
+    list_type: &str,
+    message: String,
+    vendor_config_details: ConfigDetails,
+) -> AnalysisMessageDetails {
+    match list_type {
+        "machine_model_list" => AnalysisMessageDetails {
+            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
+            message: message,
+            config_details: vendor_config_details.clone(),
+        },
+        "machine_list" => AnalysisMessageDetails {
+            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
+            message: message,
+            config_details: vendor_config_details.clone(),
+        },
+        "filament_list" => AnalysisMessageDetails {
+            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
+            message: message,
+            config_details: vendor_config_details.clone(),
+        },
+        "process_list" => AnalysisMessageDetails {
+            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
+            message: message,
+            config_details: vendor_config_details.clone(),
+        },
+        _ => panic!("No such key exists: {}", list_type),
+    }
+}
+
+fn check_if_configs_exist(
+    machine_model_list: &Option<Vec<ConfigNameAndPath>>,
+    config_dir_path: &PathBuf,
+    vendor_config_details: &ConfigDetails,
+    list_type: String,
+) -> Vec<AnalysisMessageDetails> {
+    let mut config_analysis_messages: Vec<AnalysisMessageDetails> = Vec::new();
+
+    match machine_model_list {
+        Some(machine_models) => {
+            machine_models
+                .iter()
+                .for_each(|ConfigNameAndPath { name, sub_path }| {
+                    let complete_path: String =
+                        config_dir_path.join(sub_path).to_str().unwrap().into();
+                    let file_exists_res = check_file_exists(complete_path.clone());
+
+                    match file_exists_res {
+                        Ok(file_exists) => {
+                            if !file_exists {
+                                config_analysis_messages.push(get_error_enum_from_list_type(
+                                    &list_type,
+                                    format!(
+                                        "Config '{}' does not exist at '{}'",
+                                        name, complete_path
+                                    ),
+                                    vendor_config_details.clone(),
+                                ));
+                            }
+                        }
+                        Err(err) => {
+                            config_analysis_messages.push(AnalysisMessageDetails {
+                                message_type: ConfigAnalysisMessage::Error(
+                                    ConfigErrorMessage::GenericError,
+                                ),
+                                config_details: vendor_config_details.clone(),
+                                message: err,
+                            });
+                        }
+                    }
+                });
+        }
+        None => config_analysis_messages.push(AnalysisMessageDetails {
+            message_type: ConfigAnalysisMessage::Warning(ConfigWarningMessage::GenericWarning),
+            message: format!("Config does not contain the key '{}'", list_type),
+            config_details: vendor_config_details.clone(),
+        }),
+    }
+    config_analysis_messages
+}
+
+#[tauri::command]
+pub async fn analyse_vendor_config(
+    path: String,
+    config_location: String,
+    name: String,
+) -> Result<Vec<AnalysisMessageDetails>, String> {
+    spawn_blocking(move || {
+        let mut analysis_result: Vec<AnalysisMessageDetails> = Vec::new();
+
+        let path_obj = Path::new(&path);
+        let parent_path = path_obj.parent().unwrap();
+        let config_dir_path = parent_path.join(name.clone());
+
+        let vendor_config_details = ConfigDetails::new(
+            name.clone(),
+            path.clone(),
+            None,
+            config_location.clone(),
+            "vendor".into(),
+        );
+
+        let parsed_vendor_config = load_vendor_preset(&path)?;
+
+        let vendor_version_rule = !parsed_vendor_config.version.is_none();
+
+        if !vendor_version_rule {
+            analysis_result.push(AnalysisMessageDetails {
+                message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::VersionNotFound),
+                config_details: vendor_config_details.clone(),
+                message: "Config must contain the key 'config'".into(),
+            });
+        }
+
+        let model_configs_checks = check_if_configs_exist(
+            &parsed_vendor_config.machine_model_list,
+            &config_dir_path,
+            &vendor_config_details,
+            "machine_model_list".into(),
+        );
+        analysis_result.extend(model_configs_checks);
+
+        let printer_configs_checks = check_if_configs_exist(
+            &parsed_vendor_config.machine_list,
+            &config_dir_path,
+            &vendor_config_details,
+            "machine_list".into(),
+        );
+        analysis_result.extend(printer_configs_checks);
+
+        let filament_configs_checks = check_if_configs_exist(
+            &parsed_vendor_config.filament_list,
+            &config_dir_path,
+            &vendor_config_details,
+            "filament_list".into(),
+        );
+        analysis_result.extend(filament_configs_checks);
+
+        let process_configs_checks = check_if_configs_exist(
+            &parsed_vendor_config.process_list,
+            &config_dir_path,
+            &vendor_config_details,
+            "process_list".into(),
+        );
+        analysis_result.extend(process_configs_checks);
+
+        Ok(analysis_result)
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
 }

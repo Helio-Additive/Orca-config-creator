@@ -224,6 +224,13 @@ export default function VendorConfigTab() {
             allowEdit
             flatExportFunction={flatExportFunction}
             extraOptionsMenuItems={[duplicationMenuItem]}
+            onClick={() =>
+              invoke("analyse_vendor_config", {
+                path: config.fileName,
+                configLocation: "installed",
+                name: config.name,
+              }).then(console.log)
+            }
           />
         );
       })}
