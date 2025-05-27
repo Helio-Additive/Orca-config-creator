@@ -46,6 +46,7 @@ import {
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
 import { removeVariantFromModel } from "./edit-config-helpers";
+import { ConfigAnalysisMessage } from "./bindings/ConfigAnalysisMessage";
 
 export enum InheritanceStatus {
   OK,
@@ -1794,4 +1795,39 @@ export function matchesQuery(query: string, checkStrings: string[]) {
   }, false);
 
   return checkResult;
+}
+
+export function analyseVendorConfigs() {
+  const toastMessage = "analyzing vendor configs in the background";
+  const toastId = toast(toastMessage, {
+    type: "info",
+    closeButton: true,
+    autoClose: 10000,
+  });
+
+  const { installedVendorConfigs: vendorConfigs, analysisResults } =
+    globalState;
+
+  analysisResults.set([]);
+
+  const totalVendors = vendorConfigs.keys.length;
+
+  Promise.all(
+    vendorConfigs.keys.map((vendorName) => {
+      const vendorConfig = vendorConfigs[vendorName].get();
+      invoke("analyse_vendor_config", {
+        path: vendorConfig.fileName,
+        configLocation: "installed",
+        name: vendorName,
+      }).then((analysisMessages) => {
+        analysisResults.merge(analysisMessages as ConfigAnalysisMessage[]);
+      });
+    })
+  ).then(() => {
+    toast.update(toastId, {
+      render: "Completed analyzing vendors",
+      type: "success",
+      autoClose: 3000,
+    });
+  });
 }

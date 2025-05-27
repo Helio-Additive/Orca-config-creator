@@ -5,6 +5,8 @@ import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
 import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
 import { ConfigLocationType, ConfigType } from "./commons";
+import { ConfigAnalysisMessage } from "./bindings/ConfigAnalysisMessage";
+import { AnalysisMessageDetails } from "./bindings/AnalysisMessageDetails";
 
 export type fileProperty = { fileName: string };
 export type familyProperty = { family: string };
@@ -83,6 +85,7 @@ export const globalStateObject = {
   >,
   routeStack: [] as string[],
   selectedTab: 0,
+  analysisResults: [] as AnalysisMessageDetails[],
 };
 
 export const globalState = hookstate(globalStateObject);
@@ -94,6 +97,7 @@ export const appStateObject = {
     process: { installed: 30, loadedSystem: 30, user: 30 },
     model: { installed: 30, loadedSystem: 30, user: 30 },
     vendor: { installed: 30, loadedSystem: 30, user: 30 },
+    analysis: { warning: 30, error: 30 },
   },
   searchQuery: "",
 };

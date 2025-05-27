@@ -4,17 +4,19 @@
 mod commons;
 mod configuration_loader;
 use commons::{
-    check_directory, check_file, delete_file, duplicate_vendor, find_possible_values,
-    rename_config, rename_file, show_in_folder, write_to_file,
+    analyse_vendor_config, check_directory, check_file, delete_file, duplicate_vendor,
+    find_possible_values, rename_config, rename_file, show_in_folder, write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
     load_all_process_presets, load_all_system_vendor_profiles,
     load_all_user_filaments_profiles_in_dir, load_all_user_printer_profiles_in_dir,
     load_all_user_process_profiles_in_dir, load_generic_preset, load_printer_model_preset,
-    load_printer_variant_preset, FilamentJsonSchema, GenericJsonSchema, MinFilamentJsonSchema,
-    MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema, MinProcessJsonSchema,
-    PrinterModelJsonSchema, PrinterVariantJsonSchema, ProcessJsonSchema, VendorJsonSchema,
+    load_printer_variant_preset, AnalysisMessageDetails, ConfigAnalysisMessage, ConfigDetails,
+    ConfigErrorMessage, ConfigWarningMessage, FilamentJsonSchema, GenericJsonSchema,
+    MinFilamentJsonSchema, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
+    MinProcessJsonSchema, PrinterModelJsonSchema, PrinterVariantJsonSchema, ProcessJsonSchema,
+    VendorJsonSchema,
 };
 use std::fs::File;
 use std::io::Write;
@@ -156,7 +158,13 @@ fn main() {
         ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
         MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
         GenericJsonSchema::export_all_to(type_export_directory).unwrap();
+        ConfigDetails::export_all_to(type_export_directory).unwrap();
+        ConfigErrorMessage::export_all_to(type_export_directory).unwrap();
+        ConfigWarningMessage::export_all_to(type_export_directory).unwrap();
+        ConfigAnalysisMessage::export_all_to(type_export_directory).unwrap();
+        AnalysisMessageDetails::export_all_to(type_export_directory).unwrap();
     }
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -183,7 +191,8 @@ fn main() {
             find_possible_values,
             pick_folder,
             save_and_zip_json_bundle,
-            duplicate_vendor
+            duplicate_vendor,
+            analyse_vendor_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,10 +9,15 @@ import PrinterConfigTab from "./tab-panels/printer-config-tab";
 import ProcessConfigTab from "./tab-panels/process-config-tab";
 import VendorConfigTab from "./tab-panels/vendor-config-tab";
 import TabTemplate from "./tab-template";
+import AnalysisTab from "./tab-panels/analysis-tab";
 
 export default function TabbedWindow() {
-  const { orcaInstallationPath, orcaDataDirectory, selectedTab } =
-    useHookstate(globalState);
+  const {
+    orcaInstallationPath,
+    orcaDataDirectory,
+    selectedTab,
+    analysisResults,
+  } = useHookstate(globalState);
 
   const { searchQuery } = useHookstate(appState);
 
@@ -65,6 +70,11 @@ export default function TabbedWindow() {
           orcaDataDirectory.get() !== undefined
         );
       },
+    },
+    {
+      name: "Analysis",
+      component: AnalysisTab,
+      loadCondition: () => analysisResults.length > 0,
     },
   ];
 

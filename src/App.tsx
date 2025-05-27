@@ -9,6 +9,7 @@ import BackgroundPlate from "./components/background-plate";
 import EditConfig from "./edit-config";
 import Home from "./Home";
 import {
+  analyseVendorConfigs,
   dataFilamentConfigLoader,
   dataPrinterConfigLoader,
   dataProcessConfigLoader,
@@ -59,6 +60,8 @@ function App() {
     installedFilamentConfigLoader();
 
     installedProcessConfigLoader();
+
+    analyseVendorConfigs();
   }, [vendorConfigs]);
 
   return (
