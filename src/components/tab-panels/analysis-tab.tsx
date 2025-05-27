@@ -1,13 +1,7 @@
 import { useHookstate } from "@hookstate/core";
-import { appState, appStateObject, globalState } from "../../lib/state-store";
+import { ConfigLocationType, ConfigType } from "../../lib/commons";
+import { globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
-import { useEffect, useRef } from "react";
-import {
-  ConfigLocationType,
-  ConfigType,
-  matchesQuery,
-} from "../../lib/commons";
-import { ConfigAnalysisMessage } from "../../lib/bindings/ConfigAnalysisMessage";
 
 export default function AnalysisTab() {
   const { analysisResults } = useHookstate(globalState);
