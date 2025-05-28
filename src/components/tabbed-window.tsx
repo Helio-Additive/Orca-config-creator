@@ -16,7 +16,8 @@ export default function TabbedWindow() {
     orcaInstallationPath,
     orcaDataDirectory,
     selectedTab,
-    analysisResults,
+    analysisErrors,
+    analysisWarnings,
   } = useHookstate(globalState);
 
   const { searchQuery } = useHookstate(appState);
@@ -74,7 +75,8 @@ export default function TabbedWindow() {
     {
       name: "Analysis",
       component: AnalysisTab,
-      loadCondition: () => analysisResults.length > 0,
+      loadCondition: () =>
+        analysisErrors.keys.length > 0 || analysisWarnings.keys.length > 0,
     },
   ];
 

@@ -16,7 +16,7 @@ export type KeyDetails = {
   file: string;
 };
 
-export type Warning = {
+export type ErrWan = {
   text: string;
   type: "warning" | "error" | "critical";
 };
@@ -74,7 +74,7 @@ export const globalStateObject = {
       properties: {
         res: Record<string, unknown>;
         keyDetails: Record<string, KeyDetails>;
-        warnings: Record<string, Warning[]>;
+        warnings: Record<string, ErrWan[]>;
       };
       changedProps: Record<string, unknown>;
       deleteKeys: string[];
@@ -84,7 +84,14 @@ export const globalStateObject = {
   >,
   routeStack: [] as string[],
   selectedTab: 0,
-  analysisResults: [] as AnalysisMessageDetails[],
+  analysisErrors: {} as Record<
+    string,
+    Record<string, AnalysisMessageDetails[]>
+  >,
+  analysisWarnings: {} as Record<
+    string,
+    Record<string, AnalysisMessageDetails[]>
+  >,
 };
 
 export const globalState = hookstate(globalStateObject);

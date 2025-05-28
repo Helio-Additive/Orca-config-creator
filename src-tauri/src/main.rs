@@ -12,11 +12,10 @@ use configuration_loader::{
     load_all_process_presets, load_all_system_vendor_profiles,
     load_all_user_filaments_profiles_in_dir, load_all_user_printer_profiles_in_dir,
     load_all_user_process_profiles_in_dir, load_generic_preset, load_printer_model_preset,
-    load_printer_variant_preset, AnalysisMessageDetails, ConfigAnalysisMessage, ConfigDetails,
-    ConfigErrorMessage, ConfigWarningMessage, FilamentJsonSchema, GenericJsonSchema,
-    MinFilamentJsonSchema, MinPrinterModelJsonSchema, MinPrinterVariantJsonSchema,
-    MinProcessJsonSchema, PrinterModelJsonSchema, PrinterVariantJsonSchema, ProcessJsonSchema,
-    VendorJsonSchema,
+    load_printer_variant_preset, AnalysisMessageDetails, ConfigDetails, ErrWan, FilamentJsonSchema,
+    GenericJsonSchema, MinFilamentJsonSchema, MinPrinterModelJsonSchema,
+    MinPrinterVariantJsonSchema, MinProcessJsonSchema, PrinterModelJsonSchema,
+    PrinterVariantJsonSchema, ProcessJsonSchema, VendorJsonSchema,
 };
 use std::fs::File;
 use std::io::Write;
@@ -158,10 +157,8 @@ fn main() {
         ProcessJsonSchema::export_all_to(type_export_directory).unwrap();
         MinProcessJsonSchema::export_all_to(type_export_directory).unwrap();
         GenericJsonSchema::export_all_to(type_export_directory).unwrap();
+        ErrWan::export_all_to(type_export_directory).unwrap();
         ConfigDetails::export_all_to(type_export_directory).unwrap();
-        ConfigErrorMessage::export_all_to(type_export_directory).unwrap();
-        ConfigWarningMessage::export_all_to(type_export_directory).unwrap();
-        ConfigAnalysisMessage::export_all_to(type_export_directory).unwrap();
         AnalysisMessageDetails::export_all_to(type_export_directory).unwrap();
     }
 

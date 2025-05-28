@@ -115,7 +115,7 @@ export default function ConfigItem({
     >
       <div className="flex mb-2 relative justify-between">
         <div>
-          <span className="text-text-primary text-lg/6 font-medium mr-1">
+          <span className="text-text-primary text-lg/6 font-medium mr-1 text-wrap">
             {name}
           </span>
           {text1 && (

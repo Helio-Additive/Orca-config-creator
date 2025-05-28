@@ -35,6 +35,22 @@ impl TS for Extra {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+#[serde(rename_all = "lowercase")] // ensures string values like "warning", not "Warning"
+pub enum ErrType {
+    Error,
+    Critical,
+    Warning,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ErrWan {
+    pub text: String,
+    pub r#type: ErrType,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ConfigDetails {
     name: String,
     file: String,
@@ -64,37 +80,8 @@ impl ConfigDetails {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AnalysisMessageDetails {
-    pub message_type: ConfigAnalysisMessage,
     pub config_details: ConfigDetails,
-    pub message: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub enum ConfigErrorMessage {
-    VersionNotFound,
-    InvalidInheritance,
-    PrinterModelNotFound,
-    PrinterVariantNotFound,
-    FilamentNotFound,
-    ProcessNotFound,
-    GenericError,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub enum ConfigWarningMessage {
-    ConfigAndFileNameMismatch,
-    MachineModelListDoesNotExist,
-    VendorNameAndConfigNameMismatch,
-    GenericWarning,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub enum ConfigAnalysisMessage {
-    Error(ConfigErrorMessage),
-    Warning(ConfigWarningMessage),
+    pub message: ErrWan,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
