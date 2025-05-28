@@ -1283,19 +1283,6 @@ export function findAvailableConfigs(
     const neededConfigs = getRelevantConfigsFromTypePFP(findType);
     let extraConfigs: string[] = [];
 
-    if (findType === "filament") {
-      extraConfigs = neededConfigs!.installedConfigs[
-        "OrcaFilamentLibrary"
-      ].keys.filter(
-        (configName) =>
-          neededConfigs!.loadedSystemConfigs["OrcaFilamentLibrary"][
-            configName
-          ].get({
-            stealth: true,
-          }).Ok?.instantiation === "true"
-      );
-    }
-
     switch (location) {
       case "user": {
         const loadedSystemConfigs =
@@ -1309,10 +1296,18 @@ export function findAvailableConfigs(
           );
         const userConfigs = neededConfigs!.loadedUserConfigs.keys;
 
+        if (findType === "filament") {
+          extraConfigs = getFilamentLibraryFilaments(true);
+        }
+
         return [...loadedSystemConfigs, ...userConfigs, ...extraConfigs];
       }
 
       case "loaded_system": {
+        if (findType === "filament") {
+          extraConfigs = getFilamentLibraryFilaments();
+        }
+
         return [
           ...neededConfigs!.loadedSystemConfigs[family!].keys,
           ...extraConfigs,
@@ -1320,6 +1315,10 @@ export function findAvailableConfigs(
       }
 
       case "installed": {
+        if (findType === "filament") {
+          extraConfigs = getFilamentLibraryFilaments();
+        }
+
         return [
           ...neededConfigs!.installedConfigs[family!].keys,
           ...extraConfigs,
@@ -1327,6 +1326,10 @@ export function findAvailableConfigs(
       }
 
       case "all": {
+        if (findType === "filament") {
+          extraConfigs = getFilamentLibraryFilaments();
+        }
+
         const installedConfigs = neededConfigs!.installedConfigs.keys.flatMap(
           (familyName) =>
             neededConfigs!.installedConfigs[familyName].keys.filter(
@@ -1775,10 +1778,25 @@ export async function exportFlattened(
   }
 }
 
-export function getFilamentLibraryFilaments() {
+export function getFilamentLibraryFilaments(filterInstantiated = false) {
   const { installedFilamentConfigs } = globalState;
 
-  return installedFilamentConfigs["OrcaFilamentLibrary"].keys;
+  let filaments: string[] = [];
+
+  if (installedFilamentConfigs["OrcaFilamentLibrary"].keys) {
+    filaments = installedFilamentConfigs["OrcaFilamentLibrary"]
+      .keys as string[];
+
+    if (filterInstantiated)
+      filaments = filaments.filter(
+        (configName) =>
+          installedFilamentConfigs["OrcaFilamentLibrary"][configName].get({
+            stealth: true,
+          }).Ok?.instantiation === "true"
+      );
+  }
+
+  return filaments;
 }
 
 export function matchesQuery(query: string, checkStrings: string[]) {
