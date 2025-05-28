@@ -37,7 +37,7 @@ import {
   removeArrayValue,
   saveFile,
 } from "./lib/edit-config-helpers";
-import { globalState, Warning } from "./lib/state-store";
+import { globalState, ErrWan } from "./lib/state-store";
 
 function LabelButtonTemplate({
   Icon,
@@ -85,7 +85,7 @@ function WarnIconTemplate({
   className?: string;
   tooltipClassName?: string;
   Icon: (a: { className?: string }) => ReactNode;
-  warnings: Warning[];
+  warnings: ErrWan[];
 }) {
   return (
     <Tooltip.Root delayDuration={0}>
@@ -302,7 +302,7 @@ export default function EditConfig() {
         ({
           warnings: analysedWarnings,
         }: {
-          warnings: Record<string, Warning[]>;
+          warnings: Record<string, ErrWan[]>;
         }) => {
           editWindowState[fileName].properties.warnings.set(analysedWarnings);
 
@@ -321,7 +321,7 @@ export default function EditConfig() {
             ) {
               const tempWarningsState =
                 editWindowState[fileName].properties.warnings["name"];
-              const tempWarning: Warning = {
+              const tempWarning: ErrWan = {
                 text: "Name already exists. This can overwrite some other file",
                 type: "error",
               };
@@ -598,14 +598,14 @@ export default function EditConfig() {
                 <WarnIconTemplate
                   Icon={IoIosWarning}
                   className="text-transparent-warn ml-1"
-                  warnings={warnings as Warning[]}
+                  warnings={warnings as ErrWan[]}
                 />
               )}
               {errors && errors.length > 0 && (
                 <WarnIconTemplate
                   Icon={MdOutlineError}
                   className="text-transparent-warn ml-1"
-                  warnings={errors as Warning[]}
+                  warnings={errors as ErrWan[]}
                   tooltipClassName="bg-transparent-error text-text-primary"
                 />
               )}
@@ -613,7 +613,7 @@ export default function EditConfig() {
                 <WarnIconTemplate
                   Icon={MdOutlineError}
                   className="text-transparent-error ml-1"
-                  warnings={criticalErrors as Warning[]}
+                  warnings={criticalErrors as ErrWan[]}
                   tooltipClassName="bg-transparent-error text-text-primary"
                 />
               )}

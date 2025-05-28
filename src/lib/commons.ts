@@ -44,7 +44,7 @@ import {
   KeyDetails,
   NamedConfigStateType,
   SystemConfigStateType,
-  Warning,
+  ErrWan,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
 
@@ -807,9 +807,9 @@ export function analyzeConfiguration(
   properties: Record<string, unknown>,
   type: ConfigType,
   location: ConfigLocationType
-): Record<string, Warning[]> {
-  const warnings = {} as Record<string, Warning[]>;
-  const addToWarning = (key: string, val: Warning) =>
+): Record<string, ErrWan[]> {
+  const warnings = {} as Record<string, ErrWan[]>;
+  const addToWarning = (key: string, val: ErrWan) =>
     warnings[key] ? warnings[key].push(val) : (warnings[key] = [val]);
 
   const propMap = getPropMapFromType(type);
@@ -863,7 +863,7 @@ export const deinherit_and_load_all_props_by_props: any = async <
   level = 0,
   checkedConfigs: string[] = []
 ) => {
-  const warnings = {} as Record<string, Warning[]>;
+  const warnings = {} as Record<string, ErrWan[]>;
   if (checkedConfigs.includes(properties["name"] as string)) {
     warnings["inherits"] = [
       {
@@ -950,7 +950,7 @@ export const deinherit_and_load_all_props: any = async <
   level = 0,
   checkedConfigs: string[] = []
 ) => {
-  const warnings = {} as Record<string, Warning[]>;
+  const warnings = {} as Record<string, ErrWan[]>;
   if (checkedConfigs.includes(configName)) {
     warnings["inherits"] = [
       {
@@ -994,7 +994,7 @@ export const deinherit_and_load_all_props: any = async <
             family
           ) as (T & fileProperty & familyProperty) | undefined;
 
-          const tempWarning: Warning = {
+          const tempWarning: ErrWan = {
             text: "could not find ancestor in loaded presets. This means the config might not appear in OrcaSlicer.",
             type: "warning",
           };
@@ -1026,7 +1026,7 @@ export const deinherit_and_load_all_props: any = async <
     }
 
     if (!configFile) {
-      const tempWarning: Warning = {
+      const tempWarning: ErrWan = {
         text: "Could not find parent config " + configName,
         type: "error",
       };
@@ -1823,10 +1823,14 @@ export function analyseVendorConfigs() {
     autoClose: 10000,
   });
 
-  const { installedVendorConfigs: vendorConfigs, analysisResults } =
-    globalState;
+  const {
+    installedVendorConfigs: vendorConfigs,
+    analysisErrors,
+    analysisWarnings,
+  } = globalState;
 
-  analysisResults.set([]);
+  analysisErrors.set({});
+  analysisWarnings.set({});
 
   Promise.all(
     vendorConfigs.keys.map((vendorName) => {
@@ -1836,7 +1840,40 @@ export function analyseVendorConfigs() {
         configLocation: "installed",
         name: vendorName,
       }).then((analysisMessages) => {
-        analysisResults.merge(analysisMessages as AnalysisMessageDetails[]);
+        const analysisMessagesCasted = analysisMessages as Record<
+          string,
+          Record<string, AnalysisMessageDetails[]>
+        >;
+
+        Object.entries(analysisMessagesCasted).forEach(
+          ([fileName, messages]) => {
+            Object.entries(messages).forEach(
+              ([fieldName, messageDetailsList]) => {
+                messageDetailsList.forEach((messageDetails) => {
+                  if (messageDetails.message.type === "warning")
+                    if (analysisWarnings.nested(fileName)?.nested(fileName))
+                      analysisWarnings
+                        .nested(fileName)
+                        .nested(fileName)
+                        .merge([messageDetails]);
+                    else
+                      analysisWarnings.merge({
+                        [fileName]: { [fieldName]: [messageDetails] },
+                      });
+                  else if (analysisErrors.nested(fileName)?.nested(fileName))
+                    analysisErrors
+                      .nested(fileName)
+                      .nested(fileName)
+                      .merge([messageDetails]);
+                  else
+                    analysisErrors.merge({
+                      [fileName]: { [fieldName]: [messageDetails] },
+                    });
+                });
+              }
+            );
+          }
+        );
       });
     })
   ).then(() => {

@@ -3,6 +3,7 @@ use fork::{daemon, Fork};
 use fs_extra::dir;
 use fs_extra::file;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fmt::format;
 use std::fs;
@@ -16,14 +17,12 @@ use std::{fs::metadata, path::PathBuf};
 use tauri::async_runtime::spawn_blocking;
 use tauri::utils::config;
 
-use crate::configuration_loader::load_generic_preset;
 use crate::configuration_loader::load_vendor_preset;
 use crate::configuration_loader::AnalysisMessageDetails;
-use crate::configuration_loader::ConfigAnalysisMessage;
 use crate::configuration_loader::ConfigDetails;
-use crate::configuration_loader::ConfigErrorMessage;
 use crate::configuration_loader::ConfigNameAndPath;
-use crate::configuration_loader::ConfigWarningMessage;
+use crate::configuration_loader::ErrType;
+use crate::configuration_loader::ErrWan;
 use crate::configuration_loader::FilamentJsonSchema;
 use crate::configuration_loader::PrinterModelJsonSchema;
 use crate::configuration_loader::PrinterVariantJsonSchema;
@@ -736,43 +735,13 @@ pub fn duplicate_vendor(
     Ok(())
 }
 
-fn get_error_enum_from_list_type(
-    list_type: &str,
-    message: String,
-    vendor_config_details: ConfigDetails,
-) -> AnalysisMessageDetails {
-    match list_type {
-        "machine_model_list" => AnalysisMessageDetails {
-            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
-            message: message,
-            config_details: vendor_config_details.clone(),
-        },
-        "machine_list" => AnalysisMessageDetails {
-            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
-            message: message,
-            config_details: vendor_config_details.clone(),
-        },
-        "filament_list" => AnalysisMessageDetails {
-            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
-            message: message,
-            config_details: vendor_config_details.clone(),
-        },
-        "process_list" => AnalysisMessageDetails {
-            message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::PrinterModelNotFound),
-            message: message,
-            config_details: vendor_config_details.clone(),
-        },
-        _ => panic!("No such key exists: {}", list_type),
-    }
-}
-
 fn check_if_configs_exist(
     machine_model_list: &Option<Vec<ConfigNameAndPath>>,
     config_dir_path: &PathBuf,
     vendor_config_details: &ConfigDetails,
     list_type: String,
-) -> Vec<AnalysisMessageDetails> {
-    let mut config_analysis_messages: Vec<AnalysisMessageDetails> = Vec::new();
+) -> HashMap<String, Vec<AnalysisMessageDetails>> {
+    let mut config_analysis_messages: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
 
     match machine_model_list {
         Some(machine_models) => {
@@ -786,35 +755,73 @@ fn check_if_configs_exist(
                     match file_exists_res {
                         Ok(file_exists) => {
                             if !file_exists {
-                                config_analysis_messages.push(get_error_enum_from_list_type(
-                                    &list_type,
-                                    format!(
-                                        "Config '{}' does not exist at '{}'",
-                                        name, complete_path
-                                    ),
-                                    vendor_config_details.clone(),
-                                ));
+                                insert_or_push_into_map(
+                                    &mut config_analysis_messages,
+                                    list_type.clone(),
+                                    AnalysisMessageDetails {
+                                        config_details: vendor_config_details.clone(),
+                                        message: ErrWan {
+                                            text: format!(
+                                                "Config '{}' does not exist at '{}'",
+                                                name, complete_path
+                                            ),
+                                            r#type: ErrType::Error,
+                                        },
+                                    },
+                                );
                             }
                         }
                         Err(err) => {
-                            config_analysis_messages.push(AnalysisMessageDetails {
-                                message_type: ConfigAnalysisMessage::Error(
-                                    ConfigErrorMessage::GenericError,
-                                ),
-                                config_details: vendor_config_details.clone(),
-                                message: err,
-                            });
+                            insert_or_push_into_map(
+                                &mut config_analysis_messages,
+                                list_type.clone(),
+                                AnalysisMessageDetails {
+                                    config_details: vendor_config_details.clone(),
+                                    message: ErrWan {
+                                        text: err,
+                                        r#type: ErrType::Error,
+                                    },
+                                },
+                            );
                         }
                     }
                 });
         }
-        None => config_analysis_messages.push(AnalysisMessageDetails {
-            message_type: ConfigAnalysisMessage::Warning(ConfigWarningMessage::GenericWarning),
-            message: format!("Config does not contain the key '{}'", list_type),
-            config_details: vendor_config_details.clone(),
-        }),
+        None => {
+            insert_or_push_into_map(
+                &mut config_analysis_messages,
+                "!__file__!".into(),
+                AnalysisMessageDetails {
+                    message: ErrWan {
+                        text: format!("Config does not contain the key '{}'", list_type),
+                        r#type: ErrType::Warning,
+                    },
+                    config_details: vendor_config_details.clone(),
+                },
+            );
+        }
     }
     config_analysis_messages
+}
+
+pub fn insert_or_push_into_map<T>(
+    hash_map: &mut HashMap<String, Vec<T>>,
+    key: String,
+    value: T,
+) -> () {
+    hash_map.entry(key).or_insert_with(Vec::new).push(value);
+}
+
+pub fn extend_combine_map<T>(
+    hash_map_left: &mut HashMap<String, Vec<T>>,
+    has_map_right: HashMap<String, Vec<T>>,
+) -> () {
+    for (key, mut right_vec) in has_map_right {
+        hash_map_left
+            .entry(key)
+            .and_modify(|left_vec| left_vec.extend(right_vec.drain(..)))
+            .or_insert(right_vec);
+    }
 }
 
 #[tauri::command]
@@ -822,9 +829,9 @@ pub async fn analyse_vendor_config(
     path: String,
     config_location: String,
     name: String,
-) -> Result<Vec<AnalysisMessageDetails>, String> {
+) -> Result<HashMap<String, HashMap<String, Vec<AnalysisMessageDetails>>>, String> {
     spawn_blocking(move || {
-        let mut analysis_result: Vec<AnalysisMessageDetails> = Vec::new();
+        let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
 
         let path_obj = Path::new(&path);
         let parent_path = path_obj.parent().unwrap();
@@ -843,11 +850,17 @@ pub async fn analyse_vendor_config(
         let vendor_version_rule = !parsed_vendor_config.version.is_none();
 
         if !vendor_version_rule {
-            analysis_result.push(AnalysisMessageDetails {
-                message_type: ConfigAnalysisMessage::Error(ConfigErrorMessage::VersionNotFound),
-                config_details: vendor_config_details.clone(),
-                message: "Config must contain the key 'config'".into(),
-            });
+            insert_or_push_into_map(
+                &mut analysis_result,
+                "version".into(),
+                AnalysisMessageDetails {
+                    config_details: vendor_config_details.clone(),
+                    message: ErrWan {
+                        text: "Config must contain the key 'config'".into(),
+                        r#type: ErrType::Error,
+                    },
+                },
+            );
         }
 
         let model_configs_checks = check_if_configs_exist(
@@ -856,7 +869,7 @@ pub async fn analyse_vendor_config(
             &vendor_config_details,
             "machine_model_list".into(),
         );
-        analysis_result.extend(model_configs_checks);
+        extend_combine_map(&mut analysis_result, model_configs_checks);
 
         let printer_configs_checks = check_if_configs_exist(
             &parsed_vendor_config.machine_list,
@@ -864,7 +877,7 @@ pub async fn analyse_vendor_config(
             &vendor_config_details,
             "machine_list".into(),
         );
-        analysis_result.extend(printer_configs_checks);
+        extend_combine_map(&mut analysis_result, printer_configs_checks);
 
         let filament_configs_checks = check_if_configs_exist(
             &parsed_vendor_config.filament_list,
@@ -872,7 +885,7 @@ pub async fn analyse_vendor_config(
             &vendor_config_details,
             "filament_list".into(),
         );
-        analysis_result.extend(filament_configs_checks);
+        extend_combine_map(&mut analysis_result, filament_configs_checks);
 
         let process_configs_checks = check_if_configs_exist(
             &parsed_vendor_config.process_list,
@@ -880,9 +893,11 @@ pub async fn analyse_vendor_config(
             &vendor_config_details,
             "process_list".into(),
         );
-        analysis_result.extend(process_configs_checks);
+        extend_combine_map(&mut analysis_result, process_configs_checks);
 
-        Ok(analysis_result)
+        let mut return_map = HashMap::new();
+        return_map.insert(path.into(), analysis_result);
+        Ok(return_map)
     })
     .await
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))
