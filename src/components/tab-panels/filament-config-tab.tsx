@@ -95,6 +95,7 @@ export default function FilamentConfigTab() {
                   flatExportFunction={export_flattened}
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
+                  allowDelete
                 />
               );
             } else {

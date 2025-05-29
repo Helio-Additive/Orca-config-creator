@@ -90,6 +90,7 @@ export default function ProcessConfigTab() {
                   type="process"
                   allowEdit
                   allowDuplication
+                  allowDelete
                   family={key}
                   configLocation="installed"
                   flatExportFunction={export_flattened}
