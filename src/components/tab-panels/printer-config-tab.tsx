@@ -95,6 +95,7 @@ export default function PrinterConfigTab() {
                   allowDelete
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
+                  allowDuplication
                 />
               );
             } else {

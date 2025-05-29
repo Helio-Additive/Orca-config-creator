@@ -18,3 +18,5 @@ export const directoryDefaults = {
     dataSubdirectory: "/Library/Application Support/OrcaSlicer",
   },
 };
+
+export const NEW_FILE_FILE_NAME_PLACEHOLDER = "newFile";

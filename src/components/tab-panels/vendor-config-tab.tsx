@@ -1,5 +1,7 @@
 import { useHookstate } from "@hookstate/core";
 import { invoke } from "@tauri-apps/api/tauri";
+import { useState } from "react";
+import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -10,10 +12,7 @@ import {
 } from "../../lib/commons";
 import { appState, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
-import { HiOutlineDocumentDuplicate } from "react-icons/hi2";
-import { useState } from "react";
-import { Dialog } from "radix-ui";
-import { twMerge } from "tailwind-merge";
+import { InputPopover } from "./input-components/input-popover";
 
 export default function VendorConfigTab() {
   const {
@@ -120,63 +119,34 @@ export default function VendorConfigTab() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <Dialog.Root open={popoverVisible} onOpenChange={setPopOverVisible}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fade-in" />
-          <Dialog.Content
-            className={twMerge(
-              "fixed top-1/2 left-1/2 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-transparent-white-input rounded-xl p-2 pl-3 pr-4 text-text-primary",
-              "shadow-md shadow-transparent-black-hover backdrop-blur-lg",
-              "outline-2 -outline-offset-2 outline-text-secondary/20"
-            )}
-          >
-            <Dialog.Title className="text-lg font-medium">
-              Enter the new vendor name
-            </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-gray-500">
-              This will appear in your setup wizard
-            </Dialog.Description>
-
-            <input
-              type="text"
-              placeholder="Type here..."
-              className="mt-4 w-full border border-gray-300 rounded px-3 py-2"
-              onChange={(e) => setNewVendorName(e.target.value)}
-            />
-
-            <div className="mt-6 flex justify-end space-x-2">
-              <Dialog.Close asChild>
-                <button
-                  className="px-4 py-2 rounded bg-transparent-base hover:bg-transparent-black-hover"
-                  onClick={() => setPopOverVisible(false)}
-                >
-                  Cancel
-                </button>
-              </Dialog.Close>
-              <button
-                className="px-4 py-2 rounded bg-accent text-white hover:bg-transparent-black-hover"
-                onClick={async () => {
-                  setPopOverVisible(false);
-                  try {
-                    await invoke("duplicate_vendor", {
-                      path: originalVendorFileName,
-                      newDirName: newVendorName,
-                      orcaFilamentLibraryFilaments:
-                        getFilamentLibraryFilaments(),
-                    });
-                    toast("Vendor successfully copied", { type: "success" });
-                    refreshConfigs("vendor", "installed");
-                  } catch (err: any) {
-                    toast(err.toString(), { type: "error" });
-                  }
-                }}
-              >
-                Submit
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <InputPopover
+        popoverVisible={popoverVisible}
+        setPopOverVisible={setPopOverVisible}
+        label="Enter the new vendor name"
+        description="This will appear in your setup wizard"
+        inputChildren={[
+          <input
+            type="text"
+            placeholder="Type here..."
+            className="mt-4 w-full border border-gray-300 rounded px-3 py-2"
+            onChange={(e) => setNewVendorName(e.target.value)}
+          />,
+        ]}
+        onSubmit={() =>
+          invoke("duplicate_vendor", {
+            path: originalVendorFileName,
+            newDirName: newVendorName,
+            orcaFilamentLibraryFilaments: getFilamentLibraryFilaments(),
+          })
+            .then(() => {
+              toast("Vendor successfully copied", { type: "success" });
+              refreshConfigs("vendor", "installed");
+            })
+            .catch((err: any) => {
+              toast(err.toString(), { type: "error" });
+            })
+        }
+      />
 
       {vendorConfigs.keys.map((key) => {
         const config = vendorConfigs[key].get();
@@ -193,14 +163,14 @@ export default function VendorConfigTab() {
           ? config.process_list.length
           : 0;
 
-        const onClick = async () => {
+        const onClickDuplicationItem = async () => {
           setOriginalVendorFileName(config.fileName);
           setPopOverVisible(true);
         };
 
         const duplicationMenuItem = {
           icon: HiOutlineDocumentDuplicate,
-          onClick: onClick,
+          onClick: onClickDuplicationItem,
           text: "Duplicate vendor config",
         };
 

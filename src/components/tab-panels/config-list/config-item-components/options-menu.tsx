@@ -18,7 +18,7 @@ export default function OptionsMenu({
     <Menu>
       <MenuButton className="h-fit min-h-0">
         <TopButton
-          onClick={console.log}
+          onClick={() => {}}
           Icon={HiDotsHorizontal}
           className="ml-1"
         />
@@ -28,7 +28,7 @@ export default function OptionsMenu({
         anchor="bottom end"
         className={twMerge(
           "flex flex-col justify-center  bg-transparent-white-input rounded-xl p-2 pl-3 pr-4 text-text-primary",
-          "shadow-md shadow-transparent-black-hover",
+          "shadow-md shadow-transparent-black-hover backdrop-blur-lg",
           "outline-2 -outline-offset-2 outline-text-secondary/20"
         )}
       >
