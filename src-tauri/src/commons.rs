@@ -129,6 +129,15 @@ pub fn rename_file(path: &str, new_path: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn copy_file(path: &str, new_path: &str) -> Result<(), String> {
+    let renamed_res = fs::copy(path, new_path);
+    match renamed_res {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string() + "\nYou may need to relaunch the app as administrator"),
+    }
+}
+
+#[tauri::command]
 pub fn delete_file(path: &str) -> Result<(), String> {
     let deleted_res = fs::remove_file(path);
     match deleted_res {
@@ -267,7 +276,6 @@ pub fn duplicate_vendor(
     new_dir_name: &str,
     orca_filament_library_filaments: Vec<String>,
 ) -> Result<(), String> {
-    dbg!(&orca_filament_library_filaments);
     let orca_filament_library_filaments: HashSet<String> =
         orca_filament_library_filaments.into_iter().collect();
 

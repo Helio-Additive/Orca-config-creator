@@ -66,6 +66,7 @@ export const globalStateObject = {
   editWindowState: {} as Record<
     string,
     {
+      initialLoadCompleted: boolean;
       fileName: string;
       type: ConfigType;
       name: string;
@@ -106,6 +107,16 @@ export const appStateObject = {
     analysis: { warning: 30, error: 30 },
   },
   searchQuery: "",
+  duplicationPopover: {
+    visible: false,
+    arguments: {
+      type: "printer" as ConfigType,
+      location: "installed" as ConfigLocationType,
+      originalName: "",
+      originalFamily: undefined as string | undefined,
+      newFamily: undefined as string | undefined,
+    },
+  },
 };
 
 export const appState = hookstate(structuredClone(appStateObject));

@@ -7,7 +7,6 @@ import { IoIosWarning, IoMdArrowRoundBack } from "react-icons/io";
 import { MdAdd, MdOutlineError } from "react-icons/md";
 import { RiDeleteBin6Line, RiResetLeftFill } from "react-icons/ri";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import InputComponent from "./components/tab-panels/input-component";
 import NewProperty from "./components/tab-panels/input-components/new-property";
@@ -19,7 +18,6 @@ import {
   ConfigLocationType,
   ConfigType,
   deinherit_and_load_all_props_by_props,
-  deinherit_config_by_type,
   editConfigFile,
   findAvailableConfigs,
   folderOpener,
@@ -33,11 +31,14 @@ import {
 } from "./lib/config-option-types";
 import {
   addNewArrayValue,
+  initializeWindowState,
+  loadExistingConfigProps,
+  loadNewConfigProps,
   processValueAndGetArray,
   removeArrayValue,
   saveFile,
 } from "./lib/edit-config-helpers";
-import { globalState, ErrWan } from "./lib/state-store";
+import { ErrWan, globalState } from "./lib/state-store";
 
 function LabelButtonTemplate({
   Icon,
@@ -190,7 +191,11 @@ export default function EditConfig() {
   const fileName: string = searchParams.get("fileName")!;
   const type: ConfigType = searchParams.get("type")! as ConfigType;
   const name: string = searchParams.get("name")!;
+  const originalName: string | undefined =
+    searchParams.get("originalName") ?? undefined;
   const family: string | undefined = searchParams.get("family") ?? undefined;
+  const originalFamily: string | undefined =
+    searchParams.get("originalFamily") ?? undefined;
   const newFile: string | undefined = searchParams.get("newFile") ?? undefined;
   const location: ConfigLocationType = searchParams.get(
     "location"
@@ -206,72 +211,25 @@ export default function EditConfig() {
   useEffect(() => {
     if (
       editWindowState[fileName].get({ stealth: true }) &&
-      editWindowState[fileName].changedProps.keys.length === 0 &&
+      !editWindowState[fileName].initialLoadCompleted.get({ stealth: true }) &&
       !newFile
     ) {
-      deinherit_config_by_type(
-        editWindowState[fileName].name.get({ stealth: true }),
-        editWindowState[fileName].type.get({ stealth: true }),
-        editWindowState[fileName].location.get({ stealth: true }),
-        editWindowState[fileName].family.get({ stealth: true })
-      )
-        .then((res) => {
-          const allKeysInRes = Object.keys(res.res);
-
-          const knownKeysTemp = new Set(
-            Object.keys(propMap).filter((el) => allKeysInRes.includes(el))
-          );
-          const unknownKeysTemp = new Set(
-            allKeysInRes.filter((el) => !knownKeysTemp.has(el))
-          );
-
-          Object.keys(propMap)
-            .filter((el) => checkIsRequired(location, propMap[el]))
-            .forEach((el) => knownKeysTemp.add(el));
-
-          editWindowState[fileName].knownKeys.set(knownKeysTemp);
-          editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
-
-          editWindowState[fileName].properties.set(res);
-        })
-        .catch((error: any) => toast(error.toString(), { type: "error" }));
+      loadExistingConfigProps(name, fileName, type, location, family);
     } else if (
       editWindowState[fileName].get({ stealth: true }) &&
-      editWindowState[fileName].changedProps.keys.length === 0 &&
+      !editWindowState[fileName].initialLoadCompleted.get({ stealth: true }) &&
       newFile
     ) {
-      const knownKeysTemp = Object.keys(propMap).filter((el) =>
-        checkIsRequired(location, propMap[el])
+      loadNewConfigProps(
+        fileName,
+        type,
+        location,
+        originalName,
+        originalFamily
       );
-
-      const changedPropsTemp = knownKeysTemp.reduce((acc, el) => {
-        acc[el] = structuredClone(propMap[el].default);
-        return acc;
-      }, {} as Record<string, any>);
-
-      changedPropsTemp["type"] = type;
-      editWindowState[fileName].merge({
-        changedProps: changedPropsTemp,
-        knownKeys: new Set(knownKeysTemp),
-      });
     } else {
       if (!editWindowState[fileName].get({ stealth: true }))
-        editWindowState[fileName].set({
-          fileName: fileName,
-          type: type,
-          name: name,
-          family: family,
-          properties: {
-            res: {},
-            keyDetails: {},
-            warnings: {},
-          },
-          changedProps: {},
-          deleteKeys: [],
-          knownKeys: new Set(),
-          unknownKeys: new Set(),
-          location: location,
-        });
+        initializeWindowState(name, fileName, type, location, family);
     }
 
     if (editWindowState[fileName].changedProps.keys.length > 0) {
@@ -493,7 +451,7 @@ export default function EditConfig() {
             .get()
             .includes(key);
 
-          const isBaseProp = keyDetails.level === 0;
+          const isBaseProp = !keyDetails || keyDetails.level === 0;
 
           let inputType = configOptionTypeToInputTypeString(knownProp.type);
 
@@ -553,7 +511,7 @@ export default function EditConfig() {
 
           const labelButtons = (
             <div className="flex">
-              {(keyDetails.level as number) > 0 && (
+              {!isBaseProp && (
                 <EditConfigButton
                   onClick={() => {
                     editConfigFile(
@@ -627,7 +585,11 @@ export default function EditConfig() {
               label={key}
               value={value}
               arrayValue={arrayValue}
-              extraLabel={keyDetails.configName + " · " + keyDetails.level}
+              extraLabel={
+                keyDetails
+                  ? keyDetails.configName + " · " + keyDetails.level
+                  : undefined
+              }
               labelClassName={
                 "text-lg " + (markedForDeletion ? "opacity-50" : "")
               }
@@ -676,9 +638,11 @@ export default function EditConfig() {
             return <></>;
           }
 
+          const isBaseProp = !keyDetails || keyDetails.level === 0;
+
           const labelButtons = (
             <div className="flex">
-              {(keyDetails.level as number) > 0 && (
+              {!isBaseProp && (
                 <EditConfigButton
                   onClick={() => {
                     editConfigFile(
@@ -728,7 +692,11 @@ export default function EditConfig() {
               label={key}
               value={value}
               arrayValue={arrayValue}
-              extraLabel={keyDetails.configName + " · " + keyDetails.level}
+              extraLabel={
+                keyDetails
+                  ? keyDetails.configName + " · " + keyDetails.level
+                  : undefined
+              }
               labelClassName={
                 "text-lg " + (markedForDeletion ? "opacity-50" : "")
               }

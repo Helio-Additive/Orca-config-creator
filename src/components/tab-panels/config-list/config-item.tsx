@@ -14,7 +14,9 @@ import OptionsMenu from "./config-item-components/options-menu";
 import TopButton from "./config-item-components/top-button";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useIntersectionObserver } from "usehooks-ts";
-import { State } from "@hookstate/core";
+import { State, useHookstate } from "@hookstate/core";
+import { appState } from "../../../lib/state-store";
+import { HiOutlineDocumentDuplicate } from "react-icons/hi";
 
 type OptionMenuItem = {
   icon: (a: { className?: string }) => ReactNode;
@@ -35,6 +37,7 @@ export default function ConfigItem({
   flatExportFunction,
   configLocation,
   allowDelete,
+  allowDuplication,
   extraOptionsMenuItems = [],
   index,
   itemVisibilityNumberState,
@@ -49,6 +52,7 @@ export default function ConfigItem({
   fileName?: string;
   allowEdit?: boolean;
   allowDelete?: boolean;
+  allowDuplication?: boolean;
   flatExportFunction?: (
     configName: string,
     location: ConfigLocationType,
@@ -80,6 +84,8 @@ export default function ConfigItem({
     editConfigFile(name, type, fileName!, configLocation, navigate, family);
   };
 
+  const { duplicationPopover } = useHookstate(appState);
+
   const optionsMenuItems: OptionMenuItem[] = [];
 
   flatExportFunction &&
@@ -99,6 +105,28 @@ export default function ConfigItem({
       },
       text: "Delete config",
     });
+
+  if (allowDuplication) {
+    const onClickDuplicationItem = async () => {
+      duplicationPopover.arguments.set({
+        type,
+        location: configLocation,
+        originalName: name,
+        originalFamily: family,
+        newFamily: family,
+      });
+
+      if (configLocation !== "user") duplicationPopover.visible.set(true);
+    };
+
+    const duplicationMenuItem = {
+      icon: HiOutlineDocumentDuplicate,
+      onClick: onClickDuplicationItem,
+      text: "Duplicate config",
+    };
+
+    optionsMenuItems.push(duplicationMenuItem);
+  }
 
   extraOptionsMenuItems.forEach((el) => optionsMenuItems.push(el));
 

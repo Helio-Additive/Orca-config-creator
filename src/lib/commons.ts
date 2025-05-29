@@ -29,6 +29,7 @@ import {
   LOADED_USER_PROFILES_BASE_SUBDIRECTORY,
   LOADED_USER_PROFILES_SUBDIRECTORY,
   MACHINE_SUBDIRECTORY,
+  NEW_FILE_FILE_NAME_PLACEHOLDER,
   PROCESS_SUBDIRECTORY,
 } from "./constants";
 import { removeVariantFromModel } from "./edit-config-helpers";
@@ -38,13 +39,13 @@ import {
   printer_properties_map,
 } from "./printer-configuration-options";
 import {
+  ErrWan,
   familyProperty,
   fileProperty,
   globalState,
   KeyDetails,
   NamedConfigStateType,
   SystemConfigStateType,
-  ErrWan,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
 
@@ -376,7 +377,6 @@ export const installedModelConfigLoader = async () => {
     }
   } catch (error: any) {
     toast(error, { type: "error" });
-    console.log(error);
     installedModelConfigs.set({});
   }
 };
@@ -621,7 +621,6 @@ export function installedConfigLoader<
     }
   } catch (error: any) {
     toast(error, { type: "error" });
-    console.log(error);
     installedConfigs.set({});
   }
 }
@@ -1223,8 +1222,27 @@ export function newFile(
 ) {
   const name = "New File";
   const url =
-    `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=newFile` +
+    `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=${NEW_FILE_FILE_NAME_PLACEHOLDER}` +
     (family ? `&family=${family}` : "");
+
+  navigate(url, { replace: replace });
+}
+
+export function duplicateFile(
+  type: ConfigType,
+  location: ConfigLocationType,
+  navigate: NavigateFunction,
+  originalName: string,
+  family?: string,
+  originalFamily?: string,
+  replace = false
+) {
+  const name = "New File";
+  const url =
+    `/edit?newFile=${true}&type=${type}&location=${location}&name=${name}&fileName=${NEW_FILE_FILE_NAME_PLACEHOLDER}` +
+    `&originalName=${originalName}` +
+    (family ? `&family=${family}` : "") +
+    (originalFamily ? `&originalFamily=${originalFamily}` : "");
 
   navigate(url, { replace: replace });
 }
@@ -1542,6 +1560,10 @@ export async function refreshConfigs(
   type: ConfigType,
   location: ConfigLocationType
 ) {
+  if (location === "installed") {
+    await installedVendorConfigLoader();
+  }
+
   if (
     type === "printer" &&
     (location === "loaded_system" || location === "user")

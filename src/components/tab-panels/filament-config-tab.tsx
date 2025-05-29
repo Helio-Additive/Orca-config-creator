@@ -90,6 +90,7 @@ export default function FilamentConfigTab() {
                   type="filament"
                   family={key}
                   allowEdit
+                  allowDuplication
                   configLocation="installed"
                   flatExportFunction={export_flattened}
                   index={currentIndexes.current.installed}

@@ -73,12 +73,12 @@ export default function ComboInput({
 
       <ComboboxOptions
         anchor="bottom"
-        portal={false}
+        portal={true}
         transition
         className={`w-(--input-width) origin-top-left rounded-lg outline-2 -outline-offset-2 outline-text-secondary/20
                 text-sm/6 text-text-primary transition duration-100 ease-out [--anchor-gap:var(--spacing-1)] 
                 data-[closed]:scale-95 data-[closed]:opacity-0
-                mt-1 bg-transparent-black-hover p-1 backdrop-blur-md shadow-lg`}
+                mt-1 bg-transparent-black-hover p-1 backdrop-blur-md shadow-lg pointer-events-auto`}
       >
         {query.length > 0 && !filteredValues.includes(query) && (
           <ComboboxOption

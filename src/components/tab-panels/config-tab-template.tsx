@@ -1,8 +1,12 @@
+import { useHookstate } from "@hookstate/core";
 import { ReactNode } from "react";
 import { VscNewFile } from "react-icons/vsc";
-import { ConfigType, newFile } from "../../lib/commons";
-import TopButton from "./config-list/config-item-components/top-button";
 import { useNavigate } from "react-router-dom";
+import { ConfigType, duplicateFile, newFile } from "../../lib/commons";
+import { appState, globalState } from "../../lib/state-store";
+import TopButton from "./config-list/config-item-components/top-button";
+import InputComponent from "./input-component";
+import { InputPopover } from "./input-components/input-popover";
 
 export default function ConfigTabTemplate({
   installedConfigs,
@@ -17,8 +21,41 @@ export default function ConfigTabTemplate({
 }) {
   const navigate = useNavigate();
 
+  const { installedVendorConfigs } = useHookstate(globalState);
+  const { duplicationPopover } = useHookstate(appState);
+
   return (
     <div className="flex min-h-0 h-full">
+      <InputPopover
+        popoverVisible={duplicationPopover.visible.get()}
+        setPopOverVisible={duplicationPopover.visible.set}
+        label="Please select the vendor to copy to"
+        description="This will appear in your setup wizard"
+        inputChildren={[
+          <InputComponent
+            type="combobox"
+            value={duplicationPopover.arguments.newFamily.get()}
+            possibleValues={installedVendorConfigs.keys as string[]}
+            className="mt-4 w-full rounded px-3 py-2"
+            onChange={(e) =>
+              duplicationPopover.arguments.newFamily.set(e as string)
+            }
+            allowEdit
+          />,
+        ]}
+        onSubmit={() => {
+          const { type, location, originalName, originalFamily, newFamily } =
+            duplicationPopover.arguments.get();
+          duplicateFile(
+            type,
+            location,
+            navigate,
+            originalName,
+            newFamily,
+            originalFamily
+          );
+        }}
+      />
       <div className="flex flex-col min-h-0 w-[50%] h-full mr-2">
         <div className="font-semibold text-text-primary text-2xl mb-3 pl-3">
           Installation Directory

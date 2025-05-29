@@ -3,14 +3,17 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { NavigateFunction } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
+  checkIsRequired,
   ConfigLocationType,
   ConfigType,
   createVendorConfigEntry,
+  deinherit_config_by_type,
   editConfigFile,
   findConfig,
   getArrayFromDelimitedString,
   getDelimitedStringFromArray,
   getDirectoryFromTypeAndLocation,
+  getPropMapFromType,
   getRelevantConfigsFromTypePFP,
   refreshConfigs,
   renameConfig,
@@ -415,5 +418,135 @@ export async function removeVariantFromModel(
     });
 
     await refreshConfigs("printer-model", "installed");
+  }
+}
+
+export function initializeWindowState(
+  name: string,
+  fileName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const { editWindowState } = globalState;
+
+  editWindowState[fileName].set({
+    initialLoadCompleted: false,
+    fileName: fileName,
+    type: type,
+    name: name,
+    family: family,
+    properties: {
+      res: {},
+      keyDetails: {},
+      warnings: {},
+    },
+    changedProps: {},
+    deleteKeys: [],
+    knownKeys: new Set(),
+    unknownKeys: new Set(),
+    location: location,
+  });
+}
+
+export function loadExistingConfigProps(
+  name: string,
+  fileName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const propMap = getPropMapFromType(type);
+
+  const { editWindowState } = globalState;
+  deinherit_config_by_type(name, type, location, family)
+    .then((res) => {
+      const allKeysInRes = Object.keys(res.res);
+
+      const knownKeysTemp = new Set(
+        Object.keys(propMap).filter((el) => allKeysInRes.includes(el))
+      );
+      const unknownKeysTemp = new Set(
+        allKeysInRes.filter((el) => !knownKeysTemp.has(el))
+      );
+
+      Object.keys(propMap)
+        .filter((el) => checkIsRequired(location, propMap[el]))
+        .forEach((el) => knownKeysTemp.add(el));
+
+      editWindowState[fileName].knownKeys.set(knownKeysTemp);
+      editWindowState[fileName].unknownKeys.set(unknownKeysTemp);
+
+      editWindowState[fileName].properties.set(res);
+      editWindowState[fileName].initialLoadCompleted.set(true);
+    })
+    .catch((error: any) => toast(error.toString(), { type: "error" }));
+}
+
+export async function loadNewConfigProps(
+  fileName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  originalName?: string,
+  originalFamily?: string
+) {
+  const propMap = getPropMapFromType(type);
+
+  const { editWindowState } = globalState;
+
+  const knownKeysTemp = Object.keys(propMap).filter((el) =>
+    checkIsRequired(location, propMap[el])
+  );
+
+  const changedPropsTemp = knownKeysTemp.reduce((acc, el) => {
+    acc[el] = structuredClone(propMap[el].default);
+    return acc;
+  }, {} as Record<string, any>);
+
+  changedPropsTemp["type"] = type;
+  editWindowState[fileName].merge({
+    changedProps: changedPropsTemp,
+    knownKeys: new Set(knownKeysTemp),
+    initialLoadCompleted: true,
+  });
+
+  if (originalName) {
+    const originalProps = await deinherit_config_by_type(
+      originalName,
+      type,
+      location,
+      originalFamily
+    );
+    const propsToSet = Object.fromEntries(
+      Object.entries(originalProps.res).filter(
+        ([key, _]) => originalProps.keyDetails[key].level === 0
+      )
+    );
+
+    propsToSet["name"] = propsToSet["name"] + " Copy";
+
+    editWindowState[fileName].knownKeys.set((v) => {
+      const keysSet = new Set(v);
+
+      const knownKeys = Object.keys(propsToSet).filter((el) =>
+        Object.keys(propMap).includes(el)
+      );
+      knownKeys.forEach((el) => keysSet.add(el));
+
+      return keysSet;
+    });
+
+    editWindowState[fileName].unknownKeys.set((v) => {
+      const keysSet = new Set(v);
+
+      const knownKeys = Object.keys(propsToSet).filter(
+        (el) => !Object.keys(propMap).includes(el)
+      );
+      knownKeys.forEach((el) => keysSet.add(el));
+
+      return keysSet;
+    });
+
+    editWindowState[fileName].merge({ changedProps: propsToSet });
   }
 }
