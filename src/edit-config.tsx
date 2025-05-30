@@ -700,7 +700,7 @@ export default function EditConfig() {
               labelClassName={
                 "text-lg " + (markedForDeletion ? "opacity-50" : "")
               }
-              onChange={(value: string | ConfigNameAndPath, idx = 0) =>
+              onChange={(value: string | ConfigNameAndPath, idx = undefined) =>
                 handleChange(value, key, idx)
               }
               inputClassName={
