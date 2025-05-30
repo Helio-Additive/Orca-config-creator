@@ -36,6 +36,7 @@ export default function AnalysisTab() {
                           .location as ConfigLocationType
                       }
                       className="max-w-[fit] w-fit"
+                      allowEdit
                     />
                   );
                 });
@@ -73,6 +74,7 @@ export default function AnalysisTab() {
                           .location as ConfigLocationType
                       }
                       className="max-w-[fit] w-fit"
+                      allowEdit
                     />
                   );
                 });
