@@ -1724,8 +1724,11 @@ export async function deleteConfig(
   }
 }
 
-export function getArrayFromDelimitedString(value: string, delimiter: string) {
-  return value.split(delimiter);
+export function getArrayFromDelimitedString(
+  value: string | undefined,
+  delimiter: string
+) {
+  return value ? value.split(delimiter) : [];
 }
 
 export function getDelimitedStringFromArray(

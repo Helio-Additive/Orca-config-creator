@@ -262,7 +262,10 @@ export function processValueAndGetArray(
   delimiter?: string
 ) {
   if (delimiter) {
-    return ((changedValue as string) ?? (value as string)).split(delimiter);
+    return getArrayFromDelimitedString(
+      (changedValue ?? value) as string | undefined,
+      delimiter
+    );
   } else {
     return (changedValue as string[]) ?? (value as string[]);
   }
@@ -293,15 +296,18 @@ export function addNewArrayValue(
       else editWindowState[fileName].changedProps[key].set([undefined]);
     } else {
       if (changedProperty)
-        editWindowState[fileName].changedProps[key].set(
-          (v: string) => v + delimiter
+        editWindowState[fileName].changedProps[key].set((v: string) =>
+          v ? v + delimiter : ";"
         );
-      else
+      else {
+        const v = editWindowState[fileName].properties.res[key].get({
+          stealth: true,
+        });
+
         editWindowState[fileName].changedProps[key].set(
-          editWindowState[fileName].properties.res[key].get({
-            stealth: true,
-          }) + delimiter
+          v ? v + delimiter : ";"
         );
+      }
     }
   }
 }
