@@ -2,10 +2,15 @@ import { useHookstate } from "@hookstate/core";
 import { appState, appStateObject, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { useEffect, useRef } from "react";
-import { matchesQuery } from "../../lib/commons";
+import { matchesQuery, newFile } from "../../lib/commons";
+import TopButton from "./config-list/config-item-components/top-button";
+import { VscNewFile } from "react-icons/vsc";
+import { useNavigate } from "react-router-dom";
 
 export default function ModelConfigTab() {
   const { installedModelConfigs: modelConfigs } = useHookstate(globalState);
+
+  const navigate = useNavigate();
 
   const {
     itemVisibilityState: { model: itemVisibility },
@@ -35,10 +40,20 @@ export default function ModelConfigTab() {
 
         return (
           <div key={vendor}>
-            <span className="font-semibold text-text-primary text-xl mb-1 pl-3 mt-3">
-              {vendor}
-            </span>
+            <div className="flex min-h-0 h-fit mt-3 mb-1 pl-3 items-center">
+              <span className="font-semibold text-text-primary text-xl">
+                {vendor}
+              </span>
 
+              <TopButton
+                onClick={() =>
+                  newFile("printer-model", "installed", navigate, vendor)
+                }
+                Icon={VscNewFile}
+                tooltip="Add new Config"
+                className="text-text-primary ml-2"
+              />
+            </div>
             {vendorConfig.keys.map((modelName) => {
               const config = vendorConfig.nested(modelName).get();
 
