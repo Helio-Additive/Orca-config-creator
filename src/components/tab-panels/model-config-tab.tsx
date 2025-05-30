@@ -2,19 +2,23 @@ import { useHookstate } from "@hookstate/core";
 import { appState, appStateObject, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { useEffect, useRef } from "react";
-import { matchesQuery, newFile } from "../../lib/commons";
+import { duplicateFile, matchesQuery, newFile } from "../../lib/commons";
 import TopButton from "./config-list/config-item-components/top-button";
 import { VscNewFile } from "react-icons/vsc";
 import { useNavigate } from "react-router-dom";
+import { InputPopover } from "./input-components/input-popover";
+import InputComponent from "./input-component";
 
 export default function ModelConfigTab() {
-  const { installedModelConfigs: modelConfigs } = useHookstate(globalState);
+  const { installedModelConfigs: modelConfigs, installedVendorConfigs } =
+    useHookstate(globalState);
 
   const navigate = useNavigate();
 
   const {
     itemVisibilityState: { model: itemVisibility },
     searchQuery,
+    duplicationPopover,
   } = useHookstate(appState);
 
   const currentIndexes = useRef({ installed: 0, loadedSystem: 0, user: 0 });
@@ -40,6 +44,41 @@ export default function ModelConfigTab() {
 
         return (
           <div key={vendor}>
+            <InputPopover
+              popoverVisible={duplicationPopover.visible.get()}
+              setPopOverVisible={duplicationPopover.visible.set}
+              label="Please select the vendor to copy to"
+              description="This will appear in your setup wizard"
+              inputChildren={[
+                <InputComponent
+                  type="combobox"
+                  value={duplicationPopover.arguments.newFamily.get()}
+                  possibleValues={installedVendorConfigs.keys as string[]}
+                  className="mt-4 w-full rounded px-3 py-2"
+                  onChange={(e) =>
+                    duplicationPopover.arguments.newFamily.set(e as string)
+                  }
+                  allowEdit
+                />,
+              ]}
+              onSubmit={() => {
+                const {
+                  type,
+                  location,
+                  originalName,
+                  originalFamily,
+                  newFamily,
+                } = duplicationPopover.arguments.get();
+                duplicateFile(
+                  type,
+                  location,
+                  navigate,
+                  originalName,
+                  newFamily,
+                  originalFamily
+                );
+              }}
+            />
             <div className="flex min-h-0 h-fit mt-3 mb-1 pl-3 items-center">
               <span className="font-semibold text-text-primary text-xl">
                 {vendor}
@@ -78,6 +117,8 @@ export default function ModelConfigTab() {
                     configLocation="installed"
                     family={vendor}
                     allowEdit
+                    allowDelete
+                    allowDuplication
                     index={currentIndexes.current.installed}
                     itemVisibilityNumberState={itemVisibility.installed}
                   />
