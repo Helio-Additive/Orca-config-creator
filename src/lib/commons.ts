@@ -337,6 +337,8 @@ export const installedModelConfigLoader = async () => {
   const installedModelConfigs = globalState.installedModelConfigs;
   const errLoadingInstallationPath = globalState.errLoadingInstallationPath;
 
+  installedModelConfigs.set({});
+
   try {
     if (
       orcaInstallationPath.get({ stealth: true }) &&
@@ -1508,8 +1510,6 @@ export async function deleteVendorConfigEntry(
     path,
     content: JSON.stringify(readVendorConfig, null, 2),
   });
-
-  await refreshConfigs("vendor", "installed");
 }
 
 export async function renameConfig(
@@ -1679,7 +1679,6 @@ export async function deleteInstalledConfig(
       .then(() => {
         deleteVendorConfigEntry(family, type, name).then(() => {
           toast(`Config: ${name} successfully deleted`, { type: "success" });
-          refreshConfigs(type, "installed");
         });
       })
       .catch((error: any) => toast(error.toString(), { type: "error" }));
@@ -1710,14 +1709,15 @@ export async function deleteConfig(
           toast(`Config: ${name} successfully removed from printer model`, {
             type: "success",
           });
+        } else {
+          toast(`Could not find config to delete: ${name}`, { type: "error" });
         }
-
-        await deleteVendorConfigEntry(family!, type, name);
-      } else {
-        toast(`Error deleting config: ${name}`, { type: "error" });
       }
 
+      await deleteVendorConfigEntry(family!, type, name);
       await deleteInstalledConfig(name, type, family!);
+
+      await refreshConfigs("printer-model", "installed");
     }
   } catch (error: any) {
     toast(error.toString(), { type: "error" });
