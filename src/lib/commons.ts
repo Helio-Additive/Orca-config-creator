@@ -147,7 +147,7 @@ export const setOsAndDefaultDirectories = async (
         (res) => {
           if (res) {
             orcaInstallationPath.set(
-              "C:\\Users\\Vipul Rajan\\Documents\\workspace\\Ginger\\OrcaSlicer" // directoryDefaults.win32.installationDirectory
+              directoryDefaults.win32.installationDirectory
             );
             toast("Set default installation directory", {
               type: "success",
