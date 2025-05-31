@@ -1865,40 +1865,17 @@ export function analyseVendorConfigs() {
         configLocation: "installed",
         name: vendorName,
       }).then((analysisMessages) => {
-        const analysisMessagesCasted = analysisMessages as Record<
-          string,
+        const analysisMessagesCasted = analysisMessages as [
+          Record<string, AnalysisMessageDetails[]>,
           Record<string, AnalysisMessageDetails[]>
-        >;
+        ];
 
-        Object.entries(analysisMessagesCasted).forEach(
-          ([fileName, messages]) => {
-            Object.entries(messages).forEach(
-              ([fieldName, messageDetailsList]) => {
-                messageDetailsList.forEach((messageDetails) => {
-                  if (messageDetails.message.type === "warning")
-                    if (analysisWarnings.nested(fileName)?.nested(fileName))
-                      analysisWarnings
-                        .nested(fileName)
-                        .nested(fileName)
-                        .merge([messageDetails]);
-                    else
-                      analysisWarnings.merge({
-                        [fileName]: { [fieldName]: [messageDetails] },
-                      });
-                  else if (analysisErrors.nested(fileName)?.nested(fileName))
-                    analysisErrors
-                      .nested(fileName)
-                      .nested(fileName)
-                      .merge([messageDetails]);
-                  else
-                    analysisErrors.merge({
-                      [fileName]: { [fieldName]: [messageDetails] },
-                    });
-                });
-              }
-            );
-          }
-        );
+        analysisErrors.merge({
+          [vendorConfig.fileName]: analysisMessagesCasted[0],
+        });
+        analysisWarnings.merge({
+          [vendorConfig.fileName]: analysisMessagesCasted[1],
+        });
       });
     })
   ).then(() => {

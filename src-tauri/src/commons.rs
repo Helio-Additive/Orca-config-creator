@@ -846,7 +846,13 @@ pub async fn analyse_vendor_config(
     path: String,
     config_location: String,
     name: String,
-) -> Result<HashMap<String, HashMap<String, Vec<AnalysisMessageDetails>>>, String> {
+) -> Result<
+    (
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+    ),
+    String,
+> {
     spawn_blocking(move || {
         let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
 
@@ -912,9 +918,44 @@ pub async fn analyse_vendor_config(
         );
         extend_combine_map(&mut analysis_result, process_configs_checks);
 
-        let mut return_map = HashMap::new();
-        return_map.insert(path.into(), analysis_result);
-        Ok(return_map)
+        let analysis_result_errors: HashMap<String, Vec<AnalysisMessageDetails>> = analysis_result
+            .clone()
+            .into_iter()
+            .filter_map(|(field_name, message_details)| {
+                let error_messages: Vec<_> = message_details
+                    .into_iter()
+                    .filter(|message| {
+                        matches!(message.message.r#type, ErrType::Error)
+                            || matches!(message.message.r#type, ErrType::Critical)
+                    })
+                    .collect();
+
+                if error_messages.len() > 0 {
+                    Some((field_name, error_messages))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let analysis_result_warnings: HashMap<String, Vec<AnalysisMessageDetails>> =
+            analysis_result
+                .into_iter()
+                .filter_map(|(field_name, message_details)| {
+                    let error_messages: Vec<_> = message_details
+                        .into_iter()
+                        .filter(|message| matches!(message.message.r#type, ErrType::Warning))
+                        .collect();
+
+                    if error_messages.len() > 0 {
+                        Some((field_name, error_messages))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+        Ok((analysis_result_errors, analysis_result_warnings))
     })
     .await
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))
