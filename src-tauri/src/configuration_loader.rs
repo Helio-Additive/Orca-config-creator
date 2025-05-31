@@ -52,11 +52,11 @@ pub struct ErrWan {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ConfigDetails {
-    name: String,
-    file: String,
-    family: Option<String>,
-    location: String,
-    config_type: String,
+    pub name: String,
+    pub file: String,
+    pub family: Option<String>,
+    pub location: String,
+    pub config_type: String,
 }
 
 impl ConfigDetails {
