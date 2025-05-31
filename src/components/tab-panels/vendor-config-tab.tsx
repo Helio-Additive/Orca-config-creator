@@ -8,11 +8,15 @@ import {
   flattenConfig,
   getFilamentLibraryFilaments,
   matchesQuery,
+  newFile,
   refreshConfigs,
 } from "../../lib/commons";
 import { appState, globalState } from "../../lib/state-store";
 import ConfigItem from "./config-list/config-item";
 import { InputPopover } from "./input-components/input-popover";
+import TopButton from "./config-list/config-item-components/top-button";
+import { VscNewFile } from "react-icons/vsc";
+import { useNavigate } from "react-router-dom";
 
 export default function VendorConfigTab() {
   const {
@@ -23,6 +27,8 @@ export default function VendorConfigTab() {
   } = useHookstate(globalState);
 
   const { searchQuery } = useHookstate(appState);
+
+  const navigate = useNavigate();
 
   const [popoverVisible, setPopOverVisible] = useState(false);
   const [originalVendorFileName, setOriginalVendorFileName] = useState("");
@@ -146,6 +152,13 @@ export default function VendorConfigTab() {
               toast(err.toString(), { type: "error" });
             })
         }
+      />
+
+      <TopButton
+        onClick={() => newFile("vendor", "installed", navigate)}
+        Icon={VscNewFile}
+        tooltip="Add new Config"
+        className="text-text-primary ml-2"
       />
 
       {vendorConfigs.keys.map((key) => {
