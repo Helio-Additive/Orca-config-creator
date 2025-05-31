@@ -4,8 +4,9 @@
 mod commons;
 mod configuration_loader;
 use commons::{
-    analyse_vendor_config, check_directory, check_file, copy_file, delete_file, duplicate_vendor,
-    find_possible_values, rename_config, rename_file, show_in_folder, write_to_file,
+    analyse_vendor_config, check_directory, check_file, copy_file, create_directory, delete_file,
+    duplicate_vendor, find_possible_values, rename_config, rename_file, show_in_folder,
+    write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
@@ -186,6 +187,7 @@ fn main() {
             rename_config,
             delete_file,
             copy_file,
+            create_directory,
             find_possible_values,
             pick_folder,
             save_and_zip_json_bundle,
