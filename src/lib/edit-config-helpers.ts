@@ -154,16 +154,6 @@ async function saveNewFile(
     const newProps = getKeysValuesToSave(fileName, editWindowState);
     await writeToFile(newFileName, newProps, fileName, editWindowState);
   } else if (location === "installed") {
-    const newProps = getKeysValuesToSave(fileName, editWindowState);
-    await writeToFile(newFileName, newProps, fileName, editWindowState);
-    if (type !== "vendor") await createVendorConfigEntry(family!, type, name);
-    if (type === "printer") {
-      await addNewVariantToModel(
-        family!,
-        newProps["printer_model"] as string,
-        newProps["printer_variant"] as string
-      );
-    }
     if (type === "vendor") {
       await invoke("create_directory", {
         path:
@@ -171,6 +161,19 @@ async function saveNewFile(
           "/" +
           name,
       });
+    }
+
+    const newProps = getKeysValuesToSave(fileName, editWindowState);
+
+    await writeToFile(newFileName, newProps, fileName, editWindowState);
+
+    if (type !== "vendor") await createVendorConfigEntry(family!, type, name);
+    if (type === "printer") {
+      await addNewVariantToModel(
+        family!,
+        newProps["printer_model"] as string,
+        newProps["printer_variant"] as string
+      );
     }
   } else {
     toast("Could not save file", { type: "error" });
