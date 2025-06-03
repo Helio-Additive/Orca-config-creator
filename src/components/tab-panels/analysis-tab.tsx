@@ -7,11 +7,11 @@ export default function AnalysisTab() {
   const { analysisErrors, analysisWarnings } = useHookstate(globalState);
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full flex flex-col">
       <div className="font-semibold text-text-primary text-2xl mb-3 pl-3">
         Errors
       </div>
-      <div className="min-h-0 overflow-y-auto">
+      <div className="flex-1/2 min-h-0 overflow-y-auto">
         {Object.entries(analysisErrors.get()).flatMap(
           ([fileName, messages]) => {
             return Object.entries(messages).flatMap(
@@ -49,7 +49,7 @@ export default function AnalysisTab() {
       <div className="font-semibold text-text-primary text-2xl mb-3 pl-3">
         Warnings
       </div>
-      <div className="flex-1 shrink-1 basis-1/2 min-h-0 overflow-y-auto">
+      <div className="flex-1/2 shrink-1 basis-1/2 min-h-0 overflow-y-auto">
         {Object.entries(analysisWarnings.get()).flatMap(
           ([fileName, messages]) => {
             return Object.entries(messages).flatMap(

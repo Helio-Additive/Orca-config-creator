@@ -2006,6 +2006,7 @@ name = "orca-config-manager"
 version = "0.2.0"
 dependencies = [
  "fs_extra",
+ "regex",
  "serde",
  "serde_json",
  "tauri",

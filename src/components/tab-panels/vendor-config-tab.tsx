@@ -126,6 +126,7 @@ export default function VendorConfigTab() {
   return (
     <div className="h-full overflow-y-auto">
       <InputPopover
+        key={0}
         popoverVisible={popoverVisible}
         setPopOverVisible={setPopOverVisible}
         label="Enter the new vendor name"

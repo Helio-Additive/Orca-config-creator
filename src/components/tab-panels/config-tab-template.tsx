@@ -33,6 +33,7 @@ export default function ConfigTabTemplate({
         description="This will appear in your setup wizard"
         inputChildren={[
           <InputComponent
+            key={0}
             type="combobox"
             value={duplicationPopover.arguments.newFamily.get()}
             possibleValues={installedVendorConfigs.keys as string[]}

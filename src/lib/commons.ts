@@ -3,7 +3,7 @@ import { homeDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/tauri";
 import fuzzysort from "fuzzysort";
 import { NavigateFunction } from "react-router-dom";
-import { toast } from "react-toastify";
+import { Id, toast } from "react-toastify";
 import { validate as isUuid, v4 as uuidv4 } from "uuid";
 import {
   filament_properties_map,
@@ -43,6 +43,7 @@ import {
   familyProperty,
   fileProperty,
   globalState,
+  InstantiatedConfigStateType,
   KeyDetails,
   NamedConfigStateType,
   SystemConfigStateType,
@@ -562,59 +563,66 @@ export function installedConfigLoader<
   >;
   const errLoading = globalState.errLoadingInstallationPath;
 
-  installedConfigs.set({});
+  let installedConfigsObject: SystemConfigStateType<T> = {};
+  let instantiatedConfigsObject: InstantiatedConfigStateType<T> = {};
   try {
     if (
       orcaInstallationPath.get({ stealth: true }) &&
       !errLoading.get({ stealth: true })
     ) {
-      vendorConfigs.keys.map(async (key) => {
-        const vendorConfig = vendorConfigs[key].get({ stealth: true });
-        const configList = vendorConfig[
-          configNameAndPathKey
-        ] as ConfigNameAndPath[];
-        const configsParsed: ({
-          Ok?: T;
-          Err?: string;
-        } & fileProperty)[] = await invoke(configLoaderFunction, {
-          path:
-            orcaInstallationPath.get({ stealth: true }) +
-            get_installed_system_profiles_subdirectory_directory(os.get()) +
-            "/" +
-            key,
-          configNameAndPaths: configList,
-        });
-
-        for (let i = 0; i < configList.length; i++) {
-          configsParsed[i].fileName =
-            orcaInstallationPath.get({ stealth: true }) +
-            get_installed_system_profiles_subdirectory_directory(os.get()) +
-            "/" +
-            key +
-            "/" +
-            configList[i].sub_path;
-
-          installedConfigs[key].merge({
-            [configList[i].name]: configsParsed[i],
+      Promise.all(
+        vendorConfigs.keys.map(async (key) => {
+          const vendorConfig = vendorConfigs[key].get({ stealth: true });
+          const configList = (vendorConfig[configNameAndPathKey] ??
+            []) as ConfigNameAndPath[];
+          const configsParsed: ({
+            Ok?: T;
+            Err?: string;
+          } & fileProperty)[] = await invoke(configLoaderFunction, {
+            path:
+              orcaInstallationPath.get({ stealth: true }) +
+              get_installed_system_profiles_subdirectory_directory(os.get()) +
+              "/" +
+              key,
+            configNameAndPaths: configList,
           });
 
-          if (configsParsed[i].Ok?.instantiation) {
-            const fileTempObj: fileProperty = {
-              fileName: configsParsed[i].fileName,
-            };
-            const familyTempObj: familyProperty = { family: key };
+          for (let i = 0; i < configList.length; i++) {
+            configsParsed[i].fileName =
+              orcaInstallationPath.get({ stealth: true }) +
+              get_installed_system_profiles_subdirectory_directory(os.get()) +
+              "/" +
+              key +
+              "/" +
+              configList[i].sub_path;
 
-            const tempObj: (T & fileProperty) & familyProperty = {
-              ...configsParsed[i].Ok!,
-              ...fileTempObj,
-              ...familyTempObj,
-            };
+            if (!installedConfigsObject[key]) {
+              installedConfigsObject[key] = {};
+            }
 
-            instantiatedInstalledConfigs.merge({
-              [configList[i].name]: tempObj,
-            });
+            installedConfigsObject[key][configList[i].name] = configsParsed[i];
+
+            if (configsParsed[i].Ok?.instantiation) {
+              const fileTempObj: fileProperty = {
+                fileName: configsParsed[i].fileName,
+              };
+              const familyTempObj: familyProperty = { family: key };
+
+              const tempObj: (T & fileProperty) & familyProperty = {
+                ...configsParsed[i].Ok!,
+                ...fileTempObj,
+                ...familyTempObj,
+              };
+
+              instantiatedConfigsObject[configList[i].name] = tempObj;
+            }
           }
-        }
+
+          return 0;
+        })
+      ).then(() => {
+        installedConfigs.set(installedConfigsObject);
+        instantiatedInstalledConfigs.set(instantiatedConfigsObject);
       });
 
       toast(`Loaded installed ${type} configs`, { type: "success" });
@@ -1845,7 +1853,7 @@ export function analyseVendorConfigs() {
   const toastId = toast(toastMessage, {
     type: "info",
     closeButton: true,
-    autoClose: 10000,
+    autoClose: false,
   });
 
   const {
@@ -1854,33 +1862,95 @@ export function analyseVendorConfigs() {
     analysisWarnings,
   } = globalState;
 
-  analysisErrors.set({});
-  analysisWarnings.set({});
-
   Promise.all(
-    vendorConfigs.keys.map((vendorName) => {
+    vendorConfigs.keys.map(async (vendorName) => {
       const vendorConfig = vendorConfigs[vendorName].get();
-      invoke("analyse_vendor_config", {
+      return invoke("analyse_vendor_config", {
         path: vendorConfig.fileName,
         configLocation: "installed",
         name: vendorName,
       }).then((analysisMessages) => {
-        const analysisMessagesCasted = analysisMessages as [
-          Record<string, AnalysisMessageDetails[]>,
-          Record<string, AnalysisMessageDetails[]>
-        ];
-
-        analysisErrors.merge({
-          [vendorConfig.fileName]: analysisMessagesCasted[0],
-        });
-        analysisWarnings.merge({
-          [vendorConfig.fileName]: analysisMessagesCasted[1],
-        });
+        return [vendorConfig.fileName, analysisMessages];
       });
     })
-  ).then(() => {
+  ).then((analysisMessages) => {
+    analysisMessages.forEach((analysisMessage) => {
+      const analysisMessageCasted = analysisMessage as [
+        string,
+        [
+          Record<string, AnalysisMessageDetails[]>,
+          Record<string, AnalysisMessageDetails[]>
+        ]
+      ];
+
+      const fileName = analysisMessageCasted[0];
+      const errors = analysisMessageCasted[1][0];
+      const warnings = analysisMessageCasted[1][1];
+
+      analysisErrors[fileName].set(errors);
+      analysisWarnings[fileName].set(warnings);
+    });
     toast.update(toastId, {
       render: "Completed analyzing vendors",
+      type: "success",
+      autoClose: 3000,
+    });
+  });
+}
+
+export function analyseFilamentConfigs() {
+  const toastMessage = "analyzing filament configs in the background";
+  const toastId: Id = toast(toastMessage, {
+    type: "info",
+    closeButton: true,
+    autoClose: false,
+    //toastId: "filament-analysis-toast",
+  });
+
+  const { installedFilamentConfigs, analysisErrors, analysisWarnings } =
+    globalState;
+
+  Promise.all(
+    installedFilamentConfigs.keys.flatMap((vendorName) => {
+      return installedFilamentConfigs[vendorName].keys.map(
+        async (filamentName) => {
+          const filamentConfig =
+            installedFilamentConfigs[vendorName][filamentName].get();
+
+          if (filamentConfig.Ok) {
+            return invoke("analyse_installed_filament_config", {
+              path: filamentConfig.fileName,
+              configLocation: "installed",
+              name: filamentConfig.Ok.name,
+              family: vendorName,
+              requiredKeys: [],
+            }).then((analysisMessages) => {
+              return [filamentConfig.fileName, analysisMessages];
+            });
+          }
+        }
+      );
+    })
+  ).then((analysisMessages) => {
+    analysisMessages.forEach((analysisMessage) => {
+      const analysisMessageCasted = analysisMessage as [
+        string,
+        [
+          Record<string, AnalysisMessageDetails[]>,
+          Record<string, AnalysisMessageDetails[]>
+        ]
+      ];
+
+      const fileName = analysisMessageCasted[0];
+      const errors = analysisMessageCasted[1][0];
+      const warnings = analysisMessageCasted[1][1];
+
+      analysisErrors[fileName].set(errors);
+      analysisWarnings[fileName].set(warnings);
+    });
+
+    toast.update(toastId, {
+      render: "Completed analyzing filaments",
       type: "success",
       autoClose: 3000,
     });
