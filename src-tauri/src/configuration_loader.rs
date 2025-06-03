@@ -398,6 +398,11 @@ pub fn load_preset<T: DeserializeOwned>(path: &str) -> Result<T, String> {
 }
 
 #[tauri::command]
+pub fn load_filament_preset(path: &str) -> Result<FilamentJsonSchema, String> {
+    load_preset(path)
+}
+
+#[tauri::command]
 pub fn load_printer_model_preset(path: &str) -> Result<PrinterModelJsonSchema, String> {
     load_preset(path)
 }

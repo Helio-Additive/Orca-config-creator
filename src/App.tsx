@@ -9,6 +9,7 @@ import BackgroundPlate from "./components/background-plate";
 import EditConfig from "./edit-config";
 import Home from "./Home";
 import {
+  analyseFilamentConfigs,
   analyseVendorConfigs,
   dataFilamentConfigLoader,
   dataPrinterConfigLoader,
@@ -24,12 +25,15 @@ import {
 import { globalState } from "./lib/state-store";
 
 function App() {
+  const configState = useHookstate(globalState);
+
   const {
     orcaInstallationPath,
     orcaDataDirectory,
     installedVendorConfigs: vendorConfigs,
+    installedFilamentConfigs,
     os,
-  } = useHookstate(globalState);
+  } = configState;
 
   useEffect(() => {
     platform().then((a) => {
@@ -63,6 +67,10 @@ function App() {
 
     analyseVendorConfigs();
   }, [vendorConfigs]);
+
+  useEffect(() => {
+    analyseFilamentConfigs();
+  }, [installedFilamentConfigs]);
 
   return (
     <main>

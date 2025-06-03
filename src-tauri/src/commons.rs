@@ -5,7 +5,6 @@ use fs_extra::file;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::ffi::OsString;
-use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
@@ -15,8 +14,8 @@ use std::{collections::HashSet, io::BufReader};
 #[cfg(target_os = "linux")]
 use std::{fs::metadata, path::PathBuf};
 use tauri::async_runtime::spawn_blocking;
-use tauri::utils::config;
 
+use crate::configuration_loader::load_filament_preset;
 use crate::configuration_loader::load_vendor_preset;
 use crate::configuration_loader::AnalysisMessageDetails;
 use crate::configuration_loader::ConfigDetails;
@@ -28,6 +27,17 @@ use crate::configuration_loader::PrinterModelJsonSchema;
 use crate::configuration_loader::PrinterVariantJsonSchema;
 use crate::configuration_loader::ProcessJsonSchema;
 use crate::configuration_loader::VendorJsonSchema;
+use regex::Regex;
+
+pub const FILE_KEY: &str = "!__file__!";
+
+fn str_to_bool(s: &str) -> Option<bool> {
+    match s.to_lowercase().as_str() {
+        "true" | "1" | "yes" => Some(true),
+        "false" | "0" | "no" => Some(false),
+        _ => None, // invalid input
+    }
+}
 
 #[tauri::command]
 pub fn check_directory(path: &str) -> bool {
@@ -807,7 +817,7 @@ fn check_if_configs_exist(
         None => {
             insert_or_push_into_map(
                 &mut config_analysis_messages,
-                "!__file__!".into(),
+                FILE_KEY.into(),
                 AnalysisMessageDetails {
                     message: ErrWan {
                         text: format!("Config does not contain the key '{}'", list_type),
@@ -839,6 +849,51 @@ pub fn extend_combine_map<T>(
             .and_modify(|left_vec| left_vec.extend(right_vec.drain(..)))
             .or_insert(right_vec);
     }
+}
+
+fn filter_analysis_results_into_errors_and_warning(
+    analysis_result: HashMap<String, Vec<AnalysisMessageDetails>>,
+) -> (
+    HashMap<String, Vec<AnalysisMessageDetails>>,
+    HashMap<String, Vec<AnalysisMessageDetails>>,
+) {
+    let analysis_result_errors: HashMap<String, Vec<AnalysisMessageDetails>> = analysis_result
+        .clone()
+        .into_iter()
+        .filter_map(|(field_name, message_details)| {
+            let error_messages: Vec<_> = message_details
+                .into_iter()
+                .filter(|message| {
+                    matches!(message.message.r#type, ErrType::Error)
+                        || matches!(message.message.r#type, ErrType::Critical)
+                })
+                .collect();
+
+            if error_messages.len() > 0 {
+                Some((field_name, error_messages))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let analysis_result_warnings: HashMap<String, Vec<AnalysisMessageDetails>> = analysis_result
+        .into_iter()
+        .filter_map(|(field_name, message_details)| {
+            let error_messages: Vec<_> = message_details
+                .into_iter()
+                .filter(|message| matches!(message.message.r#type, ErrType::Warning))
+                .collect();
+
+            if error_messages.len() > 0 {
+                Some((field_name, error_messages))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    (analysis_result_errors, analysis_result_warnings)
 }
 
 #[tauri::command]
@@ -918,44 +973,123 @@ pub async fn analyse_vendor_config(
         );
         extend_combine_map(&mut analysis_result, process_configs_checks);
 
-        let analysis_result_errors: HashMap<String, Vec<AnalysisMessageDetails>> = analysis_result
-            .clone()
-            .into_iter()
-            .filter_map(|(field_name, message_details)| {
-                let error_messages: Vec<_> = message_details
-                    .into_iter()
-                    .filter(|message| {
-                        matches!(message.message.r#type, ErrType::Error)
-                            || matches!(message.message.r#type, ErrType::Critical)
-                    })
-                    .collect();
+        Ok(filter_analysis_results_into_errors_and_warning(
+            analysis_result,
+        ))
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
+}
 
-                if error_messages.len() > 0 {
-                    Some((field_name, error_messages))
-                } else {
-                    None
-                }
-            })
-            .collect();
+fn check_file_name_and_config_name(path: &str, name: &str) -> bool {
+    let path = path::Path::new(path);
 
-        let analysis_result_warnings: HashMap<String, Vec<AnalysisMessageDetails>> =
-            analysis_result
-                .into_iter()
-                .filter_map(|(field_name, message_details)| {
-                    let error_messages: Vec<_> = message_details
-                        .into_iter()
-                        .filter(|message| matches!(message.message.r#type, ErrType::Warning))
-                        .collect();
+    let path_stem = path.file_stem().unwrap().to_str().unwrap().to_string();
 
-                    if error_messages.len() > 0 {
-                        Some((field_name, error_messages))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+    if path_stem == name {
+        true
+    } else {
+        dbg!(path_stem, name);
+        false
+    }
+}
 
-        Ok((analysis_result_errors, analysis_result_warnings))
+fn check_setting_id(
+    analysis_result: &mut HashMap<String, Vec<AnalysisMessageDetails>>,
+    parsed_config: &FilamentJsonSchema,
+    key: &str,
+    regex: &str,
+    config_details: ConfigDetails,
+) {
+    if parsed_config.extra.0.contains_key(key) {
+        let pattern = Regex::new(regex).unwrap();
+
+        if !pattern.is_match(parsed_config.extra.0.get(key).unwrap().as_str().unwrap()) {
+            insert_or_push_into_map(
+                analysis_result,
+                key.into(),
+                AnalysisMessageDetails {
+                    config_details: config_details.clone(),
+                    message: ErrWan {
+                        text: format!("The key {}, does not meet the set pattern: {}", key, regex),
+                        r#type: ErrType::Error,
+                    },
+                },
+            );
+        }
+    } else {
+        insert_or_push_into_map(
+            analysis_result,
+            FILE_KEY.into(),
+            AnalysisMessageDetails {
+                config_details: config_details.clone(),
+                message: ErrWan {
+                    text: format!(
+                        "The key {}, does not exist in the config. This can cause issues",
+                        key
+                    ),
+                    r#type: ErrType::Error,
+                },
+            },
+        );
+    }
+}
+
+#[tauri::command]
+pub async fn analyse_installed_filament_config(
+    path: String,
+    config_location: String,
+    name: String,
+    family: String,
+    required_keys: Vec<String>,
+) -> Result<
+    (
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+    ),
+    String,
+> {
+    spawn_blocking(move || {
+        let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
+
+        let filament_config_details = ConfigDetails::new(
+            name.clone(),
+            path.clone(),
+            Some(family),
+            config_location.clone(),
+            "filament".into(),
+        );
+
+        let parsed_filament_config = load_filament_preset(&path)?;
+
+        if str_to_bool(
+            &parsed_filament_config
+                .instantiation
+                .clone()
+                .unwrap_or("false".into()),
+        )
+        .unwrap_or(false)
+        {
+            check_setting_id(
+                &mut analysis_result,
+                &parsed_filament_config,
+                "setting_id",
+                "^GFS",
+                filament_config_details.clone(),
+            );
+        }
+
+        check_setting_id(
+            &mut analysis_result,
+            &parsed_filament_config,
+            "filament_id",
+            "^GF",
+            filament_config_details.clone(),
+        );
+
+        Ok(filter_analysis_results_into_errors_and_warning(
+            analysis_result,
+        ))
     })
     .await
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))

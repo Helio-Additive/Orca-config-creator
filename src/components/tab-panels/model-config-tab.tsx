@@ -45,6 +45,7 @@ export default function ModelConfigTab() {
         return (
           <div key={vendor}>
             <InputPopover
+              key={0}
               popoverVisible={duplicationPopover.visible.get()}
               setPopOverVisible={duplicationPopover.visible.set}
               label="Please select the vendor to copy to"
