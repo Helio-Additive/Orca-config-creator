@@ -104,7 +104,7 @@ export const appStateObject = {
     process: { installed: 30, loadedSystem: 30, user: 30 },
     model: { installed: 30, loadedSystem: 30, user: 30 },
     vendor: { installed: 30, loadedSystem: 30, user: 30 },
-    analysis: { warning: 30, error: 30 },
+    analyzed: { warnings: 30, errors: 30 },
   },
   searchQuery: "",
   duplicationPopover: {
