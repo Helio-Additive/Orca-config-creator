@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { BsFiletypeJson } from "react-icons/bs";
 import { FaEdit, FaFileExport } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,12 @@ import { useIntersectionObserver } from "usehooks-ts";
 import { State, useHookstate } from "@hookstate/core";
 import { appState } from "../../../lib/state-store";
 import { HiOutlineDocumentDuplicate } from "react-icons/hi";
+import { MdCheckBoxOutlineBlank } from "react-icons/md";
+import { MdCheckBox } from "react-icons/md";
+import {
+  checkConfigInSelectedSet,
+  selectConfigToggle,
+} from "../../../lib/edit-config-helpers";
 
 type OptionMenuItem = {
   icon: (a: { className?: string }) => ReactNode;
@@ -41,6 +47,7 @@ export default function ConfigItem({
   extraOptionsMenuItems = [],
   index,
   itemVisibilityNumberState,
+  allowSelection,
 }: {
   name: string;
   family?: string;
@@ -62,6 +69,7 @@ export default function ConfigItem({
   extraOptionsMenuItems?: OptionMenuItem[];
   index?: number;
   itemVisibilityNumberState?: State<number, {}>;
+  allowSelection?: boolean;
 }) {
   const { isIntersecting, ref } = useIntersectionObserver({
     threshold: 0.5,
@@ -84,7 +92,17 @@ export default function ConfigItem({
     editConfigFile(name, type, fileName!, configLocation, navigate, family);
   };
 
-  const { duplicationPopover } = useHookstate(appState);
+  const { duplicationPopover, selectedConfigs, propertyCopyPopover } =
+    useHookstate(appState);
+
+  const [isSelected, setIsSelected] = useState(
+    checkConfigInSelectedSet(name, type, configLocation, family)
+  );
+
+  useEffect(() => {
+    console.log("selected");
+    setIsSelected(checkConfigInSelectedSet(name, type, configLocation, family));
+  }, [selectedConfigs]);
 
   const optionsMenuItems: OptionMenuItem[] = [];
 
@@ -128,6 +146,28 @@ export default function ConfigItem({
     optionsMenuItems.push(duplicationMenuItem);
   }
 
+  if (allowSelection && selectedConfigs.get().size > 0 && !isSelected) {
+    const onClickDuplicationItem = async () => {
+      propertyCopyPopover.arguments.set({
+        type,
+        location: configLocation,
+        name: name,
+        family: family,
+      });
+
+      propertyCopyPopover.propToCopy.set(undefined);
+      propertyCopyPopover.visible.set(true);
+    };
+
+    const propCopyMenuItem = {
+      icon: HiOutlineDocumentDuplicate,
+      onClick: onClickDuplicationItem,
+      text: "Copy property",
+    };
+
+    optionsMenuItems.push(propCopyMenuItem);
+  }
+
   extraOptionsMenuItems.forEach((el) => optionsMenuItems.push(el));
 
   return (
@@ -142,7 +182,17 @@ export default function ConfigItem({
       ref={ref}
     >
       <div className="flex mb-2 relative justify-between">
-        <div>
+        <div className="flex">
+          {allowSelection && (
+            <TopButton
+              onClick={() =>
+                selectConfigToggle(name, type, configLocation, family)
+              }
+              Icon={isSelected ? MdCheckBox : MdCheckBoxOutlineBlank}
+              className="mr-1 text-text-primary"
+              tooltip="Select"
+            />
+          )}
           <span className="text-text-primary text-lg/6 font-medium mr-1 text-wrap">
             {name}
           </span>

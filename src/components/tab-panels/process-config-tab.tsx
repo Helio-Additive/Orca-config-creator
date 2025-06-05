@@ -96,6 +96,7 @@ export default function ProcessConfigTab() {
                   flatExportFunction={export_flattened}
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
+                  allowSelection
                 />
               );
             } else {
