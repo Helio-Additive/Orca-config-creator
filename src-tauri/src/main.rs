@@ -4,9 +4,9 @@
 mod commons;
 mod configuration_loader;
 use commons::{
-    analyse_installed_filament_config, analyse_vendor_config, check_directory, check_file,
-    copy_file, create_directory, delete_file, duplicate_vendor, find_possible_values,
-    rename_config, rename_file, show_in_folder, write_to_file,
+    add_new_prop_to_file, analyse_installed_filament_config, analyse_vendor_config,
+    check_directory, check_file, copy_file, create_directory, delete_file, duplicate_vendor,
+    find_possible_values, rename_config, rename_file, show_in_folder, write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
@@ -193,7 +193,8 @@ fn main() {
             save_and_zip_json_bundle,
             duplicate_vendor,
             analyse_vendor_config,
-            analyse_installed_filament_config
+            analyse_installed_filament_config,
+            add_new_prop_to_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

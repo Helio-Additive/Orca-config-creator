@@ -10,6 +10,8 @@ import ProcessConfigTab from "./tab-panels/process-config-tab";
 import VendorConfigTab from "./tab-panels/vendor-config-tab";
 import TabTemplate from "./tab-template";
 import AnalysisTab from "./tab-panels/analysis-tab";
+import TopButton from "./tab-panels/config-list/config-item-components/top-button";
+import { PiBroomLight } from "react-icons/pi";
 
 export default function TabbedWindow() {
   const {
@@ -20,7 +22,7 @@ export default function TabbedWindow() {
     analysisWarnings,
   } = useHookstate(globalState);
 
-  const { searchQuery } = useHookstate(appState);
+  const { searchQuery, selectedConfigs } = useHookstate(appState);
 
   const categories = [
     {
@@ -106,6 +108,16 @@ export default function TabbedWindow() {
             allowEdit
           />
         </div>
+        {selectedConfigs.get().size && (
+          <TopButton
+            className="text-text-primary h-full ml-1"
+            onClick={() => {
+              selectedConfigs.set(new Set());
+            }}
+            Icon={PiBroomLight}
+            tooltip="Clear Selection"
+          />
+        )}
       </div>
       <TabPanels className="w-full mt-1 min-h-0">
         {categories

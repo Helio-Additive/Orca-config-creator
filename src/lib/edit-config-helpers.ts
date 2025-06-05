@@ -19,7 +19,12 @@ import {
   renameConfig,
   renameVendorConfigEntry,
 } from "./commons";
-import { globalState, globalStateObject } from "./state-store";
+import {
+  appState,
+  appStateObject,
+  globalState,
+  globalStateObject,
+} from "./state-store";
 import { ConfigNameAndPath } from "./bindings/ConfigNameAndPath";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 
@@ -566,4 +571,54 @@ export async function loadNewConfigProps(
 
     editWindowState[fileName].merge({ changedProps: propsToSet });
   }
+}
+
+export function selectConfigToggle(
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const { selectedConfigs, selectedConfigType } = appState;
+
+  const stringified = JSON.stringify({ configName, type, location, family });
+
+  const oldSet = selectedConfigs.get({ stealth: true });
+  const newSet =
+    type === selectedConfigType.get({ stealth: true })
+      ? new Set(Array.from(oldSet))
+      : (new Set() as typeof appStateObject.selectedConfigs);
+
+  if (oldSet.has(stringified)) newSet.delete(stringified);
+  else newSet.add(stringified);
+
+  if (newSet.size === 0) selectedConfigType.set(undefined);
+  else selectedConfigType.set(type);
+
+  selectedConfigs.set(newSet);
+}
+
+export function checkConfigInSelectedSet(
+  configName: string,
+  type: ConfigType,
+  location: ConfigLocationType,
+  family?: string
+) {
+  const { selectedConfigs } = appState;
+  const stringified = JSON.stringify({ configName, type, location, family });
+
+  return selectedConfigs.get({ stealth: true }).has(stringified);
+}
+
+export function getConfigsFromSelectedSet() {
+  const { selectedConfigs } = appState;
+  const parsed = Array.from(selectedConfigs.get({ stealth: true })).map(
+    (el) => {
+      return JSON.parse(el);
+    }
+  );
+
+  return parsed.map((el: any) =>
+    findConfig(el.configName, el.type, el.location, el.family)
+  );
 }

@@ -117,6 +117,18 @@ export const appStateObject = {
       newFamily: undefined as string | undefined,
     },
   },
+  propertyCopyPopover: {
+    visible: false,
+    arguments: {
+      name: "",
+      type: "printer" as ConfigType,
+      location: "installed" as ConfigLocationType,
+      family: undefined as string | undefined,
+    },
+    propToCopy: undefined as string | undefined,
+  },
+  selectedConfigs: new Set() as Set<string>,
+  selectedConfigType: undefined as ConfigType | undefined,
 };
 
 export const appState = hookstate(structuredClone(appStateObject));

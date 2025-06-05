@@ -2,7 +2,7 @@
 use fork::{daemon, Fork};
 use fs_extra::dir;
 use fs_extra::file;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
@@ -1093,4 +1093,24 @@ pub async fn analyse_installed_filament_config(
     })
     .await
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))
+}
+
+#[tauri::command]
+pub fn add_new_prop_to_file(path: &str, prop_name: &str, prop_value: &str) -> Result<(), String> {
+    // Step 1: Read the JSON file
+    let contents = fs::read_to_string(path).unwrap();
+    let mut json_value: Value = serde_json::from_str(&contents).unwrap();
+
+    let parsed_value_to_write: Value = serde_json::from_str(&prop_value).unwrap();
+
+    // Step 2: Add or overwrite a property
+    if let Value::Object(ref mut obj) = json_value {
+        obj.insert(prop_name.to_string(), parsed_value_to_write);
+    }
+
+    // Step 3: Write it back to the file (pretty-printed)
+    let string_property = serde_json::to_string_pretty(&json_value).unwrap();
+    write_to_file(path.to_string(), string_property)?;
+
+    Ok(())
 }

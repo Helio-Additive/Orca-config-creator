@@ -22,7 +22,7 @@ import {
   loadedSystemModelConfigLoader,
   setOsAndDefaultDirectories as setDefaultDirectories,
 } from "./lib/commons";
-import { globalState } from "./lib/state-store";
+import { appState, globalState } from "./lib/state-store";
 
 function App() {
   const configState = useHookstate(globalState);
@@ -35,6 +35,8 @@ function App() {
     os,
   } = configState;
 
+  const { selectedConfigs, selectedConfigType } = useHookstate(appState);
+
   useEffect(() => {
     platform().then((a) => {
       os.set(a);
@@ -44,6 +46,9 @@ function App() {
 
   useEffect(() => {
     installedVendorConfigLoader();
+
+    selectedConfigs.set(new Set());
+    selectedConfigType.set(undefined);
   }, [orcaInstallationPath]);
 
   useEffect(() => {
@@ -54,6 +59,9 @@ function App() {
     dataFilamentConfigLoader();
 
     dataProcessConfigLoader();
+
+    selectedConfigs.set(new Set());
+    selectedConfigType.set(undefined);
   }, [orcaDataDirectory]);
 
   useEffect(() => {
@@ -71,6 +79,8 @@ function App() {
   useEffect(() => {
     analyseFilamentConfigs();
   }, [installedFilamentConfigs]);
+
+  useEffect(() => {}, []);
 
   return (
     <main>

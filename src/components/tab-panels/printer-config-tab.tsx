@@ -96,6 +96,7 @@ export default function PrinterConfigTab() {
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
                   allowDuplication
+                  allowSelection
                 />
               );
             } else {

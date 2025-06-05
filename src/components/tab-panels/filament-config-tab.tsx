@@ -96,6 +96,7 @@ export default function FilamentConfigTab() {
                   index={currentIndexes.current.installed}
                   itemVisibilityNumberState={itemVisibility.installed}
                   allowDelete
+                  allowSelection
                 />
               );
             } else {
