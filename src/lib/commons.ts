@@ -1898,7 +1898,7 @@ export function analyseVendorConfigs() {
   });
 }
 
-export function analyseFilamentConfigs() {
+export async function analyseFilamentConfigs() {
   const toastMessage = "analyzing filament configs in the background";
   const toastId: Id = toast(toastMessage, {
     type: "info",
@@ -1955,4 +1955,49 @@ export function analyseFilamentConfigs() {
       autoClose: 3000,
     });
   });
+
+  const allFilamentFiles = getAllFilesOfType("filament");
+
+  const allFilamentIDs = await invoke("find_possible_values", {
+    filesToCheck: allFilamentFiles,
+    propName: "setting_id",
+  });
+}
+
+export function getAllFilesOfType(type: ConfigType) {
+  const { installedVendorConfigs, installedModelConfigs } = globalState;
+
+  if (type === "filament" || type === "printer" || type === "process") {
+    const relevantConfigs = getRelevantConfigsFromTypePFP(type)!;
+
+    const installedFiles = relevantConfigs.installedConfigs.keys.flatMap(
+      (vendorName) =>
+        relevantConfigs.installedConfigs[vendorName].keys.map((configName) =>
+          relevantConfigs.installedConfigs[vendorName][
+            configName
+          ].fileName.get()
+        )
+    );
+    const userFiles = relevantConfigs.loadedUserConfigs.keys.map((configName) =>
+      relevantConfigs.loadedUserConfigs[configName].fileName.get()
+    );
+
+    return [...installedFiles, ...userFiles];
+  } else if (type === "vendor") {
+    return installedVendorConfigs.keys.map((configName) =>
+      installedVendorConfigs[configName].fileName.get()
+    );
+  } else {
+    return installedModelConfigs.keys.flatMap((vendorName) =>
+      installedModelConfigs[vendorName].keys.map((configName) =>
+        installedModelConfigs[vendorName][configName].fileName.get()
+      )
+    );
+  }
+}
+
+export function getAllConfigFiles() {
+  return ["filament", "printer", "process", "vendor", "printer-model"].flatMap(
+    (el) => getAllFilesOfType(el as ConfigType)
+  );
 }
