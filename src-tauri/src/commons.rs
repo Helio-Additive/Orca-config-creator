@@ -28,8 +28,13 @@ use crate::configuration_loader::PrinterVariantJsonSchema;
 use crate::configuration_loader::ProcessJsonSchema;
 use crate::configuration_loader::VendorJsonSchema;
 use regex::Regex;
+use std::sync::RwLock;
 
 pub const FILE_KEY: &str = "!__file__!";
+
+pub struct KeySet {
+    pub values: RwLock<HashSet<String>>,
+}
 
 fn str_to_bool(s: &str) -> Option<bool> {
     match s.to_lowercase().as_str() {
@@ -1113,4 +1118,16 @@ pub fn add_new_prop_to_file(path: &str, prop_name: &str, prop_value: &str) -> Re
     write_to_file(path.to_string(), string_property)?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn populate_key_set(data: Vec<String>, state: tauri::State<KeySet>) {
+    let mut set = state.values.write().unwrap();
+    *set = data.into_iter().collect();
+}
+
+#[tauri::command]
+pub fn check_in_set(value: String, state: tauri::State<HashStore>) -> bool {
+    let set = state.values.read().unwrap();
+    set.contains(&value)
 }

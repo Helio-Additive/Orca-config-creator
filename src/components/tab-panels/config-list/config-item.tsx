@@ -92,8 +92,12 @@ export default function ConfigItem({
     editConfigFile(name, type, fileName!, configLocation, navigate, family);
   };
 
-  const { duplicationPopover, selectedConfigs, propertyCopyPopover } =
-    useHookstate(appState);
+  const {
+    duplicationPopover,
+    selectedConfigs,
+    selectedConfigType,
+    propertyCopyPopover,
+  } = useHookstate(appState);
 
   const [isSelected, setIsSelected] = useState(
     checkConfigInSelectedSet(name, type, configLocation, family)
@@ -146,7 +150,12 @@ export default function ConfigItem({
     optionsMenuItems.push(duplicationMenuItem);
   }
 
-  if (allowSelection && selectedConfigs.get().size > 0 && !isSelected) {
+  if (
+    allowSelection &&
+    selectedConfigs.get().size > 0 &&
+    selectedConfigType.get() === type &&
+    !isSelected
+  ) {
     const onClickDuplicationItem = async () => {
       propertyCopyPopover.arguments.set({
         type,
