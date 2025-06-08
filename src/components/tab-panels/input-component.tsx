@@ -101,7 +101,7 @@ export default function InputComponent({
         <Tooltip.Trigger asChild>
           <div
             className={twMerge(
-              "flex items-center w-full max-w-[1024px] relative overflow-x-auto ",
+              "flex items-center w-full max-w-[1024px] relative overflow-x-auto",
               directionClassName
             )}
           >

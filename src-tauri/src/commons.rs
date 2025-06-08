@@ -10,6 +10,7 @@ use std::fs::File;
 use std::path::Path;
 use std::path::{self, PathBuf};
 use std::process::Command;
+use std::sync::Arc;
 use std::{collections::HashSet, io::BufReader};
 #[cfg(target_os = "linux")]
 use std::{fs::metadata, path::PathBuf};
@@ -1103,10 +1104,19 @@ pub async fn analyse_installed_filament_config(
 #[tauri::command]
 pub fn add_new_prop_to_file(path: &str, prop_name: &str, prop_value: &str) -> Result<(), String> {
     // Step 1: Read the JSON file
-    let contents = fs::read_to_string(path).unwrap();
-    let mut json_value: Value = serde_json::from_str(&contents).unwrap();
+    let contents = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read file '{}': {}", path, e.to_string()))?;
 
-    let parsed_value_to_write: Value = serde_json::from_str(&prop_value).unwrap();
+    let mut json_value: Value = serde_json::from_str(&contents)
+        .map_err(|e| format!("Malformed JSON file '{}': {}", path, e.to_string()))?;
+
+    let parsed_value_to_write: Value = serde_json::from_str(&prop_value).map_err(|e| {
+        format!(
+            "Cannot locate property value '{}': {}",
+            prop_name,
+            e.to_string()
+        )
+    })?;
 
     // Step 2: Add or overwrite a property
     if let Value::Object(ref mut obj) = json_value {
@@ -1114,20 +1124,67 @@ pub fn add_new_prop_to_file(path: &str, prop_name: &str, prop_value: &str) -> Re
     }
 
     // Step 3: Write it back to the file (pretty-printed)
-    let string_property = serde_json::to_string_pretty(&json_value).unwrap();
+    let string_property = serde_json::to_string_pretty(&json_value).map_err(|e| {
+        format!(
+            "Failed to serialize JSON to string for file '{}': {}",
+            path,
+            e.to_string()
+        )
+    })?;
+
     write_to_file(path.to_string(), string_property)?;
 
     Ok(())
 }
 
 #[tauri::command]
-pub fn populate_key_set(data: Vec<String>, state: tauri::State<KeySet>) {
+pub fn populate_key_set(data: Vec<String>, state: tauri::State<Arc<KeySet>>) {
     let mut set = state.values.write().unwrap();
     *set = data.into_iter().collect();
 }
 
 #[tauri::command]
-pub fn check_in_set(value: String, state: tauri::State<HashStore>) -> bool {
+pub fn check_in_set(value: String, state: tauri::State<Arc<KeySet>>) -> bool {
     let set = state.values.read().unwrap();
     set.contains(&value)
+}
+
+#[tauri::command]
+pub async fn check_collision_in_config_file(
+    path: String,
+    config_location: String,
+    name: String,
+    family: String,
+    key_to_check: String,
+    state: tauri::State<'_, Arc<KeySet>>,
+) -> Result<HashMap<String, Vec<AnalysisMessageDetails>>, String> {
+    let state_clone = Arc::clone(&*state);
+
+    spawn_blocking(move || {
+        let mut messages: Vec<AnalysisMessageDetails> = Vec::new();
+
+        let contents = fs::read_to_string(&path)
+            .map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
+
+        let json_value: Value = serde_json::from_str(&contents)
+            .map_err(|e| format!("Malformed JSON file '{}': {}", path, e))?;
+
+        if let Some(str_value) = json_value.get(&key_to_check).and_then(Value::as_str) {
+            // you can use str_value here
+        }
+
+        match json_value.get(&key_to_check).and_then(Value::as_str) {
+            Some(str_value) => {}
+            None => {}
+        }
+
+        let set = state_clone.values.read().unwrap();
+        if set.contains(&name) {
+            // check collision, push message, etc.
+        }
+
+        Ok(HashMap::new())
+    })
+    .await
+    .map_err(|e| format!("Task error: {e}"))?
 }
