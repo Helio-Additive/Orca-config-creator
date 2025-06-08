@@ -49,6 +49,7 @@ import {
   SystemConfigStateType,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
+import { PrinterModelJsonSchema } from "./bindings/PrinterModelJsonSchema";
 
 export enum InheritanceStatus {
   OK,
@@ -98,6 +99,24 @@ export const checkDirectoryExists = async (path: string) => {
 export const checkFileExists = async (path: string) => {
   return await invoke("check_file", { path: path });
 };
+
+export function mergeListProps<T>(
+  newListProps: Record<string, T[]>,
+  oldListProps: Record<string, T[]>
+) {
+  const mergedProps = { ...oldListProps };
+
+  Object.keys(newListProps).forEach((el) => {
+    if (!mergedProps[el]) {
+      mergedProps[el] = newListProps[el];
+    } else {
+      // Merge arrays if they exist in both
+      mergedProps[el] = [...mergedProps[el], ...newListProps[el]];
+    }
+  });
+
+  return mergedProps;
+}
 
 export const setOsAndDefaultDirectories = async (
   os: string,
@@ -1898,6 +1917,34 @@ export function analyseVendorConfigs() {
   });
 }
 
+function getAllConfigsFromSystemConfigState<
+  T extends
+    | MinPrinterVariantJsonSchema
+    | MinFilamentJsonSchema
+    | MinProcessJsonSchema
+    | PrinterModelJsonSchema
+>(
+  configState: State<SystemConfigStateType<T>, {}>,
+  location: ConfigLocationType
+) {
+  configState.keys.flatMap((vendorName) =>
+    configState[vendorName].keys.flatMap((configName) => {
+      const specificConfig = configState[vendorName][configName].get();
+
+      if (specificConfig.Ok)
+        return [
+          {
+            path: specificConfig.fileName,
+            configLocation: location,
+            name: specificConfig.Ok.name,
+            family: vendorName,
+          },
+        ];
+      else return [];
+    })
+  );
+}
+
 export async function analyseFilamentConfigs() {
   const toastMessage = "analyzing filament configs in the background";
   const toastId: Id = toast(toastMessage, {
@@ -1909,6 +1956,21 @@ export async function analyseFilamentConfigs() {
 
   const { installedFilamentConfigs, analysisErrors, analysisWarnings } =
     globalState;
+
+  const allConfigs = getAllConfigsFromSystemConfigState(
+    installedFilamentConfigs,
+    "installed"
+  );
+
+  const allFilamentFiles = getAllFilesOfType("filament");
+
+  invoke("find_possible_values", {
+    filesToCheck: allFilamentFiles,
+    propName: "setting_id",
+  }).then((allValuesUnknown) => {
+    const allValues = allValuesUnknown as string[];
+    invoke("populate_key_set", { data: allValues }).then(() => {});
+  });
 
   Promise.all(
     installedFilamentConfigs.keys.flatMap((vendorName) => {
@@ -1945,8 +2007,8 @@ export async function analyseFilamentConfigs() {
       const errors = analysisMessageCasted[1][0];
       const warnings = analysisMessageCasted[1][1];
 
-      analysisErrors[fileName].set(errors);
-      analysisWarnings[fileName].set(warnings);
+      analysisErrors[fileName].set((v) => mergeListProps(errors, v));
+      analysisWarnings[fileName].set((v) => mergeListProps(warnings, v));
     });
 
     toast.update(toastId, {
@@ -1954,13 +2016,6 @@ export async function analyseFilamentConfigs() {
       type: "success",
       autoClose: 3000,
     });
-  });
-
-  const allFilamentFiles = getAllFilesOfType("filament");
-
-  const allFilamentIDs = await invoke("find_possible_values", {
-    filesToCheck: allFilamentFiles,
-    propName: "setting_id",
   });
 }
 

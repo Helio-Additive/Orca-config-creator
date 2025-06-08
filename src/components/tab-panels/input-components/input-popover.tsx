@@ -22,7 +22,7 @@ export function InputPopover({
   return (
     <Dialog.Root open={popoverVisible} onOpenChange={setPopOverVisible}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-fade-in" />
+        <div className="fixed inset-0 bg-black/50 data-[state=open]:animate-fade-in backdrop-blur-lg" />
         <Dialog.Content
           className={twMerge(
             "fixed top-1/2 left-1/2 max-w-md w-full -translate-x-1/2 -translate-y-1/2 bg-transparent-white-input rounded-xl p-2 pl-3 pr-4 text-text-primary",

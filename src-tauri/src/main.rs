@@ -5,9 +5,9 @@ mod commons;
 mod configuration_loader;
 use commons::{
     add_new_prop_to_file, analyse_installed_filament_config, analyse_vendor_config,
-    check_directory, check_file, check_in_set, copy_file, create_directory, delete_file,
-    duplicate_vendor, find_possible_values, populate_key_set, rename_config, rename_file,
-    show_in_folder, write_to_file,
+    check_collision_in_config_file, check_directory, check_file, check_in_set, copy_file,
+    create_directory, delete_file, duplicate_vendor, find_possible_values, populate_key_set,
+    rename_config, rename_file, show_in_folder, write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
@@ -29,7 +29,7 @@ use zip::write::SimpleFileOptions;
 
 use crate::commons::KeySet;
 use std::collections::HashSet;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 // Learn more about Tauri commands at https://v1.tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -169,9 +169,9 @@ fn main() {
     }
 
     tauri::Builder::default()
-        .manage(KeySet {
+        .manage(Arc::new(KeySet {
             values: RwLock::new(HashSet::new()),
-        })
+        }))
         .invoke_handler(tauri::generate_handler![
             greet,
             greet2,
@@ -203,7 +203,9 @@ fn main() {
             analyse_vendor_config,
             analyse_installed_filament_config,
             add_new_prop_to_file,
-            populate_key_set
+            populate_key_set,
+            check_in_set,
+            check_collision_in_config_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
