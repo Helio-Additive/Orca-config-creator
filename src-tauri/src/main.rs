@@ -4,10 +4,11 @@
 mod commons;
 mod configuration_loader;
 use commons::{
-    add_new_prop_to_file, analyse_installed_filament_config, analyse_vendor_config,
-    check_collision_in_config_file, check_directory, check_file, check_in_set, copy_file,
-    create_directory, delete_file, duplicate_vendor, find_possible_values, populate_key_set,
-    rename_config, rename_file, show_in_folder, write_to_file,
+    add_new_prop_to_file, analyse_installed_filament_config, analyse_installed_printer_config,
+    analyse_installed_process_config, analyse_vendor_config, check_collision_in_config_file,
+    check_directory, check_file, check_in_set, copy_file, create_directory, delete_file,
+    duplicate_vendor, find_possible_values, populate_key_set, rename_config, rename_file,
+    show_in_folder, write_to_file,
 };
 use configuration_loader::{
     load_all_filament_presets, load_all_printer_model_presets, load_all_printer_presets,
@@ -202,6 +203,8 @@ fn main() {
             duplicate_vendor,
             analyse_vendor_config,
             analyse_installed_filament_config,
+            analyse_installed_printer_config,
+            analyse_installed_process_config,
             add_new_prop_to_file,
             populate_key_set,
             check_in_set,

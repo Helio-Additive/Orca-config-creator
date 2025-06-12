@@ -1873,6 +1873,7 @@ export function analyseVendorConfigs() {
     type: "info",
     closeButton: true,
     autoClose: false,
+    toastId: "vendor-analysis-toast",
   });
 
   const {
@@ -1945,110 +1946,161 @@ function getAllConfigsFromSystemConfigState<
   );
 }
 
+export async function analyseProcessConfigs() {
+  const toastMessage = "analyzing process configs in the background";
+  const toastId: Id = toast(toastMessage, {
+    type: "info",
+    closeButton: true,
+    autoClose: false,
+    toastId: "process-analysis-toast",
+  });
+
+  const { installedProcessConfigs } = globalState;
+
+  const allProcessConfigs = getAllConfigsFromSystemConfigState(
+    installedProcessConfigs,
+    "installed"
+  );
+
+  const allFiles = getAllConfigFiles();
+
+  Promise.all([
+    collisionChecker(allFiles, allProcessConfigs, "process", "setting_id"),
+    Promise.all(
+      installedProcessConfigs.keys.flatMap((vendorName) => {
+        return installedProcessConfigs[vendorName].keys.map(
+          async (processName) => {
+            const processConfig =
+              installedProcessConfigs[vendorName][processName].get();
+
+            if (processConfig.Ok) {
+              return invoke("analyse_installed_process_config", {
+                path: processConfig.fileName,
+                configLocation: "installed",
+                name: processConfig.Ok.name,
+                family: vendorName,
+                requiredKeys: [],
+              }).then((analysisMessages) => {
+                return [processConfig.fileName, analysisMessages];
+              });
+            }
+          }
+        );
+      })
+    ).then(setAnalysisMessagesToGlobalState),
+  ]).then(() => {
+    toast.update(toastId, {
+      render: "Completed analyzing process",
+      type: "success",
+      autoClose: 3000,
+    });
+  });
+}
+
+export async function analysePrinterConfigs() {
+  const toastMessage = "analyzing printer configs in the background";
+  const toastId: Id = toast(toastMessage, {
+    type: "info",
+    closeButton: true,
+    autoClose: false,
+    toastId: "printer-analysis-toast",
+  });
+
+  const { installedPrinterConfigs } = globalState;
+
+  const allPrinterConfigs = getAllConfigsFromSystemConfigState(
+    installedPrinterConfigs,
+    "installed"
+  );
+
+  const allFiles = getAllConfigFiles();
+
+  Promise.all([
+    collisionChecker(allFiles, allPrinterConfigs, "printer", "setting_id"),
+    Promise.all(
+      installedPrinterConfigs.keys.flatMap((vendorName) => {
+        return installedPrinterConfigs[vendorName].keys.map(
+          async (printerName) => {
+            const printerConfig =
+              installedPrinterConfigs[vendorName][printerName].get();
+
+            if (printerConfig.Ok) {
+              return invoke("analyse_installed_printer_config", {
+                path: printerConfig.fileName,
+                configLocation: "installed",
+                name: printerConfig.Ok.name,
+                family: vendorName,
+                requiredKeys: [],
+              }).then((analysisMessages) => {
+                return [printerConfig.fileName, analysisMessages];
+              });
+            }
+          }
+        );
+      })
+    ).then(setAnalysisMessagesToGlobalState),
+  ]).then(() => {
+    toast.update(toastId, {
+      render: "Completed analyzing printers",
+      type: "success",
+      autoClose: 3000,
+    });
+  });
+}
+
 export async function analyseFilamentConfigs() {
   const toastMessage = "analyzing filament configs in the background";
   const toastId: Id = toast(toastMessage, {
     type: "info",
     closeButton: true,
     autoClose: false,
-    //toastId: "filament-analysis-toast",
+    toastId: "filament-analysis-toast",
   });
 
-  const { installedFilamentConfigs, analysisErrors, analysisWarnings } =
-    globalState;
+  const { installedFilamentConfigs } = globalState;
 
-  const allConfigs = getAllConfigsFromSystemConfigState(
+  const allFilamentConfigs = getAllConfigsFromSystemConfigState(
     installedFilamentConfigs,
     "installed"
   );
 
-  const allFilamentFiles = getAllFilesOfType("filament");
+  const allFilamentFiles = getAllConfigFiles();
 
-  invoke("find_possible_values", {
-    filesToCheck: allFilamentFiles,
-    propName: "setting_id",
-  }).then((allValuesUnknown) => {
-    const allValues = allValuesUnknown as string[];
-    invoke("populate_key_set", { data: allValues }).then(() => {
-      Promise.all(
-        allConfigs.map((config) => {
-          return invoke("check_collision_in_config_file", {
-            path: config.path,
-            configLocation: config.configLocation,
-            name: config.name,
-            family: config.family,
-            configType: "filament",
-            keyToCheck: "settings_id",
-          }).then((analysisMessages) => {
-            return [config.path, analysisMessages];
-          });
-        })
-      ).then((analysisMessages) => {
-        analysisMessages.forEach((analysisMessage) => {
-          const analysisMessageCasted = analysisMessage as [
-            string,
-            [
-              Record<string, AnalysisMessageDetails[]>,
-              Record<string, AnalysisMessageDetails[]>
-            ]
-          ];
+  Promise.all([
+    collisionChecker(
+      allFilamentFiles,
+      allFilamentConfigs,
+      "filament",
+      "setting_id"
+    ),
+    collisionChecker(
+      allFilamentFiles,
+      allFilamentConfigs,
+      "filament",
+      "filament_id"
+    ),
+    Promise.all(
+      installedFilamentConfigs.keys.flatMap((vendorName) => {
+        return installedFilamentConfigs[vendorName].keys.map(
+          async (filamentName) => {
+            const filamentConfig =
+              installedFilamentConfigs[vendorName][filamentName].get();
 
-          const fileName = analysisMessageCasted[0];
-          const errors = analysisMessageCasted[1][0];
-          const warnings = analysisMessageCasted[1][1];
-
-          analysisErrors[fileName].set((v) => mergeListProps(errors, v));
-          analysisWarnings[fileName].set((v) => mergeListProps(warnings, v));
-        });
-
-        toast.update(toastId, {
-          render: "Completed analyzing filaments",
-          type: "success",
-          autoClose: 3000,
-        });
-      });
-    });
-  });
-
-  Promise.all(
-    installedFilamentConfigs.keys.flatMap((vendorName) => {
-      return installedFilamentConfigs[vendorName].keys.map(
-        async (filamentName) => {
-          const filamentConfig =
-            installedFilamentConfigs[vendorName][filamentName].get();
-
-          if (filamentConfig.Ok) {
-            return invoke("analyse_installed_filament_config", {
-              path: filamentConfig.fileName,
-              configLocation: "installed",
-              name: filamentConfig.Ok.name,
-              family: vendorName,
-              requiredKeys: [],
-            }).then((analysisMessages) => {
-              return [filamentConfig.fileName, analysisMessages];
-            });
+            if (filamentConfig.Ok) {
+              return invoke("analyse_installed_filament_config", {
+                path: filamentConfig.fileName,
+                configLocation: "installed",
+                name: filamentConfig.Ok.name,
+                family: vendorName,
+              }).then((analysisMessages) => {
+                return [filamentConfig.fileName, analysisMessages];
+              });
+            }
           }
-        }
-      );
-    })
-  ).then((analysisMessages) => {
-    analysisMessages.forEach((analysisMessage) => {
-      const analysisMessageCasted = analysisMessage as [
-        string,
-        [
-          Record<string, AnalysisMessageDetails[]>,
-          Record<string, AnalysisMessageDetails[]>
-        ]
-      ];
-
-      const fileName = analysisMessageCasted[0];
-      const errors = analysisMessageCasted[1][0];
-      const warnings = analysisMessageCasted[1][1];
-
-      analysisErrors[fileName].set((v) => mergeListProps(errors, v));
-      analysisWarnings[fileName].set((v) => mergeListProps(warnings, v));
-    });
-
+        );
+      })
+    ).then(setAnalysisMessagesToGlobalState),
+  ]).then(() => {
     toast.update(toastId, {
       render: "Completed analyzing filaments",
       type: "success",
@@ -2077,8 +2129,9 @@ export function getAllFilesOfType(type: ConfigType) {
 
     return [...installedFiles, ...userFiles];
   } else if (type === "vendor") {
-    return installedVendorConfigs.keys.map((configName) =>
-      installedVendorConfigs[configName].fileName.get()
+    return installedVendorConfigs.keys.map(
+      (configName) =>
+        installedVendorConfigs[configName].fileName.get() as string
     );
   } else {
     return installedModelConfigs.keys.flatMap((vendorName) =>
@@ -2093,4 +2146,60 @@ export function getAllConfigFiles() {
   return ["filament", "printer", "process", "vendor", "printer-model"].flatMap(
     (el) => getAllFilesOfType(el as ConfigType)
   );
+}
+
+function setAnalysisMessagesToGlobalState(analysisMessages: any) {
+  const { analysisErrors, analysisWarnings } = globalState;
+
+  analysisMessages.forEach((analysisMessage: any) => {
+    const analysisMessageCasted = analysisMessage as [
+      string,
+      [
+        Record<string, AnalysisMessageDetails[]>,
+        Record<string, AnalysisMessageDetails[]>
+      ]
+    ];
+
+    const fileName = analysisMessageCasted[0];
+    const errors = analysisMessageCasted[1][0];
+    const warnings = analysisMessageCasted[1][1];
+
+    analysisErrors[fileName].set((v) => mergeListProps(errors, v));
+    analysisWarnings[fileName].set((v) => mergeListProps(warnings, v));
+  });
+}
+
+async function collisionChecker(
+  allFiles: string[],
+  allConfigs: {
+    path: string;
+    configLocation: ConfigLocationType;
+    name: string;
+    family: string;
+  }[],
+  configType: ConfigType,
+  propName: string
+) {
+  return invoke("find_possible_values", {
+    filesToCheck: allFiles,
+    propName: propName,
+  }).then((allValuesUnknown) => {
+    const allValues = allValuesUnknown as string[];
+    invoke("populate_key_set", { data: allValues }).then(() => {
+      Promise.all(
+        allConfigs.map(async (config) => {
+          return invoke("check_collision_in_config_file", {
+            path: config.path,
+            configLocation: config.configLocation,
+            name: config.name,
+            family: config.family,
+            configType: configType,
+            keyToCheck: propName,
+          }).then((analysisMessages) => {
+            return [config.path, analysisMessages];
+          });
+        })
+      ).then(setAnalysisMessagesToGlobalState);
+    });
+  });
 }

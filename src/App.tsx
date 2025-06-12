@@ -10,6 +10,8 @@ import EditConfig from "./edit-config";
 import Home from "./Home";
 import {
   analyseFilamentConfigs,
+  analysePrinterConfigs,
+  analyseProcessConfigs,
   analyseVendorConfigs,
   dataFilamentConfigLoader,
   dataPrinterConfigLoader,
@@ -32,6 +34,8 @@ function App() {
     orcaDataDirectory,
     installedVendorConfigs: vendorConfigs,
     installedFilamentConfigs,
+    installedPrinterConfigs,
+    installedProcessConfigs,
     os,
   } = configState;
 
@@ -80,7 +84,13 @@ function App() {
     analyseFilamentConfigs();
   }, [installedFilamentConfigs]);
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    analysePrinterConfigs();
+  }, [installedPrinterConfigs]);
+
+  useEffect(() => {
+    analyseProcessConfigs();
+  }, [installedProcessConfigs]);
 
   return (
     <main>
