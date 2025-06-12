@@ -107,6 +107,7 @@ export const appStateObject = {
     analyzed: { warnings: 30, errors: 30 },
   },
   searchQuery: "",
+  editConfigSearchQuery: "",
   duplicationPopover: {
     visible: false,
     arguments: {

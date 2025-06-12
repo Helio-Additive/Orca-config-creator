@@ -17,6 +17,7 @@ import { MinFilamentJsonSchema } from "./bindings/MinFilamentJsonSchema";
 import { MinPrinterModelJsonSchema } from "./bindings/MinPrinterModelJsonSchema";
 import { MinPrinterVariantJsonSchema } from "./bindings/MinPrinterVariantJsonSchema";
 import { MinProcessJsonSchema } from "./bindings/MinProcessJsonSchema";
+import { PrinterModelJsonSchema } from "./bindings/PrinterModelJsonSchema";
 import { PrinterVariantJsonSchema } from "./bindings/PrinterVariantJsonSchema";
 import { ProcessJsonSchema } from "./bindings/ProcessJsonSchema";
 import { VendorJsonSchema } from "./bindings/VendorJsonSchema";
@@ -49,7 +50,6 @@ import {
   SystemConfigStateType,
 } from "./state-store";
 import { vendor_model_properties_map } from "./vendor-configuration-options";
-import { PrinterModelJsonSchema } from "./bindings/PrinterModelJsonSchema";
 
 export enum InheritanceStatus {
   OK,
@@ -1927,7 +1927,7 @@ function getAllConfigsFromSystemConfigState<
   configState: State<SystemConfigStateType<T>, {}>,
   location: ConfigLocationType
 ) {
-  configState.keys.flatMap((vendorName) =>
+  return configState.keys.flatMap((vendorName) =>
     configState[vendorName].keys.flatMap((configName) => {
       const specificConfig = configState[vendorName][configName].get();
 
@@ -1969,7 +1969,45 @@ export async function analyseFilamentConfigs() {
     propName: "setting_id",
   }).then((allValuesUnknown) => {
     const allValues = allValuesUnknown as string[];
-    invoke("populate_key_set", { data: allValues }).then(() => {});
+    invoke("populate_key_set", { data: allValues }).then(() => {
+      Promise.all(
+        allConfigs.map((config) => {
+          return invoke("check_collision_in_config_file", {
+            path: config.path,
+            configLocation: config.configLocation,
+            name: config.name,
+            family: config.family,
+            configType: "filament",
+            keyToCheck: "settings_id",
+          }).then((analysisMessages) => {
+            return [config.path, analysisMessages];
+          });
+        })
+      ).then((analysisMessages) => {
+        analysisMessages.forEach((analysisMessage) => {
+          const analysisMessageCasted = analysisMessage as [
+            string,
+            [
+              Record<string, AnalysisMessageDetails[]>,
+              Record<string, AnalysisMessageDetails[]>
+            ]
+          ];
+
+          const fileName = analysisMessageCasted[0];
+          const errors = analysisMessageCasted[1][0];
+          const warnings = analysisMessageCasted[1][1];
+
+          analysisErrors[fileName].set((v) => mergeListProps(errors, v));
+          analysisWarnings[fileName].set((v) => mergeListProps(warnings, v));
+        });
+
+        toast.update(toastId, {
+          render: "Completed analyzing filaments",
+          type: "success",
+          autoClose: 3000,
+        });
+      });
+    });
   });
 
   Promise.all(

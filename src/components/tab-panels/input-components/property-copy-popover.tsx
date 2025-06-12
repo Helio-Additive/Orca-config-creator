@@ -66,6 +66,7 @@ export default function PropertyCopyPopover() {
                   propValue: JSON.stringify(value),
                 })
                   .then(() => {
+                    selectedConfigs.set(new Set());
                     toast("Successfully wrote to file: " + el!.fileName, {
                       type: "success",
                     });
