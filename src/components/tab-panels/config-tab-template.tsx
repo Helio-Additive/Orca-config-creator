@@ -1,12 +1,8 @@
-import { useHookstate } from "@hookstate/core";
 import { ReactNode } from "react";
 import { VscNewFile } from "react-icons/vsc";
 import { useNavigate } from "react-router-dom";
-import { ConfigType, duplicateFile, newFile } from "../../lib/commons";
-import { appState, globalState } from "../../lib/state-store";
+import { ConfigType, newFile } from "../../lib/commons";
 import TopButton from "./config-list/config-item-components/top-button";
-import InputComponent from "./input-component";
-import { InputPopover } from "./input-components/input-popover";
 import DuplicationPopover from "./input-components/duplication-popover";
 import PropertyCopyPopover from "./input-components/property-copy-popover";
 

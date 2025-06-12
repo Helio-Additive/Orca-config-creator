@@ -1,15 +1,15 @@
 import { Button, Field, Label } from "@headlessui/react";
-import { ReactNode } from "react";
-import { twMerge } from "tailwind-merge";
-import DropdownInput from "./input-components/dropdown-input";
-import ValueInput from "./input-components/value-input";
 import { Tooltip } from "radix-ui";
-import Infotip from "../tooltip/infotip";
-import { ConfigType } from "../../lib/commons";
-import ComboInput from "./input-components/combo-input";
-import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
-import NameAndPathInput from "./input-components/name-and-path-input";
+import { ReactNode } from "react";
 import { FaMinus } from "react-icons/fa";
+import { twMerge } from "tailwind-merge";
+import { ConfigNameAndPath } from "../../lib/bindings/ConfigNameAndPath";
+import { ConfigType } from "../../lib/commons";
+import Infotip from "../tooltip/infotip";
+import ComboInput from "./input-components/combo-input";
+import DropdownInput from "./input-components/dropdown-input";
+import NameAndPathInput from "./input-components/name-and-path-input";
+import ValueInput from "./input-components/value-input";
 
 export default function InputComponent({
   label,

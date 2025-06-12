@@ -24,6 +24,7 @@ import {
   getArrayFromDelimitedString,
   getDelimitedStringFromArray,
   getPropMapFromType,
+  matchesQuery,
 } from "./lib/commons";
 import {
   configOptionTypeToInputTypeString,
@@ -38,7 +39,7 @@ import {
   removeArrayValue,
   saveFile,
 } from "./lib/edit-config-helpers";
-import { ErrWan, globalState } from "./lib/state-store";
+import { appState, ErrWan, globalState } from "./lib/state-store";
 
 function LabelButtonTemplate({
   Icon,
@@ -203,6 +204,7 @@ export default function EditConfig() {
 
   const navigate = useNavigate();
   const { editWindowState } = useHookstate(globalState);
+  const { editConfigSearchQuery: searchQuery } = useHookstate(appState);
 
   const propMap = getPropMapFromType(type);
 
@@ -385,11 +387,22 @@ export default function EditConfig() {
         >
           {editWindowState[fileName].name.get()}
         </div>
+
+        <InputComponent
+          type="text"
+          placeholder="Search"
+          className="mb-0 ml-4"
+          value={searchQuery.get()}
+          onChange={(a) => searchQuery.set(a as string)}
+          allowEdit
+        />
+
         <ShowDirectoryButton
           onClick={() => {
             folderOpener(fileName);
           }}
         />
+
         {(editWindowState[fileName].changedProps.keys.length > 0 ||
           editWindowState[fileName].deleteKeys.length > 0) &&
           !criticalErrorsExist && (
@@ -578,6 +591,9 @@ export default function EditConfig() {
             </div>
           );
 
+          if (!matchesQuery(searchQuery.get(), [key]))
+            return <div key={key}></div>;
+
           return (
             <InputComponent
               labelChild={labelButtons}
@@ -684,6 +700,9 @@ export default function EditConfig() {
           const markedForDeletion = editWindowState[fileName].deleteKeys
             .get()
             .includes(key);
+
+          if (!matchesQuery(searchQuery.get(), [key]))
+            return <div key={key}></div>;
 
           return (
             <InputComponent

@@ -15,6 +15,7 @@ use std::{collections::HashSet, io::BufReader};
 #[cfg(target_os = "linux")]
 use std::{fs::metadata, path::PathBuf};
 use tauri::async_runtime::spawn_blocking;
+use tauri::utils::config;
 
 use crate::configuration_loader::load_filament_preset;
 use crate::configuration_loader::load_vendor_preset;
@@ -1154,14 +1155,29 @@ pub async fn check_collision_in_config_file(
     path: String,
     config_location: String,
     name: String,
-    family: String,
+    family: Option<String>,
+    config_type: String,
     key_to_check: String,
     state: tauri::State<'_, Arc<KeySet>>,
-) -> Result<HashMap<String, Vec<AnalysisMessageDetails>>, String> {
+) -> Result<
+    (
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+    ),
+    String,
+> {
     let state_clone = Arc::clone(&*state);
 
     spawn_blocking(move || {
         let mut messages: Vec<AnalysisMessageDetails> = Vec::new();
+
+        let config_details = ConfigDetails::new(
+            name.clone(),
+            path.clone(),
+            family,
+            config_location.clone(),
+            config_type.into(),
+        );
 
         let contents = fs::read_to_string(&path)
             .map_err(|e| format!("Failed to read file '{}': {}", path, e))?;
@@ -1170,20 +1186,36 @@ pub async fn check_collision_in_config_file(
             .map_err(|e| format!("Malformed JSON file '{}': {}", path, e))?;
 
         if let Some(str_value) = json_value.get(&key_to_check).and_then(Value::as_str) {
-            // you can use str_value here
+            let set = state_clone.values.read().unwrap();
+            if set.contains(str_value) {
+                messages.push(AnalysisMessageDetails {
+                    config_details: config_details.clone(),
+                    message: ErrWan {
+                        text: format!(
+                            "Collision detected for key '{}' with value '{}'",
+                            key_to_check, str_value
+                        ),
+                        r#type: ErrType::Warning,
+                    },
+                });
+            }
+        } else {
+            messages.push(AnalysisMessageDetails {
+                config_details: config_details.clone(),
+                message: ErrWan {
+                    text: format!("Key does not exist in the config '{}'", key_to_check),
+                    r#type: ErrType::Warning,
+                },
+            });
         }
 
-        match json_value.get(&key_to_check).and_then(Value::as_str) {
-            Some(str_value) => {}
-            None => {}
-        }
+        let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
 
-        let set = state_clone.values.read().unwrap();
-        if set.contains(&name) {
-            // check collision, push message, etc.
-        }
+        analysis_result.insert(key_to_check, messages);
 
-        Ok(HashMap::new())
+        Ok(filter_analysis_results_into_errors_and_warning(
+            analysis_result,
+        ))
     })
     .await
     .map_err(|e| format!("Task error: {e}"))?
