@@ -18,6 +18,8 @@ use tauri::async_runtime::spawn_blocking;
 use tauri::utils::config;
 
 use crate::configuration_loader::load_filament_preset;
+use crate::configuration_loader::load_printer_variant_preset;
+use crate::configuration_loader::load_process_preset;
 use crate::configuration_loader::load_vendor_preset;
 use crate::configuration_loader::AnalysisMessageDetails;
 use crate::configuration_loader::ConfigDetails;
@@ -1001,9 +1003,91 @@ fn check_file_name_and_config_name(path: &str, name: &str) -> bool {
     }
 }
 
-fn check_setting_id(
+fn check_filament_setting_id(
     analysis_result: &mut HashMap<String, Vec<AnalysisMessageDetails>>,
     parsed_config: &FilamentJsonSchema,
+    key: &str,
+    regex: &str,
+    config_details: ConfigDetails,
+) {
+    if parsed_config.extra.0.contains_key(key) {
+        let pattern = Regex::new(regex).unwrap();
+
+        if !pattern.is_match(parsed_config.extra.0.get(key).unwrap().as_str().unwrap()) {
+            insert_or_push_into_map(
+                analysis_result,
+                key.into(),
+                AnalysisMessageDetails {
+                    config_details: config_details.clone(),
+                    message: ErrWan {
+                        text: format!("The key {}, does not meet the set pattern: {}", key, regex),
+                        r#type: ErrType::Error,
+                    },
+                },
+            );
+        }
+    } else {
+        insert_or_push_into_map(
+            analysis_result,
+            FILE_KEY.into(),
+            AnalysisMessageDetails {
+                config_details: config_details.clone(),
+                message: ErrWan {
+                    text: format!(
+                        "The key {}, does not exist in the config. This can cause issues",
+                        key
+                    ),
+                    r#type: ErrType::Error,
+                },
+            },
+        );
+    }
+}
+
+fn check_printer_setting_id(
+    analysis_result: &mut HashMap<String, Vec<AnalysisMessageDetails>>,
+    parsed_config: &PrinterVariantJsonSchema,
+    key: &str,
+    regex: &str,
+    config_details: ConfigDetails,
+) {
+    if parsed_config.extra.0.contains_key(key) {
+        let pattern = Regex::new(regex).unwrap();
+
+        if !pattern.is_match(parsed_config.extra.0.get(key).unwrap().as_str().unwrap()) {
+            insert_or_push_into_map(
+                analysis_result,
+                key.into(),
+                AnalysisMessageDetails {
+                    config_details: config_details.clone(),
+                    message: ErrWan {
+                        text: format!("The key {}, does not meet the set pattern: {}", key, regex),
+                        r#type: ErrType::Error,
+                    },
+                },
+            );
+        }
+    } else {
+        insert_or_push_into_map(
+            analysis_result,
+            FILE_KEY.into(),
+            AnalysisMessageDetails {
+                config_details: config_details.clone(),
+                message: ErrWan {
+                    text: format!(
+                        "The key {}, does not exist in the config. This can cause issues",
+                        key
+                    ),
+                    r#type: ErrType::Error,
+                },
+            },
+        );
+    }
+}
+
+fn check_process_setting_id(
+    analysis_result: &mut HashMap<String, Vec<AnalysisMessageDetails>>,
+    parsed_config: &ProcessJsonSchema,
     key: &str,
     regex: &str,
     config_details: ConfigDetails,
@@ -1048,7 +1132,6 @@ pub async fn analyse_installed_filament_config(
     config_location: String,
     name: String,
     family: String,
-    required_keys: Vec<String>,
 ) -> Result<
     (
         HashMap<String, Vec<AnalysisMessageDetails>>,
@@ -1077,7 +1160,7 @@ pub async fn analyse_installed_filament_config(
         )
         .unwrap_or(false)
         {
-            check_setting_id(
+            check_filament_setting_id(
                 &mut analysis_result,
                 &parsed_filament_config,
                 "setting_id",
@@ -1086,13 +1169,115 @@ pub async fn analyse_installed_filament_config(
             );
         }
 
-        check_setting_id(
+        check_filament_setting_id(
             &mut analysis_result,
             &parsed_filament_config,
             "filament_id",
             "^GF",
             filament_config_details.clone(),
         );
+
+        Ok(filter_analysis_results_into_errors_and_warning(
+            analysis_result,
+        ))
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
+}
+
+#[tauri::command]
+pub async fn analyse_installed_printer_config(
+    path: String,
+    config_location: String,
+    name: String,
+    family: String,
+) -> Result<
+    (
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+    ),
+    String,
+> {
+    spawn_blocking(move || {
+        let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
+
+        let filament_config_details = ConfigDetails::new(
+            name.clone(),
+            path.clone(),
+            Some(family),
+            config_location.clone(),
+            "filament".into(),
+        );
+
+        let parsed_filament_config = load_printer_variant_preset(&path)?;
+
+        if str_to_bool(
+            &parsed_filament_config
+                .instantiation
+                .clone()
+                .unwrap_or("false".into()),
+        )
+        .unwrap_or(false)
+        {
+            check_printer_setting_id(
+                &mut analysis_result,
+                &parsed_filament_config,
+                "setting_id",
+                "^GM",
+                filament_config_details.clone(),
+            );
+        }
+
+        Ok(filter_analysis_results_into_errors_and_warning(
+            analysis_result,
+        ))
+    })
+    .await
+    .unwrap_or_else(|e| Err(format!("Task error: {e}")))
+}
+
+#[tauri::command]
+pub async fn analyse_installed_process_config(
+    path: String,
+    config_location: String,
+    name: String,
+    family: String,
+) -> Result<
+    (
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+        HashMap<String, Vec<AnalysisMessageDetails>>,
+    ),
+    String,
+> {
+    spawn_blocking(move || {
+        let mut analysis_result: HashMap<String, Vec<AnalysisMessageDetails>> = HashMap::new();
+
+        let filament_config_details = ConfigDetails::new(
+            name.clone(),
+            path.clone(),
+            Some(family),
+            config_location.clone(),
+            "filament".into(),
+        );
+
+        let parsed_filament_config = load_process_preset(&path)?;
+
+        if str_to_bool(
+            &parsed_filament_config
+                .instantiation
+                .clone()
+                .unwrap_or("false".into()),
+        )
+        .unwrap_or(false)
+        {
+            check_process_setting_id(
+                &mut analysis_result,
+                &parsed_filament_config,
+                "setting_id",
+                "^GP",
+                filament_config_details.clone(),
+            );
+        }
 
         Ok(filter_analysis_results_into_errors_and_warning(
             analysis_result,

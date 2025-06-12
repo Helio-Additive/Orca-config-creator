@@ -408,6 +408,11 @@ pub fn load_printer_model_preset(path: &str) -> Result<PrinterModelJsonSchema, S
 }
 
 #[tauri::command]
+pub fn load_process_preset(path: &str) -> Result<ProcessJsonSchema, String> {
+    load_preset(path)
+}
+
+#[tauri::command]
 pub fn load_printer_variant_preset(path: &str) -> Result<PrinterVariantJsonSchema, String> {
     load_preset(path)
 }
