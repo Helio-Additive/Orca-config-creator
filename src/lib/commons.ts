@@ -559,7 +559,7 @@ export const dataProcessConfigLoader = async () =>
     "/process"
   );
 
-export function installedConfigLoader<
+export async function installedConfigLoader<
   T extends
     | MinPrinterVariantJsonSchema
     | MinFilamentJsonSchema
@@ -589,7 +589,7 @@ export function installedConfigLoader<
       orcaInstallationPath.get({ stealth: true }) &&
       !errLoading.get({ stealth: true })
     ) {
-      Promise.all(
+      await Promise.all(
         vendorConfigs.keys.map(async (key) => {
           const vendorConfig = vendorConfigs[key].get({ stealth: true });
           const configList = (vendorConfig[configNameAndPathKey] ??
@@ -1587,48 +1587,45 @@ export async function refreshConfigs(
   type: ConfigType,
   location: ConfigLocationType
 ) {
-  if (location === "installed") {
-    await installedVendorConfigLoader();
-  }
+  if (location === "installed") await installedVendorConfigLoader();
 
   if (
     type === "printer" &&
     (location === "loaded_system" || location === "user")
-  ) {
+  )
     await dataPrinterConfigLoader();
-  } else if (
+  else if (
     type === "filament" &&
     (location === "loaded_system" || location === "user")
-  ) {
+  )
     await dataFilamentConfigLoader();
-  } else if (
+  else if (
     type === "process" &&
     (location === "loaded_system" || location === "user")
-  ) {
+  )
     await dataProcessConfigLoader();
-  } else if (
+  else if (
     type === "vendor" &&
     (location === "loaded_system" || location === "user")
-  ) {
+  )
     await loadedSystemVendorConfigLoader();
-  } else if (
+  else if (
     type === "printer-model" &&
     (location === "loaded_system" || location === "user")
-  ) {
+  )
     await loadedSystemModelConfigLoader();
-  } else if (type === "printer" && location === "installed") {
+  else if (type === "printer" && location === "installed")
     await installedPrinterConfigLoader();
-  } else if (type === "printer-model" && location === "installed") {
+  else if (type === "printer-model" && location === "installed")
     await installedModelConfigLoader();
-  } else if (type === "filament" && location === "installed") {
+  else if (type === "filament" && location === "installed")
     await installedFilamentConfigLoader();
-  } else if (type === "process" && location === "installed") {
+  else if (type === "process" && location === "installed")
     await installedPrinterConfigLoader();
-  } else if (type === "vendor" && location === "installed") {
+  else if (type === "vendor" && location === "installed")
     await installedVendorConfigLoader();
-  } else if (type === "process" && location === "installed") {
+  else if (type === "process" && location === "installed")
     await installedModelConfigLoader();
-  }
 }
 
 export function getDirectoryFromTypeAndLocation(
@@ -1893,29 +1890,38 @@ export function analyseVendorConfigs() {
         return [vendorConfig.fileName, analysisMessages];
       });
     })
-  ).then((analysisMessages) => {
-    analysisMessages.forEach((analysisMessage) => {
-      const analysisMessageCasted = analysisMessage as [
-        string,
-        [
-          Record<string, AnalysisMessageDetails[]>,
-          Record<string, AnalysisMessageDetails[]>
-        ]
-      ];
+  )
+    .then((analysisMessages) => {
+      analysisMessages.forEach((analysisMessage) => {
+        const analysisMessageCasted = analysisMessage as [
+          string,
+          [
+            Record<string, AnalysisMessageDetails[]>,
+            Record<string, AnalysisMessageDetails[]>
+          ]
+        ];
 
-      const fileName = analysisMessageCasted[0];
-      const errors = analysisMessageCasted[1][0];
-      const warnings = analysisMessageCasted[1][1];
+        const fileName = analysisMessageCasted[0];
+        const errors = analysisMessageCasted[1][0];
+        const warnings = analysisMessageCasted[1][1];
 
-      analysisErrors[fileName].set(errors);
-      analysisWarnings[fileName].set(warnings);
+        analysisErrors[fileName].set(errors);
+        analysisWarnings[fileName].set(warnings);
+      });
+      toast.update(toastId, {
+        render: "Completed analyzing vendors",
+        type: "success",
+        autoClose: 3000,
+      });
+    })
+    .catch((error: any) => {
+      const errorString = error.toString();
+      toast.update(toastId, {
+        render: `Error analyzing vendor configs: ${errorString}`,
+        type: "error",
+        autoClose: 5000,
+      });
     });
-    toast.update(toastId, {
-      render: "Completed analyzing vendors",
-      type: "success",
-      autoClose: 3000,
-    });
-  });
 }
 
 function getAllConfigsFromSystemConfigState<
@@ -1988,13 +1994,22 @@ export async function analyseProcessConfigs() {
         );
       })
     ).then(setAnalysisMessagesToGlobalState),
-  ]).then(() => {
-    toast.update(toastId, {
-      render: "Completed analyzing process",
-      type: "success",
-      autoClose: 3000,
+  ])
+    .then(() => {
+      toast.update(toastId, {
+        render: "Completed analyzing process",
+        type: "success",
+        autoClose: 3000,
+      });
+    })
+    .catch((error: any) => {
+      const errorString = error.toString();
+      toast.update(toastId, {
+        render: `Error analyzing process configs: ${errorString}`,
+        type: "error",
+        autoClose: 5000,
+      });
     });
-  });
 }
 
 export async function analysePrinterConfigs() {
@@ -2039,13 +2054,22 @@ export async function analysePrinterConfigs() {
         );
       })
     ).then(setAnalysisMessagesToGlobalState),
-  ]).then(() => {
-    toast.update(toastId, {
-      render: "Completed analyzing printers",
-      type: "success",
-      autoClose: 3000,
+  ])
+    .then(() => {
+      toast.update(toastId, {
+        render: "Completed analyzing printers",
+        type: "success",
+        autoClose: 3000,
+      });
+    })
+    .catch((error: any) => {
+      const errorString = error.toString();
+      toast.update(toastId, {
+        render: `Error analyzing printer configs: ${errorString}`,
+        type: "error",
+        autoClose: 5000,
+      });
     });
-  });
 }
 
 export async function analyseFilamentConfigs() {
@@ -2100,13 +2124,22 @@ export async function analyseFilamentConfigs() {
         );
       })
     ).then(setAnalysisMessagesToGlobalState),
-  ]).then(() => {
-    toast.update(toastId, {
-      render: "Completed analyzing filaments",
-      type: "success",
-      autoClose: 3000,
+  ])
+    .then(() => {
+      toast.update(toastId, {
+        render: "Completed analyzing filaments",
+        type: "success",
+        autoClose: 3000,
+      });
+    })
+    .catch((error: any) => {
+      const errorString = error.toString();
+      toast.update(toastId, {
+        render: `Error analyzing filament configs: ${errorString}`,
+        type: "error",
+        autoClose: 5000,
+      });
     });
-  });
 }
 
 export function getAllFilesOfType(type: ConfigType) {
