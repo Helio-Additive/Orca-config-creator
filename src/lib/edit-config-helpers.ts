@@ -7,6 +7,7 @@ import {
   ConfigLocationType,
   ConfigType,
   createVendorConfigEntry,
+  deinherit_and_load_all_props,
   deinherit_config_by_type,
   editConfigFile,
   findConfig,
@@ -55,6 +56,7 @@ async function writeToFile(
     .then(() => {
       toast("Wrote new configuration to file", { type: "success" });
       changedProps.set({});
+      editWindowState[editWindowStateKey].initialLoadCompleted.set(false);
       editWindowState[editWindowStateKey].deleteKeys.set([]);
     })
     .catch((error: any) => {
@@ -103,9 +105,17 @@ export async function saveFile(
     newName = changedProps["name"].get({ stealth: true }) as string;
   }
   try {
-    if (!newName && !newFile)
+    if (!newName && !newFile) {
       await saveFileWithoutRenameOrCreation(fileName, editWindowState);
-    else if (newFile) {
+      refreshAndReload(
+        props["name"].get({ stealth: true }) as string,
+        fileName,
+        type,
+        location,
+        navigate,
+        family
+      );
+    } else if (newFile) {
       const newFileName =
         getDirectoryFromTypeAndLocation(type, location, family) +
         newName +
@@ -481,7 +491,7 @@ export function loadExistingConfigProps(
   const propMap = getPropMapFromType(type);
 
   const { editWindowState } = globalState;
-  deinherit_config_by_type(name, type, location, family)
+  deinherit_and_load_all_props(name, type, location, family)
     .then((res) => {
       const allKeysInRes = Object.keys(res.res);
 
