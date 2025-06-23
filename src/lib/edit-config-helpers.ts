@@ -492,7 +492,7 @@ export function loadExistingConfigProps(
 
   const { editWindowState } = globalState;
   deinherit_and_load_all_props(name, type, location, family)
-    .then((res) => {
+    .then((res: any) => {
       const allKeysInRes = Object.keys(res.res);
 
       const knownKeysTemp = new Set(

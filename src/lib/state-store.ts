@@ -130,6 +130,7 @@ export const appStateObject = {
   },
   selectedConfigs: new Set() as Set<string>,
   selectedConfigType: undefined as ConfigType | undefined,
+  analysisGoingOn: false,
 };
 
 export const appState = hookstate(structuredClone(appStateObject));
