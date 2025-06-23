@@ -76,21 +76,7 @@ function App() {
     installedFilamentConfigLoader();
 
     installedProcessConfigLoader();
-
-    analyseVendorConfigs();
   }, [vendorConfigs]);
-
-  useEffect(() => {
-    analyseFilamentConfigs();
-  }, [installedFilamentConfigs]);
-
-  useEffect(() => {
-    analysePrinterConfigs();
-  }, [installedPrinterConfigs]);
-
-  useEffect(() => {
-    analyseProcessConfigs();
-  }, [installedProcessConfigs]);
 
   return (
     <main>

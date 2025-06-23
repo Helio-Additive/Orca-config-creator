@@ -1,6 +1,11 @@
 import { TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { useHookstate } from "@hookstate/core";
+import { PiBroomLight } from "react-icons/pi";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { analyseConfigs, deleteConfig, refreshConfigs } from "../lib/commons";
 import { appState, globalState } from "../lib/state-store";
+import AnalysisTab from "./tab-panels/analysis-tab";
+import TopButton from "./tab-panels/config-list/config-item-components/top-button";
 import FilamentConfigTab from "./tab-panels/filament-config-tab";
 import FileLoader from "./tab-panels/file-loader";
 import InputComponent from "./tab-panels/input-component";
@@ -9,9 +14,7 @@ import PrinterConfigTab from "./tab-panels/printer-config-tab";
 import ProcessConfigTab from "./tab-panels/process-config-tab";
 import VendorConfigTab from "./tab-panels/vendor-config-tab";
 import TabTemplate from "./tab-template";
-import AnalysisTab from "./tab-panels/analysis-tab";
-import TopButton from "./tab-panels/config-list/config-item-components/top-button";
-import { PiBroomLight } from "react-icons/pi";
+import { BiSolidAnalyse } from "react-icons/bi";
 
 export default function TabbedWindow() {
   const {
@@ -22,7 +25,8 @@ export default function TabbedWindow() {
     analysisWarnings,
   } = useHookstate(globalState);
 
-  const { searchQuery, selectedConfigs } = useHookstate(appState);
+  const { searchQuery, selectedConfigs, selectedConfigType, analysisGoingOn } =
+    useHookstate(appState);
 
   const categories = [
     {
@@ -109,12 +113,54 @@ export default function TabbedWindow() {
           />
         </div>
         {selectedConfigs.get().size && (
+          <>
+            <TopButton
+              className="text-text-primary h-full ml-1"
+              onClick={() => {
+                selectedConfigs.set(new Set());
+              }}
+              Icon={PiBroomLight}
+              tooltip="Clear Selection"
+            />
+
+            <TopButton
+              className="text-text-primary h-full ml-1"
+              onClick={async () => {
+                const selectedConfigsArray = Array.from(
+                  selectedConfigs.get({ stealth: true })
+                );
+
+                for (let i = 0; i < selectedConfigsArray.length; i++) {
+                  const el = selectedConfigsArray[i];
+                  const parsedEl = JSON.parse(el);
+                  await deleteConfig(
+                    parsedEl.configName,
+                    parsedEl.type,
+                    parsedEl.location,
+                    parsedEl.family,
+                    true
+                  );
+                }
+                refreshConfigs(
+                  selectedConfigType.get({ stealth: true })!,
+                  "installed"
+                );
+                selectedConfigs.set(new Set());
+              }}
+              Icon={RiDeleteBin6Line}
+              tooltip="Delete Selected"
+            />
+          </>
+        )}
+        {!analysisGoingOn.get({ stealth: true }) && (
           <TopButton
             className="text-text-primary h-full ml-1"
-            onClick={() => {
-              selectedConfigs.set(new Set());
+            onClick={async () => {
+              analysisGoingOn.set(true);
+              await analyseConfigs();
+              analysisGoingOn.set(false);
             }}
-            Icon={PiBroomLight}
+            Icon={BiSolidAnalyse}
             tooltip="Clear Selection"
           />
         )}

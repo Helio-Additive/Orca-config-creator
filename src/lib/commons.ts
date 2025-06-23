@@ -1713,7 +1713,8 @@ export async function deleteConfig(
   name: string,
   type: ConfigType,
   location: ConfigLocationType,
-  family?: string
+  family?: string,
+  doRefresh: boolean = true
 ) {
   try {
     if (location === "user") await deleteUserConfig(name, type);
@@ -1741,7 +1742,7 @@ export async function deleteConfig(
       await deleteVendorConfigEntry(family!, type, name);
       await deleteInstalledConfig(name, type, family!);
 
-      await refreshConfigs("printer-model", "installed");
+      if (doRefresh) await refreshConfigs(type, "installed");
     }
   } catch (error: any) {
     toast(error.toString(), { type: "error" });
@@ -1864,7 +1865,7 @@ export function matchesQuery(query: string, checkStrings: string[]) {
   return checkResult;
 }
 
-export function analyseVendorConfigs() {
+export async function analyseVendorConfigs() {
   const toastMessage = "analyzing vendor configs in the background";
   const toastId = toast(toastMessage, {
     type: "info",
@@ -1879,7 +1880,7 @@ export function analyseVendorConfigs() {
     analysisWarnings,
   } = globalState;
 
-  Promise.all(
+  return Promise.all(
     vendorConfigs.keys.map(async (vendorName) => {
       const vendorConfig = vendorConfigs[vendorName].get();
       return invoke("analyse_vendor_config", {
@@ -1970,7 +1971,7 @@ export async function analyseProcessConfigs() {
 
   const allFiles = getAllConfigFiles();
 
-  Promise.all([
+  return Promise.all([
     collisionChecker(allFiles, allProcessConfigs, "process", "setting_id"),
     Promise.all(
       installedProcessConfigs.keys.flatMap((vendorName) => {
@@ -2030,7 +2031,7 @@ export async function analysePrinterConfigs() {
 
   const allFiles = getAllConfigFiles();
 
-  Promise.all([
+  return Promise.all([
     collisionChecker(allFiles, allPrinterConfigs, "printer", "setting_id"),
     Promise.all(
       installedPrinterConfigs.keys.flatMap((vendorName) => {
@@ -2090,7 +2091,7 @@ export async function analyseFilamentConfigs() {
 
   const allFilamentFiles = getAllConfigFiles();
 
-  Promise.all([
+  return Promise.all([
     collisionChecker(
       allFilamentFiles,
       allFilamentConfigs,
@@ -2235,4 +2236,13 @@ async function collisionChecker(
       ).then(setAnalysisMessagesToGlobalState);
     });
   });
+}
+
+export async function analyseConfigs() {
+  return Promise.all([
+    analyseVendorConfigs(),
+    analyseFilamentConfigs(),
+    analysePrinterConfigs(),
+    analyseProcessConfigs(),
+  ]);
 }
