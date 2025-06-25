@@ -161,7 +161,7 @@ export default function TabbedWindow() {
               analysisGoingOn.set(false);
             }}
             Icon={BiSolidAnalyse}
-            tooltip="Clear Selection"
+            tooltip="Analyse Configs"
           />
         )}
       </div>
