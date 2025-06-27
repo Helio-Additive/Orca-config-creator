@@ -44,6 +44,8 @@ The default for this will also be automatically loaded on launch. You only need 
 
 ## <img src="docs/images/duplicate_config_icon.png" alt="My SVG" height="32"> Duplicate config: You can duplicate the config into the same vendor or a different vendor.
 
+## <img src="docs/images/add_new_config_icon.png" alt="My SVG" height="32"> Add new config: You can create new configs using this button. See [Create New Config](docs/create-new-config.md) for more.
+
 # Copying a property from one config to another
 
 If you want to copy a property from one config to another<br>
