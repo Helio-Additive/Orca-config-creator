@@ -9,10 +9,6 @@ import BackgroundPlate from "./components/background-plate";
 import EditConfig from "./edit-config";
 import Home from "./Home";
 import {
-  analyseFilamentConfigs,
-  analysePrinterConfigs,
-  analyseProcessConfigs,
-  analyseVendorConfigs,
   dataFilamentConfigLoader,
   dataPrinterConfigLoader,
   dataProcessConfigLoader,
@@ -33,9 +29,6 @@ function App() {
     orcaInstallationPath,
     orcaDataDirectory,
     installedVendorConfigs: vendorConfigs,
-    installedFilamentConfigs,
-    installedPrinterConfigs,
-    installedProcessConfigs,
     os,
   } = configState;
 
