@@ -1,0 +1,16 @@
+{
+  "type": "printer",
+  "version": "",
+  "from": "User",
+  "printer_technology": "FFF",
+  "printable_area": null,
+  "bed_exclude_area": [
+    [
+      0,
+      0
+    ]
+  ],
+  "printer_model": null,
+  "printer_variant": null,
+  "nozzle_height": 2.5
+}
