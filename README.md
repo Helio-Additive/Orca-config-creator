@@ -2,6 +2,8 @@
 
 ### The doc is written for OrcaSlicer but about 90% of it is applicable as it is to BambuStudio and PrusaSlicer
 
+- ### [How to Build](docs/how-to-build.md)
+
 - ### [Config Types](docs/config-types.md)
 
 - ### [Installed, loaded and user configs](docs/config-locations.md)
