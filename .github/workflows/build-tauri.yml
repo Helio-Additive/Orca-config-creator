@@ -67,9 +67,10 @@ jobs:
         run: yarn tauri build ${{ matrix.args }}
 
       - name: Find and rename artifact
+        shell: bash
         run: |
-          bundle_dir="src-tauri/target/release/bundle"
-          original_file=$(find "$bundle_dir" -type f -name "*.${{ matrix.ext }}")
+          bundle_dir="src-tauri/target"
+          original_file=$(find "$bundle_dir" -path "*/release/bundle" -type f -name "*.${{ matrix.ext }}")
           new_file="${{ steps.meta.outputs.name }}_${{ steps.meta.outputs.version }}_${{ matrix.artifact-name }}.${{ matrix.ext }}"
           cp "$original_file" "$new_file"
           echo "renamed_file=$new_file" >> $GITHUB_ENV
