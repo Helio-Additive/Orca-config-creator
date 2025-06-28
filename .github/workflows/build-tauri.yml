@@ -47,9 +47,12 @@ jobs:
 
       - name: Extract Tauri metadata
         id: meta
+        shell: bash
         run: |
           version=$(jq -r '.package.version' src-tauri/tauri.conf.json)
           name=$(jq -r '.package.productName' src-tauri/tauri.conf.json)
+          echo "VERSION: $version"
+          echo "NAME: $name"
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "name=$name" >> $GITHUB_OUTPUT
 
