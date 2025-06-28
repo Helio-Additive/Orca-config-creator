@@ -13,17 +13,21 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest"
-            args: ""
+            args: "--target aarch64-apple-darwin"
             artifact-name: "mac-arm64"
+            ext: "dmg"
           - platform: "macos-latest"
-            args: ""
+            args: "--target x86_64-apple-darwin"
             artifact-name: "mac-intel"
+            ext: "dmg"
           - platform: "ubuntu-22.04"
             args: ""
             artifact-name: "linux"
+            ext: "deb"
           - platform: "windows-latest"
             args: ""
             artifact-name: "windows"
+            ext: "exe"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -62,14 +66,16 @@ jobs:
       - name: Build Tauri app
         run: yarn tauri build ${{ matrix.args }}
 
-      - name: Upload build artifacts
+      - name: Find and rename artifact
+        run: |
+          bundle_dir="src-tauri/target/release/bundle"
+          original_file=$(find "$bundle_dir" -type f -name "*.${{ matrix.ext }}")
+          new_file="${{ steps.meta.outputs.name }}_${{ steps.meta.outputs.version }}_${{ matrix.artifact-name }}.${{ matrix.ext }}"
+          cp "$original_file" "$new_file"
+          echo "renamed_file=$new_file" >> $GITHUB_ENV
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
-          path: |
-            src-tauri/target/**/release/bundle/**/*.app
-            src-tauri/target/**/release/bundle/**/*.dmg
-            src-tauri/target/**/release/bundle/**/*.exe
-            src-tauri/target/**/release/bundle/**/*.msi
-            src-tauri/target/**/release/bundle/**/*.AppImage
-            src-tauri/target/**/release/bundle/**/*.deb
+          name: ${{ env.renamed_file }}
+          path: ${{ env.renamed_file }}
