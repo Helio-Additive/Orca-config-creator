@@ -45,6 +45,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      - name: Extract Tauri metadata
+        id: meta
+        run: |
+          version=$(jq -r '.package.version' src-tauri/tauri.conf.json)
+          name=$(jq -r '.package.productName' src-tauri/tauri.conf.json)
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "name=$name" >> $GITHUB_OUTPUT
+
       - name: Install frontend dependencies
         run: yarn install
 
