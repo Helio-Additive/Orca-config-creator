@@ -2,20 +2,19 @@
 use fork::{daemon, Fork};
 use fs_extra::dir;
 use fs_extra::file;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
+#[cfg(target_os = "linux")]
+use std::fs::metadata;
 use std::fs::File;
 use std::path::Path;
 use std::path::{self, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 use std::{collections::HashSet, io::BufReader};
-#[cfg(target_os = "linux")]
-use std::{fs::metadata, path::PathBuf};
 use tauri::async_runtime::spawn_blocking;
-use tauri::utils::config;
 
 use crate::configuration_loader::load_filament_preset;
 use crate::configuration_loader::load_printer_variant_preset;
@@ -990,7 +989,7 @@ pub async fn analyse_vendor_config(
     .unwrap_or_else(|e| Err(format!("Task error: {e}")))
 }
 
-fn check_file_name_and_config_name(path: &str, name: &str) -> bool {
+fn _check_file_name_and_config_name(path: &str, name: &str) -> bool {
     let path = path::Path::new(path);
 
     let path_stem = path.file_stem().unwrap().to_str().unwrap().to_string();
