@@ -1,9 +1,6 @@
 name: Build Artifacts
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch: # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
@@ -75,17 +72,8 @@ jobs:
           cp "$original_file" "$new_file"
           echo "renamed_file=$new_file" >> $GITHUB_ENV
 
-      - name: Run versioner
-        uses: Helio-Additive/actions/versioner@main
-        id: versioner
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.DEVOPS_TOKEN }}
-        env:
-          GH_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
-
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ${{ env.renamed_file }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
+          name: ${{ env.renamed_file }}
+          path: ${{ env.renamed_file }}
