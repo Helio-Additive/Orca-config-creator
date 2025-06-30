@@ -83,9 +83,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
 
-      - name: Upload to GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.meta.outputs.version }}
+          name: Release v${{ steps.meta.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ env.renamed_file }}
         env:
-          GITHUB_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
