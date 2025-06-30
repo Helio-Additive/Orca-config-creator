@@ -75,14 +75,6 @@ jobs:
           cp "$original_file" "$new_file"
           echo "renamed_file=$new_file" >> $GITHUB_ENV
 
-      - name: Run versioner
-        uses: Helio-Additive/actions/versioner@main
-        id: versioner
-        with:
-          github-token: ${{ secrets.DEVOPS_TOKEN }}
-        env:
-          GH_TOKEN: ${{ secrets.DEVOPS_TOKEN }}
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
