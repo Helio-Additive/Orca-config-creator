@@ -104,6 +104,15 @@ jobs:
           # Make the new keychain default
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
+      - name: List available code signing identities
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          echo "Keychains:"
+          security list-keychains
+          echo "Identities:"
+          security find-identity -v -p codesigning
+
       - name: Sign the DMG
         if: matrix.platform == 'macos-latest'
         shell: bash
