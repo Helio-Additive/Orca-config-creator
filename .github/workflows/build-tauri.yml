@@ -79,8 +79,8 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          CERT_PATH="$RUNNER_TEMP/cert.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Decode the certificate
           echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
